@@ -1,0 +1,374 @@
+// src/features/pedidos/components/PedidosPage.tsx
+import { usePedidos } from '../hooks/usePedidos'
+import { useVentasOptions, useServiciosOptions, useMarcoOptions } from '@/src/shared/hooks/useOptions'
+import { useState, useMemo, useEffect } from 'react'
+import { SearchInput } from '@/src/shared/components/SearchInput'
+import { Pagination }    from '@/src/shared/components/Pagination'
+import { usePagination } from '@/src/shared/hooks/usePagination'
+import { FilterBar } from '@/src/shared/components/FilterBar'
+import { withToast } from '@/src/shared/lib/withToast'
+import { toast } from 'sonner'   
+import { formatFecha } from '@/src/shared/lib/formatFecha'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Pencil, Trash2, Eye, ArrowRight } from 'lucide-react'
+import { apiRequest } from '@/src/shared/lib/apiClient'
+import { Button } from '@/src/shared/components/ui/button'
+import { Input } from '@/src/shared/components/ui/input'
+import { Label } from '@/src/shared/components/ui/label'
+import { Badge } from '@/src/shared/components/ui/badge'
+import { Skeleton } from '@/src/shared/components/ui/skeleton'
+import { Textarea } from '@/src/shared/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/src/shared/components/ui/alert-dialog'
+import { ViewDialog } from '@/src/shared/components/ViewDialog'
+import { Combobox } from '@/src/shared/components/Combobox'
+import { EmptyState } from '@/src/shared/components/EmptyState'
+import { formatCOP } from '@/src/shared/lib/formatCOP'
+
+// ── Tipo local ────────────────────────────────────────────────────────────────
+type Pedido = {
+  id_detalle: number; id_venta: number; id_servicio: number
+  id_estado: number; id_marco: number | null
+  fecha: string; observacion?: string; precio: number; estado: boolean
+}
+
+// ── Estado de servicio desde BD ───────────────────────────────────────────────
+type EstadoServicio = { id_estado: number; nombre: string }
+
+// Colores por posición (sin importar el ID de BD)
+const BADGE_COLORS = [
+  'border-amber-300 bg-amber-100 text-amber-800',
+  'border-blue-300 bg-blue-100 text-blue-800',
+  'border-emerald-300 bg-emerald-100 text-emerald-800',
+  'border-slate-300 bg-slate-100 text-slate-600',
+  'border-purple-300 bg-purple-100 text-purple-800',
+]
+
+function badgeClass(index: number) {
+  return BADGE_COLORS[index % BADGE_COLORS.length]
+}
+
+// ── Hook para cargar estados de servicio ──────────────────────────────────────
+function useEstadosServicio() {
+  const [estados, setEstados] = useState<EstadoServicio[]>([])
+  useEffect(() => {
+    apiRequest<{ success: boolean; data: EstadoServicio[] }>('/api/estado-servicio')
+      .then(r => setEstados(r.data ?? []))
+      .catch(() => {})
+  }, [])
+  return estados
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+export function PedidosPage() {
+  const navigate = useNavigate()
+  const { pedidos, isLoading, onCrear, onEditar, onEliminar, onCambiarEstado } = usePedidos()
+  const { options: ventasOpts }    = useVentasOptions()
+  const { options: serviciosOpts } = useServiciosOptions()
+  const { options: marcosOpts }    = useMarcoOptions()
+  const estados = useEstadosServicio()
+
+  // ── Búsqueda y filtros ─────────────────────────────────────────────────
+  const [q,            setQ]            = useState('')
+  const [filterEstado, setFilterEstado] = useState('')
+
+  const filtered = useMemo(() => {
+    const s = q.toLowerCase()
+    return pedidos.filter(p => {
+      const ventaLabel    = ventasOpts.find(o => o.value === String(p.id_venta))?.label ?? ''
+      const servicioLabel = serviciosOpts.find(o => o.value === String(p.id_servicio))?.label ?? ''
+      const marcoLabel    = p.id_marco ? (marcosOpts.find(o => o.value === String(p.id_marco))?.label ?? '') : ''
+      const matchQ        = !s ||
+        ventaLabel.toLowerCase().includes(s) ||
+        servicioLabel.toLowerCase().includes(s) ||
+        marcoLabel.toLowerCase().includes(s) ||
+        p.fecha.includes(s)
+      const matchEstado   = !filterEstado || String(p.id_estado) === filterEstado
+      return matchQ && matchEstado
+    })
+  }, [pedidos, ventasOpts, serviciosOpts, marcosOpts, q, filterEstado])
+
+  const { paginated, page, setPage, totalPages, total, pageSize, setPageSize } = usePagination(filtered)
+
+  const [isFormOpen,   setIsFormOpen]   = useState(false)
+  const [isViewOpen,   setIsViewOpen]   = useState(false)
+  const [editingId,    setEditingId]    = useState<number | null>(null)
+  const [viewingItem,  setViewingItem]  = useState<Pedido | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [actionError,  setActionError]  = useState<string | null>(null)
+
+  const [idVenta,      setIdVenta]      = useState('')
+  const [idServicio,   setIdServicio]   = useState('')
+  const [idMarco,      setIdMarco]      = useState('')
+  const [idEstado,     setIdEstado]     = useState('')
+  const [fecha,        setFecha]        = useState('')
+  const [precio,       setPrecio]       = useState('')
+  const [observacion,  setObservacion]  = useState('')
+  const [errors,       setErrors]       = useState<Record<string, string>>({})
+
+  // Helpers para nombre y color de estado por id
+  const estadoNombre = (id: number) =>
+    estados.find(e => e.id_estado === id)?.nombre ?? `Estado ${id}`
+  const estadoColor = (id: number) => {
+    const idx = estados.findIndex(e => e.id_estado === id)
+    return badgeClass(idx === -1 ? 0 : idx)
+  }
+
+  const resetForm = () => {
+    setIdVenta(''); setIdServicio(''); setIdMarco(''); setIdEstado('')
+    setFecha(''); setPrecio(''); setObservacion(''); setErrors({}); setEditingId(null)
+  }
+  const openCreate = () => { resetForm(); setIsFormOpen(true) }
+  const openEdit   = (p: Pedido) => {
+    setEditingId(p.id_detalle); setIdVenta(String(p.id_venta))
+    setIdServicio(String(p.id_servicio)); setIdMarco(p.id_marco ? String(p.id_marco) : '')
+    setIdEstado(String(p.id_estado)); setFecha(p.fecha)
+    setPrecio(String(p.precio)); setObservacion(p.observacion ?? '')
+    setErrors({}); setIsFormOpen(true)
+  }
+  const openView = (p: Pedido) => { setViewingItem(p); setIsViewOpen(true) }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const newErrors: Record<string, string> = {}
+    if (!idVenta)       newErrors.idVenta    = 'Campo requerido'
+    if (!idServicio)    newErrors.idServicio = 'Campo requerido'
+    if (!idEstado)      newErrors.idEstado   = 'Campo requerido'
+    if (!fecha.trim())  newErrors.fecha      = 'Campo requerido'
+    if (!precio.trim()) newErrors.precio     = 'Campo requerido'
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
+    setIsSubmitting(true)
+    try {
+      const data = {
+        id_venta: Number(idVenta), id_servicio: Number(idServicio),
+        id_marco: idMarco ? Number(idMarco) : null,
+        id_estado: Number(idEstado), fecha,
+        precio: Number(precio), observacion, estado: true,
+      }
+      const err = editingId ? await onEditar(editingId, data) : await onCrear(data)
+      if (err) { setActionError(err); return }
+      toast.success(editingId ? 'Pedido actualizado' : 'Pedido registrado')
+      setIsFormOpen(false); resetForm()
+    } finally { setIsSubmitting(false) }
+  }
+
+  const handleCambiarEstado = async (id: number, id_estado: number) => {
+    const err = await onCambiarEstado(id, id_estado)
+    if (err) setActionError(err)
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Pedidos</h1>
+        <SearchInput value={q} onChange={setQ} placeholder="Buscar pedido..." className="w-64" />
+          <p className="text-muted-foreground">Gestiona los pedidos registrados</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar venta, servicio, marco, fecha..." className="w-72" />
+          <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+            <Plus className="mr-2 h-4 w-4" />Registrar Pedido
+          </Button>
+        </div>
+      </div>
+
+      <FilterBar
+        filters={[
+          { key: 'estado', label: 'Estado', type: 'select', value: filterEstado, onChange: setFilterEstado,
+            options: estados.map((e, i) => ({ value: String(e.id_estado), label: e.nombre })) },
+        ]}
+        onClear={() => setFilterEstado('')}
+      />
+
+      {actionError && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive flex justify-between">
+          <span>{actionError}</span>
+          <button onClick={() => setActionError(null)}>✕</button>
+          </div>
+        )}
+
+      {isLoading ? (
+        <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-md" />)}</div>
+      ) : filtered.length === 0 ? (
+        <EmptyState title="Sin registros" description="No hay pedidos registrados aún." />
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-muted-foreground">ID</TableHead>
+                <TableHead className="text-muted-foreground">Venta</TableHead>
+                <TableHead className="text-muted-foreground">Servicio</TableHead>
+                <TableHead className="text-muted-foreground">Marco</TableHead>
+                <TableHead className="text-muted-foreground">Fecha</TableHead>
+                <TableHead className="text-muted-foreground">Precio</TableHead>
+                <TableHead className="text-muted-foreground">Estado</TableHead>
+                <TableHead className="text-right text-muted-foreground">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginated.map((p) => {
+                const ventaLabel    = ventasOpts.find(o => o.value === String(p.id_venta))?.label ?? `#${p.id_venta}`
+                const servicioLabel = serviciosOpts.find(o => o.value === String(p.id_servicio))?.label ?? `#${p.id_servicio}`
+                const marcoLabel    = p.id_marco
+                  ? (marcosOpts.find(o => o.value === String(p.id_marco))?.label ?? `#${p.id_marco}`)
+                  : '—'
+                return (
+                  <TableRow key={p.id_detalle}>
+                    <TableCell className="text-foreground">{p.id_detalle}</TableCell>
+                    <TableCell className="text-foreground text-sm">{ventaLabel}</TableCell>
+                    <TableCell className="text-foreground">{servicioLabel}</TableCell>
+                    <TableCell className="text-foreground">{marcoLabel}</TableCell>
+                    <TableCell className="text-foreground">{formatFecha(p.fecha)}</TableCell>
+                    <TableCell className="text-foreground">{formatCOP(p.precio)}</TableCell>
+                    <TableCell>
+                      {/* ── Dropdown dinámico con estados reales de BD ── */}
+                      <Select
+                        value={String(p.id_estado)}
+                        onValueChange={(v) => handleCambiarEstado(p.id_detalle, Number(v))}
+                      >
+                        <SelectTrigger className="w-36 h-8 border-0 bg-transparent p-0 shadow-none focus:ring-0">
+                          <Badge variant="outline" className={estadoColor(p.id_estado)}>
+                            {estadoNombre(p.id_estado)}
+                          </Badge>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {estados.map((e, i) => (
+                            <SelectItem key={e.id_estado} value={String(e.id_estado)}>
+                              <Badge variant="outline" className={badgeClass(i)}>{e.nombre}</Badge>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openView(p)}>
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                          <Pencil className="h-4 w-4 text-foreground" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-card text-card-foreground border-border">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Eliminar pedido</AlertDialogTitle>
+                              <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="border-border text-foreground">Cancelar</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={async () => { await withToast(onEliminar(p.id_detalle), 'Pedido eliminado') }}>
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/pagos?id_venta=${p.id_venta}`)} className="text-foreground">
+                          Pagos<ArrowRight className="ml-1 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
+
+          <Pagination
+            page={page} totalPages={totalPages} total={total} pageSize={pageSize}
+            onChange={setPage} onPageSizeChange={setPageSize} className="px-2 pb-2"
+          />
+        </div>
+      )}
+
+      {/* ── Ver detalle ──────────────────────────────────────────────────────── */}
+      {viewingItem && (
+        <ViewDialog
+          open={isViewOpen} onOpenChange={setIsViewOpen}
+          title={`Pedido #${viewingItem.id_detalle}`} description={viewingItem.fecha}
+          fields={[
+            { label: 'ID',          value: viewingItem.id_detalle },
+            { label: 'Estado',      value: <Badge variant="outline" className={estadoColor(viewingItem.id_estado)}>{estadoNombre(viewingItem.id_estado)}</Badge> },
+            { label: 'Venta',       value: ventasOpts.find(o => o.value === String(viewingItem.id_venta))?.label ?? `#${viewingItem.id_venta}`, fullWidth: true },
+            { label: 'Servicio',    value: serviciosOpts.find(o => o.value === String(viewingItem.id_servicio))?.label ?? `#${viewingItem.id_servicio}` },
+            { label: 'Marco',       value: viewingItem.id_marco ? (marcosOpts.find(o => o.value === String(viewingItem.id_marco))?.label ?? `#${viewingItem.id_marco}`) : '—' },
+            { label: 'Fecha',       value: viewingItem.fecha },
+            { label: 'Precio',      value: formatCOP(viewingItem.precio) },
+            { label: 'Observación', value: viewingItem.observacion, fullWidth: true },
+          ]}
+        />
+      )}
+
+      {/* ── Form crear/editar ─────────────────────────────────────────────────── */}
+      <Dialog open={isFormOpen} onOpenChange={(v) => { setIsFormOpen(v); if (!v) resetForm() }}>
+        <DialogContent className="bg-card text-card-foreground border-border max-w-md overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">{editingId ? 'Editar Pedido' : 'Registrar Pedido'}</DialogTitle>
+            <DialogDescription className="text-muted-foreground">Completa los datos del pedido.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
+            <div className="flex flex-col gap-2">
+              <Label className="text-foreground">Venta</Label>
+              <Combobox options={ventasOpts} value={idVenta} onValueChange={(v) => { setIdVenta(v); if (errors.idVenta) setErrors({...errors, idVenta: ''}) }} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
+              {errors.idVenta && <p className="text-sm text-destructive">{errors.idVenta}</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-foreground">Tipo de Servicio</Label>
+              <Combobox options={serviciosOpts} value={idServicio} onValueChange={(v) => { setIdServicio(v); if (errors.idServicio) setErrors({...errors, idServicio: ''}) }} placeholder="Buscar servicio..." searchPlaceholder="Nombre del servicio..." />
+              {errors.idServicio && <p className="text-sm text-destructive">{errors.idServicio}</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-foreground">Marco (opcional)</Label>
+              <Combobox options={marcosOpts} value={idMarco} onValueChange={setIdMarco} placeholder="Seleccionar marco..." searchPlaceholder="Código del marco..." />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-foreground">Estado</Label>
+              <Select value={idEstado} onValueChange={(v) => { setIdEstado(v); if (errors.idEstado) setErrors({...errors, idEstado: ''}) }}>
+                <SelectTrigger className="bg-card text-foreground border-border">
+                  <SelectValue placeholder="Seleccionar estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* ── Dinámico desde BD ── */}
+                  {estados.map((e, i) => (
+                    <SelectItem key={e.id_estado} value={String(e.id_estado)}>
+                      <Badge variant="outline" className={badgeClass(i)}>{e.nombre}</Badge>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.idEstado && <p className="text-sm text-destructive">{errors.idEstado}</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-foreground">Fecha</Label>
+              <Input type="date" value={fecha} onChange={(e) => { setFecha(e.target.value); if (errors.fecha) setErrors({...errors, fecha: ''}) }} className="bg-card text-foreground border-border" />
+              {errors.fecha && <p className="text-sm text-destructive">{errors.fecha}</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-foreground">Precio</Label>
+              <Input type="number" step="0.01" value={precio} onChange={(e) => { setPrecio(e.target.value); if (errors.precio) setErrors({...errors, precio: ''}) }} className="bg-card text-foreground border-border" />
+              {errors.precio && <p className="text-sm text-destructive">{errors.precio}</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-foreground">Observación (opcional)</Label>
+              <Textarea value={observacion} onChange={(e) => setObservacion(e.target.value)} className="bg-card text-foreground border-border" />
+            </div>
+            <div className="flex justify-end gap-3 mt-2">
+              <Button type="button" variant="outline" onClick={() => { setIsFormOpen(false); resetForm() }} className="border-border text-foreground">Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                {editingId ? 'Guardar cambios' : 'Registrar'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

@@ -1,0 +1,93 @@
+// src/features/auth/hooks/useLogin.ts
+// CAMBIO: "Recordarme" → sessionStorage (sin checkbox) o localStorage (con checkbox)
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { apiRequest } from '@/src/shared/lib/apiClient'
+
+type LoginResponse = {
+  success: boolean
+  message?: string
+  token:   string
+  data: {
+    id_usuario:  number
+    correo:      string
+    rol:         string
+    id_cliente:  number | null
+    nombre?:     string | null
+  }
+}
+
+// ── Helpers: guardar/leer/limpiar auth según "recordarme" ─────────────────────
+type AuthData = { token: string; rol: string; id_usuario: number; correo: string; id_cliente?: number | null }
+
+export function saveAuth(data: AuthData, remember: boolean) {
+  const storage = remember ? localStorage : sessionStorage
+  storage.setItem('token',      data.token)
+  storage.setItem('rol',        data.rol)
+  storage.setItem('id_usuario', String(data.id_usuario))
+  storage.setItem('correo',     data.correo)
+  if (data.id_cliente != null)
+    storage.setItem('id_cliente', String(data.id_cliente))
+}
+
+export function clearAuth() {
+  // Limpia ambos storages por si acaso
+  ;['token', 'rol', 'id_usuario', 'correo', 'id_cliente'].forEach(k => {
+    localStorage.removeItem(k)
+    sessionStorage.removeItem(k)
+  })
+}
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem('token') ?? sessionStorage.getItem('token')
+}
+
+export function getAuthRol(): string | null {
+  return localStorage.getItem('rol') ?? sessionStorage.getItem('rol')
+}
+
+// ── Hook ──────────────────────────────────────────────────────────────────────
+export function useLogin(redirectCita = false) {
+  const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error,     setError]     = useState<string | null>(null)
+
+  const login = async (correo: string, password: string, remember: boolean) => {
+    setIsLoading(true); setError(null)
+    try {
+      const res = await apiRequest<LoginResponse>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ correo, clave: password }),
+      })
+
+      if (!res.success || !res.token) {
+        setError('Credenciales incorrectas')
+        return
+      }
+
+      saveAuth({
+        token:      res.token,
+        rol:        res.data.rol,
+        id_usuario: res.data.id_usuario,
+        correo:     res.data.correo,
+        id_cliente: res.data.id_cliente,
+      }, remember)
+
+      // Redirigir según rol
+      if (res.data.rol === 'Admin' || res.data.rol === 'Empleado') {
+        navigate('/admin/dashboard', { replace: true })
+      } else if (redirectCita) {
+        // Venía desde "Agenda tu cita" → abrir formulario directo
+        navigate('/mi-cuenta?nueva-cita=true', { replace: true })
+      } else {
+        navigate('/mi-cuenta', { replace: true })
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al iniciar sesión')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return { login, isLoading, error }
+}

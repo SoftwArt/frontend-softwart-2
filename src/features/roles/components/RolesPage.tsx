@@ -1,0 +1,130 @@
+// src/features/roles/components/RolesPage.tsx
+import { useRoles } from '../hooks/useRoles'
+import { useState } from 'react'
+import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
+import { Button } from '@/src/shared/components/ui/button'
+import { Input } from '@/src/shared/components/ui/input'
+import { Label } from '@/src/shared/components/ui/label'
+import { Skeleton } from '@/src/shared/components/ui/skeleton'
+import { Switch } from '@/src/shared/components/ui/switch'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/src/shared/components/ui/alert-dialog'
+import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
+import { EmptyState } from '@/src/shared/components/EmptyState'
+
+type Rol = { id_rol: number; nombre: string; descripcion?: string; estado: boolean }
+
+export function RolesPage() {
+  const { roles, isLoading, onCrear, onEditar, onEliminar, onToggleEstado } = useRoles()
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [viewingItem, setViewingItem] = useState<Rol | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [nombre, setNombre] = useState('')
+  const [descripcion, setDescripcion] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const resetForm = () => { setNombre(''); setDescripcion(''); setErrors({}); setEditingId(null) }
+  const openCreate = () => { resetForm(); setIsFormOpen(true) }
+  const openEdit = (r: Rol) => { setEditingId(r.id_rol); setNombre(r.nombre); setDescripcion(r.descripcion ?? ''); setErrors({}); setIsFormOpen(true) }
+  const openView = (r: Rol) => { setViewingItem(r); setIsViewOpen(true) }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!nombre.trim()) { setErrors({ nombre: 'Campo requerido' }); return }
+    setIsSubmitting(true)
+    try {
+      if (editingId) await onEditar(editingId, { nombre, descripcion })
+      else await onCrear({ nombre, descripcion, estado: true })
+      setIsFormOpen(false); resetForm()
+    } catch { } finally { setIsSubmitting(false) }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-3xl font-bold text-foreground">Roles</h1><p className="text-muted-foreground">Gestiona los roles del sistema</p></div>
+        <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90"><Plus className="mr-2 h-4 w-4" />Registrar Rol</Button>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-md" />)}</div>
+      ) : roles.length === 0 ? <EmptyState title="Sin registros" description="No hay roles registrados aún." /> : (
+        <div className="overflow-x-auto rounded-lg border border-border bg-card">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead className="text-muted-foreground">ID</TableHead>
+              <TableHead className="text-muted-foreground">Nombre</TableHead>
+              <TableHead className="text-muted-foreground">Descripción</TableHead>
+              <TableHead className="text-muted-foreground">Estado</TableHead>
+              <TableHead className="text-right text-muted-foreground">Acciones</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {roles.map((r) => (
+                <TableRow key={r.id_rol}>
+                  <TableCell className="text-foreground">{r.id_rol}</TableCell>
+                  <TableCell className="text-foreground font-medium">{r.nombre}</TableCell>
+                  <TableCell className="text-muted-foreground">{r.descripcion ?? '—'}</TableCell>
+                  <TableCell><Switch checked={r.estado} onCheckedChange={() => onToggleEstado(r.id_rol)} /></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openView(r)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4 text-foreground" /></Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                        <AlertDialogContent className="bg-card text-card-foreground border-border">
+                          <AlertDialogHeader><AlertDialogTitle>Eliminar rol</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="border-border text-foreground">Cancelar</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => onEliminar(r.id_rol)}>Eliminar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {viewingItem && (
+        <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
+          title={`Rol — ${viewingItem.nombre}`} description={`Registro #${viewingItem.id_rol}`}
+          fields={[
+            { label: 'ID', value: viewingItem.id_rol },
+            { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },
+            { label: 'Nombre', value: viewingItem.nombre, fullWidth: true },
+            { label: 'Descripción', value: viewingItem.descripcion, fullWidth: true },
+          ]} />
+      )}
+
+      <Dialog open={isFormOpen} onOpenChange={(v) => { setIsFormOpen(v); if (!v) resetForm() }}>
+        <DialogContent className="bg-card text-card-foreground border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">{editingId ? 'Editar Rol' : 'Registrar Rol'}</DialogTitle>
+            <DialogDescription className="text-muted-foreground">Completa los datos del rol.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
+            <div className="flex flex-col gap-2">
+              <Label className="text-foreground">Nombre</Label>
+              <Input value={nombre} onChange={(e) => { setNombre(e.target.value); if (errors.nombre) setErrors({}) }} className="bg-card text-foreground border-border" />
+              {errors.nombre && <p className="text-sm text-destructive">{errors.nombre}</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-foreground">Descripción (opcional)</Label>
+              <Input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="bg-card text-foreground border-border" />
+            </div>
+            <div className="flex justify-end gap-3 mt-2">
+              <Button type="button" variant="outline" onClick={() => { setIsFormOpen(false); resetForm() }} className="border-border text-foreground">Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground hover:bg-primary/90">{editingId ? 'Guardar cambios' : 'Registrar'}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
