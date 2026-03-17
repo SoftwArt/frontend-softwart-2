@@ -123,6 +123,7 @@ function ModuloCard({ moduloKey, permisos, id_rol, isAdmin, tienePermiso, onTogg
             return (
               <label
                 key={permiso.id_permiso}
+                title={isAdmin ? 'El Admin siempre tiene todos los permisos' : undefined}
                 className={[
                   'flex items-center gap-2 rounded-md border px-2.5 py-1.5 cursor-pointer select-none transition-colors',
                   isAdmin

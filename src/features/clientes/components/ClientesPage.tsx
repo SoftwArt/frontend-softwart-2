@@ -161,7 +161,7 @@ export function ClientesPage() {
                     <TableCell className="text-foreground">{c.correo}</TableCell>
                     <TableCell className="text-foreground">{c.telefono ?? '—'}</TableCell>
                     <TableCell>
-                      <Switch checked={c.estado} onCheckedChange={() => onToggleEstado(c.id_cliente)} />
+                      <Switch checked={c.estado} onCheckedChange={async () => { await withToast(onToggleEstado(c.id_cliente), 'Estado actualizado') }} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">

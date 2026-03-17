@@ -1,9 +1,8 @@
 /// RegisterPage.tsx
 
-
 import { useRegister } from '../hooks/useRegister'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '@/src/shared/components/ui/button'
 import { Input } from '@/src/shared/components/ui/input'
 import { Label } from '@/src/shared/components/ui/label'
@@ -34,7 +33,9 @@ const DOCUMENT_TYPES = [
 ]
 
 export function RegisterPage() {
-  const { onSubmit, isLoading, error } = useRegister()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get('redirect') ?? undefined
+  const { onSubmit, isLoading, error } = useRegister(redirect)
   const [tipoDocumento, setTipoDocumento] = useState('')
   const [documento, setDocumento] = useState('')
   const [nombre, setNombre] = useState('')
@@ -71,15 +72,12 @@ export function RegisterPage() {
     passwordsMatch
 
   return (
-    <div className="min-h-[70vh] bg-background flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-xl p-8 w-full max-w-md shadow-sm">
-        {/* Title */}
-        <div className="text-center mb-8">
+    <div className="w-full max-w-md flex flex-col gap-6">
+        <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground">Crear cuenta</h1>
-          <p className="text-muted-foreground mt-2">Completa tus datos para registrarte</p>
+          <p className="text-muted-foreground mt-1">Completa tus datos para registrarte</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4 col-span-2">
   {/* Columna 1: Tipo de documento */}
@@ -117,10 +115,6 @@ export function RegisterPage() {
     />
   </div>
 </div>
-
-          <div className="flex flex-col gap-2">
-            
-          </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="nombre" className="text-foreground">
@@ -209,20 +203,16 @@ export function RegisterPage() {
           </Button>
 
           {error && (
-            <p className="text-sm text-destructive text-center mt-2">{error}</p>
+            <p className="text-sm text-destructive text-center">{error}</p>
           )}
         </form>
 
-        {/* Links */}
-        <div className="mt-6 text-center">
-          <p className="text-muted-foreground text-sm">
-            ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="text-primary hover:underline">
-              Inicia sesión
-            </Link>
-          </p>
-        </div>
-      </div>
+        <p className="text-center text-sm text-muted-foreground">
+          ¿Ya tienes cuenta?{' '}
+          <Link to={redirect ? `/login?redirect=${redirect}` : '/login'} className="text-primary hover:underline">
+            Inicia sesión
+          </Link>
+        </p>
     </div>
   )
 }

@@ -295,8 +295,8 @@ export function AppointmentsPage() {
             { label: 'ID',      value: viewingItem.id_cita },
             { label: 'Estado',  value: <Badge variant="outline" className={ESTADO_BADGE[viewingItem.id_estado_cita] ?? ESTADO_BADGE[4]}>{getEstadoLabel(viewingItem.id_estado_cita)}</Badge> },
             { label: 'Cliente', value: clientesOpts.find(o => o.value === String(viewingItem.id_cliente))?.label ?? `#${viewingItem.id_cliente}`, fullWidth: true },
-            { label: 'Fecha',   value: viewingItem.fecha },
-            { label: 'Hora',    value: viewingItem.hora },
+            { label: 'Fecha',   value: formatFecha(viewingItem.fecha) },
+            { label: 'Hora',    value: formatHora(viewingItem.hora) },
           ]}
         />
       )}

@@ -4,6 +4,7 @@
 import { ClientesPage }     from '@/src/features/clientes/components/ClientesPage'
 import { DashboardPage }    from '@/src/features/dashboard/components/DashboardPage'
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { checkAuthValidity } from '@/src/shared/lib/checkAuth'
 import { Toaster } from 'sonner'
 import { AdminSidebar }     from '@/src/shared/components/AdminSidebar'
 import { UsersPage }        from '@/src/features/users/components/UsersPage'
@@ -30,19 +31,19 @@ function getRol()   { return localStorage.getItem('rol')   ?? sessionStorage.get
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation()
-  const token = getToken()
-  const rol   = getRol()
-  // Sin token o sin rol → siempre al login (nunca hacer redirect circular)
-  if (!token || !rol) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  // Verificar que el token no haya expirado antes de evaluar el rol
+  if (!checkAuthValidity()) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  const rol = getRol()
+  if (!rol) return <Navigate to="/login" replace />
   if (rol !== 'Admin' && rol !== 'Empleado') return <Navigate to="/login" replace />
   return <>{children}</>
 }
 
 function RequireCliente({ children }: { children: React.ReactNode }) {
   const location = useLocation()
-  const token = getToken()
-  const rol   = getRol()
-  if (!token || !rol) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (!checkAuthValidity()) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  const rol = getRol()
+  if (!rol) return <Navigate to="/login" replace />
   if (rol !== 'Cliente') return <Navigate to="/login" replace />
   return <>{children}</>
 }

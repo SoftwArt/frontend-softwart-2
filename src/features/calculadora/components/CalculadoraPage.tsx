@@ -135,7 +135,7 @@ export function CalculadoraPage() {
                   <TableCell className="text-foreground font-medium">{m.codigo}</TableCell>
                   <TableCell className="text-foreground text-right tabular-nums">{fmt(m.colilla)}</TableCell>
                   <TableCell className="text-foreground text-right tabular-nums">{fmt(m.precio_ensamblado)}</TableCell>
-                  <TableCell><Switch checked={m.estado} onCheckedChange={() => onToggleEstado(m.id_marco)} /></TableCell>
+                  <TableCell><Switch checked={m.estado} onCheckedChange={async () => { await withToast(onToggleEstado(m.id_marco), 'Estado actualizado') }} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="icon" onClick={() => openCalc(m)}><Calculator className="h-4 w-4 text-muted-foreground" /></Button>

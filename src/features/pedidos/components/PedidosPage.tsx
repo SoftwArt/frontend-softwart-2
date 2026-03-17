@@ -300,7 +300,7 @@ export function PedidosPage() {
             { label: 'Venta',       value: ventasOpts.find(o => o.value === String(viewingItem.id_venta))?.label ?? `#${viewingItem.id_venta}`, fullWidth: true },
             { label: 'Servicio',    value: serviciosOpts.find(o => o.value === String(viewingItem.id_servicio))?.label ?? `#${viewingItem.id_servicio}` },
             { label: 'Marco',       value: viewingItem.id_marco ? (marcosOpts.find(o => o.value === String(viewingItem.id_marco))?.label ?? `#${viewingItem.id_marco}`) : '—' },
-            { label: 'Fecha',       value: viewingItem.fecha },
+            { label: 'Fecha',       value: formatFecha(viewingItem.fecha) },
             { label: 'Precio',      value: formatCOP(viewingItem.precio) },
             { label: 'Observación', value: viewingItem.observacion, fullWidth: true },
           ]}

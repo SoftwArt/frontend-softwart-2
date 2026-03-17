@@ -153,7 +153,7 @@ export function VentasPage() {
                       {fmt(v.total)}
                     </TableCell>
                     <TableCell>
-                      <Switch checked={v.estado} onCheckedChange={() => onToggleEstado(v.id_venta)} />
+                      <Switch checked={v.estado} onCheckedChange={async () => { await withToast(onToggleEstado(v.id_venta), 'Estado actualizado') }} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -218,7 +218,7 @@ export function VentasPage() {
             { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },
             { label: 'Cliente', value: clientesOpts.find(o => o.value === String(viewingItem.id_cliente))?.label ?? `#${viewingItem.id_cliente}`, fullWidth: true },
             { label: 'Cita',   value: viewingItem.id_cita ? (citasOpts.find(o => o.value === String(viewingItem.id_cita))?.label ?? `#${viewingItem.id_cita}`) : '—' },
-            { label: 'Fecha',  value: viewingItem.fecha },
+            { label: 'Fecha',  value: formatFecha(viewingItem.fecha) },
             { label: 'Total',  value: fmt(viewingItem.total) },
             { label: 'Observación', value: viewingItem.observacion ?? '—', fullWidth: true },
           ]} />

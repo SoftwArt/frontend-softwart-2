@@ -17,8 +17,8 @@ import { EmptyState } from '@/src/shared/components/EmptyState'
 import { withToast } from '@/src/shared/lib/withToast'   
 import { SearchInput }  from '@/src/shared/components/SearchInput'
 import { FilterBar }    from '@/src/shared/components/FilterBar'
-import { Pagination } from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
+import { Pagination } from '@/src/shared/components/Pagination'
 
 type Usuario = { id_usuario: number; correo: string; clave: string; estado: boolean; id_rol: number }
 type CreateUsuarioDto = Omit<Usuario, 'id_usuario'>
@@ -145,7 +145,7 @@ export function UsersPage() {
                       {ROL_LABELS[u.id_rol] ?? `Rol ${u.id_rol}`}
                     </Badge>
                   </TableCell>
-                  <TableCell><Switch checked={u.estado} onCheckedChange={() => onToggleEstado(u.id_usuario)} /></TableCell>
+                  <TableCell><Switch checked={u.estado} onCheckedChange={async () => { await withToast(onToggleEstado(u.id_usuario), 'Estado actualizado') }} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="icon" onClick={() => openView(u)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
@@ -153,7 +153,7 @@ export function UsersPage() {
                       <AlertDialog>
                         <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
                         <AlertDialogContent className="bg-card text-card-foreground border-border">
-                          <AlertDialogHeader><AlertDialogTitle>Eliminar usuario</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
+                          <AlertDialogHeader><AlertDialogTitle>¿Eliminar {u.correo}?</AlertDialogTitle><AlertDialogDescription>Los datos del usuario se perderán permanentemente. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel className="border-border text-foreground">Cancelar</AlertDialogCancel>
                             <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={async () => { await withToast(onEliminar(u.id_usuario), 'Usuario eliminado') }}>Eliminar</AlertDialogAction>

@@ -14,7 +14,7 @@ type RegisterDto = {
   telefono: string // FIX: era opcional — en el backend es NOT NULL
 }
 
-export function useRegister() {
+export function useRegister(loginRedirect?: string) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -28,7 +28,7 @@ export function useRegister() {
         body: JSON.stringify(data),
         skipAuth: true,
       })
-      navigate('/login')
+      navigate(loginRedirect ? `/login?redirect=${loginRedirect}` : '/login')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrar')
     } finally {

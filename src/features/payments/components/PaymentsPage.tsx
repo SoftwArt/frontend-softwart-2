@@ -213,7 +213,7 @@ export function PaymentsPage() {
             { label: 'ID',             value: viewingItem.id_pago },
             { label: 'Venta',          value: ventasOpts.find(o => o.value === String(viewingItem.id_venta))?.label ?? `#${viewingItem.id_venta}`, fullWidth: true },
             { label: 'Monto',          value: fmt(viewingItem.monto) },
-            { label: 'Fecha',          value: viewingItem.fecha },
+            { label: 'Fecha',          value: formatFecha(viewingItem.fecha) },
             { label: 'Método de pago', value: getMetodoLabel(viewingItem.id_metodo_pago) },
             { label: 'Estado',         value: getEstadoLabel(viewingItem.id_estado_pago) },
           ]} />

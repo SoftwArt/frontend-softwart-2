@@ -3,3 +3,5 @@ node_modules/
 
 # Ignorar archivos binarios o compilados
 bin/
+
+CLAUDE.md
