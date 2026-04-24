@@ -280,7 +280,7 @@ export function MyAccountPage() {
                 <div className="space-y-3">
                   {citas.map((c) => {
                     const { mes, dia } = parseFechaBloque(c.fecha)
-                    const esPendiente  = c.estadoCita?.nombre?.toLowerCase().includes('pend') ?? false
+                    const esPendiente  = c.appointmentStatus?.nombre?.toLowerCase().includes('pend') ?? false
                     return (
                       <div
                         key={c.id_cita}
@@ -300,8 +300,8 @@ export function MyAccountPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${estadoBadgeClasses(c.estadoCita?.nombre)}`}>
-                            {c.estadoCita?.nombre ?? 'Sin estado'}
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${estadoBadgeClasses(c.appointmentStatus?.nombre)}`}>
+                            {c.appointmentStatus?.nombre ?? 'Sin estado'}
                           </span>
                           {esPendiente && (
                             <button

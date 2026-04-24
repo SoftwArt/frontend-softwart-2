@@ -20,7 +20,7 @@ type Cita = {
   id_cita:    number
   fecha:      string
   hora:       string
-  estadoCita?: { id_estado_cita: number; nombre: string } | null
+  appointmentStatus?: { id_estado_cita: number; nombre: string } | null
 }
 
 // Tipo para actualizar datos personales (sin contraseña)
