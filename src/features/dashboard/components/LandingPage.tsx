@@ -4,13 +4,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { LazyMotion, domAnimation, m, useInView } from 'framer-motion'
 import {
   CalendarPlus, LogOut, ArrowRight, BadgeCheck,
-  Clock, MapPin, MessageCircle, X, UserPlus,
+  Clock, MapPin, MessageCircle, X,
 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
 import { Input } from '@/src/shared/components/ui/input'
 import { Label } from '@/src/shared/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/components/ui/dialog'
+import { TimePicker } from '@/src/shared/components/TimePicker'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
 import { toast } from 'sonner'
 
@@ -120,46 +121,65 @@ export function LandingPage() {
     setToken(null)
   }
 
-  // ── Registro de invitado (sin crear cuenta) ───────────────────────────────
-  const [guestOpen,  setGuestOpen]  = useState(false)
-  const [guestDone,  setGuestDone]  = useState(false)
-  const [guestBusy,  setGuestBusy]  = useState(false)
-  const [guestForm,  setGuestForm]  = useState({
-    tipoDocumento: '',
-    documento:     '',
-    nombre:        '',
-    correo:        '',
-    telefono:      '',
-  })
+  // ── Agendar cita sin cuenta (invitado) ───────────────────────────────────
+  const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
-  const handleGuestSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setGuestBusy(true)
+  const [apptOpen,    setApptOpen]    = useState(false)
+  const [apptStep,    setApptStep]    = useState<1 | 2>(1)
+  const [apptDone,    setApptDone]    = useState(false)
+  const [apptBusy,    setApptBusy]    = useState(false)
+  const [bookedSlots, setBookedSlots] = useState<{ hora: string }[]>([])
+
+  const [clientForm, setClientForm] = useState({
+    tipoDocumento: '', documento: '', nombre: '', correo: '', telefono: '',
+  })
+  const [apptForm, setApptForm] = useState({ fecha: '', hora: '', observacion: '' })
+
+  const openAppt = () => {
+    setApptStep(1)
+    setApptDone(false)
+    setClientForm({ tipoDocumento: '', documento: '', nombre: '', correo: '', telefono: '' })
+    setApptForm({ fecha: '', hora: '', observacion: '' })
+    setBookedSlots([])
+    setApptOpen(true)
+  }
+
+  const fetchAvailability = async (fecha: string) => {
     try {
-      const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
-      const res  = await fetch(`${BASE}/api/auth/register-guest`, {
+      const res  = await fetch(`${BASE}/api/auth/disponibilidad?fecha=${fecha}`)
+      const body = await res.json()
+      if (res.ok) setBookedSlots(body.data ?? [])
+    } catch { /* silencioso */ }
+  }
+
+  const handleDateChange = (fecha: string) => {
+    setApptForm(f => ({ ...f, fecha, hora: '' }))
+    if (fecha) fetchAvailability(fecha)
+  }
+
+  const handleApptSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setApptBusy(true)
+    try {
+      const res  = await fetch(`${BASE}/api/auth/guest-appointment`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(guestForm),
+        body:    JSON.stringify({ ...clientForm, ...apptForm }),
       })
       const body = await res.json()
       if (!res.ok) {
-        toast.error(body.message ?? 'Error al registrar datos')
+        toast.error(body.message ?? 'Error al agendar cita')
         return
       }
-      setGuestDone(true)
+      setApptDone(true)
     } catch {
       toast.error('No se pudo conectar con el servidor')
     } finally {
-      setGuestBusy(false)
+      setApptBusy(false)
     }
   }
 
-  const openGuest = () => {
-    setGuestDone(false)
-    setGuestForm({ tipoDocumento: '', documento: '', nombre: '', correo: '', telefono: '' })
-    setGuestOpen(true)
-  }
+  const todayStr = new Date().toISOString().slice(0, 10)
 
   return (
     <LazyMotion features={domAnimation}>
@@ -327,19 +347,13 @@ export function LandingPage() {
                   </Button>
                 ) : (
                   <>
-                    <Link to="/register">
-                      <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
-                        <CalendarPlus className="h-5 w-5" />
-                        Quiero agendar una cita
-                      </Button>
-                    </Link>
                     <Button
-                      size="lg" variant="ghost"
-                      className="text-secondary-foreground hover:bg-secondary-foreground/10 hover:text-secondary-foreground gap-2"
-                      onClick={openGuest}
+                      size="lg"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+                      onClick={openAppt}
                     >
-                      <UserPlus className="h-5 w-5" />
-                      Solo registrar mis datos
+                      <CalendarPlus className="h-5 w-5" />
+                      Quiero agendar una cita
                     </Button>
                     <Link to="/login">
                       <Button
@@ -446,12 +460,14 @@ export function LandingPage() {
               {!token && (
                 <FadeInView className="text-center mt-10 mb-2">
                   <div className="flex flex-col items-center gap-2">
-                    <Link to="/register">
-                      <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
-                        <CalendarPlus className="h-5 w-5" />
-                        Quiero agendar una cita
-                      </Button>
-                    </Link>
+                    <Button
+                      size="lg"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+                      onClick={openAppt}
+                    >
+                      <CalendarPlus className="h-5 w-5" />
+                      Quiero agendar una cita
+                    </Button>
                     <p className="text-sm text-muted-foreground">
                       ¿Ya tienes cuenta?{' '}
                       <Link to="/login" className="text-primary underline underline-offset-2">Inicia sesión</Link>
@@ -550,15 +566,12 @@ export function LandingPage() {
                 </div>
               </div>
               {!token && (
-                <div className="mt-8 flex flex-col gap-2">
-                  <Link to="/register">
-                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full gap-2">
-                      Agendar una Cita <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Button variant="outline" className="w-full gap-2" onClick={openGuest}>
-                    <UserPlus className="h-4 w-4" />
-                    Solo registrar mis datos
+                <div className="mt-8">
+                  <Button
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full gap-2"
+                    onClick={openAppt}
+                  >
+                    Agendar una Cita <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
               )}
@@ -594,41 +607,61 @@ export function LandingPage() {
 
     </div>
 
-    {/* ── Dialog registro de invitado ────────────────────────────────────── */}
-    <Dialog open={guestOpen} onOpenChange={setGuestOpen}>
-      <DialogContent className="max-w-md">
+    {/* ── Dialog agendar cita sin cuenta ────────────────────────────────── */}
+    <Dialog open={apptOpen} onOpenChange={setApptOpen}>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-serif text-xl">Registrar mis datos</DialogTitle>
+          <DialogTitle className="font-serif text-xl">
+            {apptDone ? '¡Cita agendada!' : apptStep === 1 ? 'Tus datos' : 'Elige tu cita'}
+          </DialogTitle>
+          {!apptDone && (
+            <p className="text-xs text-muted-foreground">
+              Paso {apptStep} de 2 ·{' '}
+              {apptStep === 1
+                ? 'Completa tus datos de contacto'
+                : 'Selecciona fecha y hora disponible'}
+            </p>
+          )}
         </DialogHeader>
 
-        {guestDone ? (
+        {/* ── Éxito ── */}
+        {apptDone && (
           <div className="flex flex-col items-center gap-4 py-4 text-center">
-            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-              <BadgeCheck className="w-6 h-6 text-emerald-600" />
+            <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center">
+              <BadgeCheck className="w-7 h-7 text-emerald-600" />
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              ¡Listo! Tus datos quedaron registrados. Nos pondremos en contacto contigo pronto.
-            </p>
+            <div>
+              <p className="font-semibold text-foreground">¡Tu cita quedó registrada!</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Te llegará una confirmación al correo. Nos vemos pronto en Arte Café.
+              </p>
+            </div>
             <p className="text-xs text-muted-foreground">
-              ¿Quieres rastrear tus pedidos?{' '}
+              ¿Quieres rastrear el estado de tus pedidos?{' '}
               <Link
                 to="/register"
                 className="text-primary underline underline-offset-2"
-                onClick={() => setGuestOpen(false)}
+                onClick={() => setApptOpen(false)}
               >
                 Crea una cuenta
               </Link>
             </p>
-            <Button className="w-full" onClick={() => setGuestOpen(false)}>Cerrar</Button>
+            <Button className="w-full" onClick={() => setApptOpen(false)}>Cerrar</Button>
           </div>
-        ) : (
-          <form onSubmit={handleGuestSubmit} className="flex flex-col gap-4 pt-1">
+        )}
+
+        {/* ── Paso 1: datos del cliente ── */}
+        {!apptDone && apptStep === 1 && (
+          <form
+            onSubmit={e => { e.preventDefault(); setApptStep(2) }}
+            className="flex flex-col gap-4 pt-1"
+          >
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="g-tipo">Tipo de documento</Label>
                 <Select
-                  value={guestForm.tipoDocumento}
-                  onValueChange={v => setGuestForm(f => ({ ...f, tipoDocumento: v }))}
+                  value={clientForm.tipoDocumento}
+                  onValueChange={v => setClientForm(f => ({ ...f, tipoDocumento: v }))}
                   required
                 >
                   <SelectTrigger id="g-tipo">
@@ -646,8 +679,8 @@ export function LandingPage() {
                 <Label htmlFor="g-doc">Número de documento</Label>
                 <Input
                   id="g-doc"
-                  value={guestForm.documento}
-                  onChange={e => setGuestForm(f => ({ ...f, documento: e.target.value }))}
+                  value={clientForm.documento}
+                  onChange={e => setClientForm(f => ({ ...f, documento: e.target.value }))}
                   required
                 />
               </div>
@@ -657,8 +690,8 @@ export function LandingPage() {
               <Label htmlFor="g-nombre">Nombre completo</Label>
               <Input
                 id="g-nombre"
-                value={guestForm.nombre}
-                onChange={e => setGuestForm(f => ({ ...f, nombre: e.target.value }))}
+                value={clientForm.nombre}
+                onChange={e => setClientForm(f => ({ ...f, nombre: e.target.value }))}
                 minLength={2}
                 required
               />
@@ -669,8 +702,8 @@ export function LandingPage() {
               <Input
                 id="g-correo"
                 type="email"
-                value={guestForm.correo}
-                onChange={e => setGuestForm(f => ({ ...f, correo: e.target.value }))}
+                value={clientForm.correo}
+                onChange={e => setClientForm(f => ({ ...f, correo: e.target.value }))}
                 required
               />
             </div>
@@ -682,8 +715,8 @@ export function LandingPage() {
               <Input
                 id="g-tel"
                 type="tel"
-                value={guestForm.telefono}
-                onChange={e => setGuestForm(f => ({ ...f, telefono: e.target.value }))}
+                value={clientForm.telefono}
+                onChange={e => setClientForm(f => ({ ...f, telefono: e.target.value }))}
               />
             </div>
 
@@ -692,7 +725,7 @@ export function LandingPage() {
               <Link
                 to="/register"
                 className="text-primary underline underline-offset-2"
-                onClick={() => setGuestOpen(false)}
+                onClick={() => setApptOpen(false)}
               >
                 Crear una cuenta
               </Link>
@@ -700,11 +733,66 @@ export function LandingPage() {
 
             <Button
               type="submit"
-              disabled={guestBusy || !guestForm.tipoDocumento}
+              disabled={!clientForm.tipoDocumento}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {guestBusy ? 'Guardando…' : 'Registrar datos'}
+              Siguiente →
             </Button>
+          </form>
+        )}
+
+        {/* ── Paso 2: fecha y hora ── */}
+        {!apptDone && apptStep === 2 && (
+          <form onSubmit={handleApptSubmit} className="flex flex-col gap-4 pt-1">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="g-fecha">Fecha</Label>
+              <Input
+                id="g-fecha"
+                type="date"
+                min={todayStr}
+                value={apptForm.fecha}
+                onChange={e => handleDateChange(e.target.value)}
+                required
+              />
+            </div>
+
+            {apptForm.fecha && (
+              <TimePicker
+                value={apptForm.hora}
+                onChange={hora => setApptForm(f => ({ ...f, hora }))}
+                bookedSlots={bookedSlots}
+              />
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="g-obs">
+                Observaciones <span className="text-muted-foreground text-xs">(opcional)</span>
+              </Label>
+              <Input
+                id="g-obs"
+                placeholder="Ej: es un cuadro de 60×80 cm"
+                value={apptForm.observacion}
+                onChange={e => setApptForm(f => ({ ...f, observacion: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setApptStep(1)}
+              >
+                ← Atrás
+              </Button>
+              <Button
+                type="submit"
+                disabled={apptBusy || !apptForm.fecha || !apptForm.hora}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {apptBusy ? 'Agendando…' : 'Agendar cita'}
+              </Button>
+            </div>
           </form>
         )}
       </DialogContent>
