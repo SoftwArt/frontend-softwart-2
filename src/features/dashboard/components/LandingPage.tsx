@@ -151,9 +151,7 @@ export function LandingPage() {
     setApptOpen(true)
   }
 
-  const handleDateChange = async (fecha: string) => {
-    setApptForm(f => ({ ...f, fecha, hora: '' }))
-    setApptErrors(p => ({ ...p, fecha: '', hora: '' }))
+  const loadAvailability = async (fecha: string) => {
     try {
       const res  = await fetch(`${BASE}/api/auth/disponibilidad?fecha=${fecha}`)
       const body = await res.json()
@@ -161,6 +159,12 @@ export function LandingPage() {
         hora: d.hora, id_cita: d.id_cita,
       })))
     } catch { setBookedSlots([]) }
+  }
+
+  const handleDateChange = async (fecha: string) => {
+    setApptForm(f => ({ ...f, fecha, hora: '' }))
+    setApptErrors(p => ({ ...p, fecha: '', hora: '' }))
+    await loadAvailability(fecha)
   }
 
   const handleApptSubmit = async (e: React.FormEvent) => {
@@ -662,7 +666,7 @@ export function LandingPage() {
         {/* ── Paso 1: datos del cliente ── */}
         {!apptDone && apptStep === 1 && (
           <form
-            onSubmit={e => { e.preventDefault(); setApptStep(2) }}
+            onSubmit={async (e) => { e.preventDefault(); await loadAvailability(apptForm.fecha); setApptStep(2) }}
             className="flex flex-col gap-4 pt-1"
           >
             <div className="grid grid-cols-2 gap-3">
