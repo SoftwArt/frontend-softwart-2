@@ -81,7 +81,9 @@ export function OrdersPage() {
       const ventaLabel    = ventasOpts.find(o => o.value === String(p.id_venta))?.label ?? ''
       const servicioLabel = serviciosOpts.find(o => o.value === String(p.id_servicio))?.label ?? ''
       const marcoLabel    = p.id_marco ? (marcosOpts.find(o => o.value === String(p.id_marco))?.label ?? '') : ''
+      const clienteNombre = rawVentas.find(rv => rv.id_venta === p.id_venta)?.client?.nombre ?? ''
       const matchQ        = !s ||
+        clienteNombre.toLowerCase().includes(s) ||
         ventaLabel.toLowerCase().includes(s) ||
         servicioLabel.toLowerCase().includes(s) ||
         marcoLabel.toLowerCase().includes(s) ||
@@ -217,6 +219,7 @@ export function OrdersPage() {
               <TableRow>
            
                 <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[18%]">Venta</TableHead>
+                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[14%]">Cliente</TableHead>
                 <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[14%]">Tipo de Servicio</TableHead>
                 <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[13%]">Marco</TableHead>
                 <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[11%]">Fecha</TableHead>
@@ -232,10 +235,13 @@ export function OrdersPage() {
                 const marcoLabel    = p.id_marco
                   ? (marcosOpts.find(o => o.value === String(p.id_marco))?.label ?? `#${p.id_marco}`)
                   : '—'
+                const clienteNombre = rawVentas.find(rv => rv.id_venta === p.id_venta)?.client?.nombre ?? '—'
                 return (
                   <TableRow key={p.id_detalle} className="hover:bg-muted/40 transition-colors border-border">
-              
-                    <TableCell className="text-foreground text-sm">{ventaLabel}</TableCell>
+                    <TableCell className="text-foreground text-sm">
+                      <div className="font-medium">{clienteNombre}</div>
+                      <div className="text-xs text-muted-foreground">{ventaLabel}</div>
+                    </TableCell>
                     <TableCell className="text-foreground">{servicioLabel}</TableCell>
                     <TableCell className="text-foreground">{marcoLabel}</TableCell>
                     <TableCell className="text-foreground">{formatDate(p.fecha)}</TableCell>
