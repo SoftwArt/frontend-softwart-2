@@ -78,15 +78,17 @@ function persistIgnored(key: string, ids: number[]) {
 function AlertChip<T extends { href: string }>({
   items,
   label,
+  baseHref,
   ignoredIds,
   onIgnore,
   renderRow,
 }: {
   items:      T[]
   label:      string
+  baseHref:   string
   ignoredIds: number[]
   onIgnore:   (id: number) => void
-  renderRow:  (item: T) => { id: number; primary: string; secondary: string }
+  renderRow:  (item: T) => { id: number; primary: string; secondary: string; query: string }
 }) {
   const visible = items.filter(i => !ignoredIds.includes(renderRow(i).id))
   if (visible.length === 0) return null
@@ -104,22 +106,22 @@ function AlertChip<T extends { href: string }>({
       <PopoverContent align="start" className="w-80 p-0">
         <div className="flex items-center justify-between px-3 py-2 border-b border-border">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
-          <Link
-            to={(items[0] as unknown as { href: string }).href}
-            className="text-xs text-primary hover:underline flex items-center gap-1"
-          >
+          <Link to={baseHref} className="text-xs text-primary hover:underline flex items-center gap-1">
             Ver todos <ChevronRight className="h-3 w-3" />
           </Link>
         </div>
         <ul className="max-h-64 overflow-y-auto divide-y divide-border">
           {visible.map(item => {
-            const { id, primary, secondary } = renderRow(item)
+            const { id, primary, secondary, query } = renderRow(item)
             return (
-              <li key={id} className="flex items-center justify-between px-3 py-2.5 gap-2">
-                <div className="min-w-0">
+              <li key={id} className="flex items-center gap-2 px-3 py-2.5">
+                <Link
+                  to={`${baseHref}?q=${encodeURIComponent(query)}`}
+                  className="flex-1 min-w-0 hover:opacity-70 transition-opacity"
+                >
                   <p className="text-sm font-medium text-foreground truncate">{primary}</p>
                   <p className="text-xs text-muted-foreground">{secondary}</p>
-                </div>
+                </Link>
                 <button
                   onClick={() => onIgnore(id)}
                   title="Ignorar"
@@ -215,23 +217,26 @@ export function DashboardPage() {
           <AlertChip<AlertaVenta & { href: string }>
             items={data.alertas.ventas_sin_pago.map(v => ({ ...v, href: '/admin/sales' }))}
             label="ventas sin pago registrado"
+            baseHref="/admin/sales"
             ignoredIds={ignoredVentas}
             onIgnore={ignoreVenta}
-            renderRow={v => ({ id: v.id_venta, primary: v.cliente_nombre, secondary: `${v.fecha?.slice(0,10)} · ${formatCurrency(v.total)}` })}
+            renderRow={v => ({ id: v.id_venta, primary: v.cliente_nombre, secondary: `${v.fecha?.slice(0,10)} · ${formatCurrency(v.total)}`, query: v.cliente_nombre })}
           />
           <AlertChip<AlertaCita & { href: string }>
             items={data.alertas.citas_sin_venta.map(c => ({ ...c, href: '/admin/appointments' }))}
             label="citas completadas sin venta"
+            baseHref="/admin/appointments"
             ignoredIds={ignoredCitas}
             onIgnore={ignoreCita}
-            renderRow={c => ({ id: c.id_cita, primary: c.cliente_nombre, secondary: `${c.fecha?.slice(0,10)} · ${c.hora?.slice(0,5)}` })}
+            renderRow={c => ({ id: c.id_cita, primary: c.cliente_nombre, secondary: `${c.fecha?.slice(0,10)} · ${c.hora?.slice(0,5)}`, query: c.cliente_nombre })}
           />
           <AlertChip<AlertaPedido & { href: string }>
             items={data.alertas.pedidos_atrasados.map(p => ({ ...p, href: '/admin/orders' }))}
             label="pedidos pendientes hace +3 días"
+            baseHref="/admin/orders"
             ignoredIds={ignoredPedidos}
             onIgnore={ignorePedido}
-            renderRow={p => ({ id: p.id_detalle, primary: `${p.servicio} — ${p.cliente_nombre}`, secondary: p.fecha?.slice(0,10) })}
+            renderRow={p => ({ id: p.id_detalle, primary: `${p.servicio} — ${p.cliente_nombre}`, secondary: p.fecha?.slice(0,10), query: p.cliente_nombre })}
           />
         </div>
       )}

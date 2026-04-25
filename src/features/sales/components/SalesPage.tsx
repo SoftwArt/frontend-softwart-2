@@ -4,6 +4,7 @@ import { useClientsOptions, useAppointmentsOptions } from '@/src/shared/hooks/us
 import { formatCurrency }        from '@/src/shared/lib/formatCurrency'
 import { SaleInstallmentModal } from './SaleInstallmentModal'
 import { useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
@@ -31,6 +32,7 @@ const labelCls = 'block text-xs font-bold capitalize tracking-widest text-muted-
 
 export function SalesPage() {
   const { ventas, isLoading, onCreate, onEdit, onDelete, onToggleStatus, refetch } = useSales()
+  const [searchParams] = useSearchParams()
 
   // ── Modal de abonos ───────────────────────────────────────────────────────
   const [abonoModalVenta, setAbonoModalVenta] = useState<{ id: number; label: string } | null>(null)
@@ -38,7 +40,7 @@ export function SalesPage() {
   const { options: citasOpts, rawCitas } = useAppointmentsOptions()
 
   // ── Búsqueda y filtros ─────────────────────────────────────────────────
-  const [q,            setQ]            = useState('')
+  const [q,            setQ]            = useState(searchParams.get('q') ?? '')
   const [filterEstado, setFilterEstado] = useState('')
 
   const filtered = useMemo(() => {

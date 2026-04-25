@@ -2,6 +2,7 @@
 import { useOrders } from '../hooks/useOrders'
 import { useSalesOptions, useServicesOptions, useFrameOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
@@ -66,9 +67,10 @@ export function OrdersPage() {
   const { options: serviciosOpts } = useServicesOptions()
   const { options: marcosOpts }    = useFrameOptions()
   const estados = useEstadosServicio()
+  const [searchParams] = useSearchParams()
 
   // ── Búsqueda y filtros ─────────────────────────────────────────────────
-  const [q,            setQ]            = useState('')
+  const [q,            setQ]            = useState(searchParams.get('q') ?? '')
   const [filterEstado, setFilterEstado] = useState('')
 
   const filtered = useMemo(() => {

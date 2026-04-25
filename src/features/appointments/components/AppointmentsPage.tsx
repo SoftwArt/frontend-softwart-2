@@ -4,6 +4,7 @@ import { useServicesOptions, useFrameOptions } from '@/src/shared/hooks/useOptio
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { useClientsOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
@@ -42,8 +43,9 @@ export function AppointmentsPage() {
   const { options: clientesOpts }  = useClientsOptions()
   const { options: serviciosOpts } = useServicesOptions()
   const { options: marcosOpts }    = useFrameOptions()
+  const [searchParams] = useSearchParams()
 
-  const [q,            setQ]            = useState('')
+  const [q,            setQ]            = useState(searchParams.get('q') ?? '')
   const [filterEstado, setFilterEstado] = useState('')
 
   const ESTADO_ORDER: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3 }
