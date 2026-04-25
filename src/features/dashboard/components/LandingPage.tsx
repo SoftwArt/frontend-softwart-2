@@ -113,7 +113,7 @@ export function LandingPage() {
   const processInView = useInView(processRef, { once: true, margin: '-60px 0px' })
 
   const handleAgendarCita = () => {
-    if (isCliente)        navigate('/mi-cuenta?new-appointment=true')
+    if (isCliente)        navigate('/my-account?nueva-cita=true')
     else if (isAdminEmpl) navigate('/admin/dashboard')
   }
 
