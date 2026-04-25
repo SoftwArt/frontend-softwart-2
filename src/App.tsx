@@ -5,11 +5,16 @@
 import { lazy, Suspense } from 'react'
 import { useBackendWakeup } from '@/src/shared/hooks/useBackendWakeup'
 import { SplashScreen }     from '@/src/shared/components/SplashScreen'
-import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { checkAuthValidity } from '@/src/shared/lib/checkAuth'
 import { Toaster } from 'sonner'
 import { AdminSidebar }     from '@/src/shared/components/AdminSidebar'
 import { LandingPage }      from '@/src/features/dashboard/components/LandingPage'
+import { clearAuth }        from '@/src/features/auth/hooks/useLogin'
+import { LogOut, ChevronDown } from 'lucide-react'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/src/shared/components/ui/dropdown-menu'
 
 // Rutas bajo lazy loading — reducen el bundle inicial del landing
 const LoginPage         = lazy(() => import('@/src/features/auth/components/LoginPage').then(m => ({ default: m.LoginPage })))
@@ -54,9 +59,15 @@ function RequireCliente({ children }: { children: React.ReactNode }) {
 }
 
 function AdminLayout() {
-  const rol    = getRol()   ?? ''
-  const correo = localStorage.getItem('correo') ?? sessionStorage.getItem('correo') ?? ''
-  const inicial = correo.charAt(0).toUpperCase()
+  const navigate = useNavigate()
+  const rol      = getRol()   ?? ''
+  const correo   = localStorage.getItem('correo') ?? sessionStorage.getItem('correo') ?? ''
+  const inicial  = correo.charAt(0).toUpperCase()
+
+  const handleLogout = () => {
+    clearAuth()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -64,15 +75,31 @@ function AdminLayout() {
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Topbar */}
         <header className="shrink-0 h-14 border-b border-border bg-card flex items-center justify-end px-6 gap-3">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-              <span className="text-xs font-semibold text-primary">{inicial}</span>
-            </div>
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-medium text-foreground leading-tight truncate max-w-[160px]">{correo}</p>
-              <p className="text-[10px] text-muted-foreground leading-tight">{rol}</p>
-            </div>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent transition-colors outline-none">
+                <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-semibold text-primary">{inicial}</span>
+                </div>
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs font-medium text-foreground leading-tight truncate max-w-[160px]">{correo}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{rol}</p>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <div className="px-2 py-1.5">
+                <p className="text-xs font-medium text-foreground truncate">{correo}</p>
+                <p className="text-[10px] text-muted-foreground">{rol}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-rose-500 focus:text-rose-500 focus:bg-rose-500/10 cursor-pointer">
+                <LogOut className="h-4 w-4 mr-2 shrink-0" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
         <main className="flex-1 min-h-0 overflow-y-auto p-6">
           <Outlet />

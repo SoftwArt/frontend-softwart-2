@@ -1,11 +1,10 @@
 // src/shared/components/AdminSidebar.tsx
-import { useLocation, Link, useNavigate } from 'react-router-dom'
-import { clearAuth } from '@/src/features/auth/hooks/useLogin'
+import { useLocation, Link } from 'react-router-dom'
 import { useState } from 'react'
 import {
   Users, Shield, Wrench, Calendar, UserCircle, CreditCard,
   Calculator, ShoppingBag, ClipboardList, ShieldCheck,
-  ChevronLeft, ChevronRight, ChevronDown, LayoutDashboard, LogOut,
+  ChevronLeft, ChevronRight, ChevronDown, LayoutDashboard,
 } from 'lucide-react'
 import { cn } from '@/src/shared/lib/utils'
 
@@ -51,7 +50,6 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ className }: AdminSidebarProps) {
   const { pathname } = useLocation()
-  const navigate     = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
     () => Object.fromEntries(NAV_GROUPS.map(g => [g.label, true]))
@@ -59,11 +57,6 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
 
   const toggleGroup = (label: string) =>
     setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }))
-
-  const handleLogout = () => {
-    clearAuth()
-    navigate('/login', { replace: true })
-  }
 
   return (
     <aside className={cn(
@@ -153,29 +146,14 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
         </ul>
       </nav>
 
-      {/* Footer con logout */}
-      <div className={cn(
-        'shrink-0 border-t border-sidebar-border p-2 flex flex-col gap-1',
-        collapsed ? 'items-center' : ''
-      )}>
-        <button
-          onClick={handleLogout}
-          title="Cerrar sesión"
-          className={cn(
-            'flex items-center gap-3 rounded-md text-sm transition-colors px-2 py-2 w-full',
-            'text-rose-500 hover:bg-rose-500/10',
-            collapsed ? 'justify-center' : ''
-          )}
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {!collapsed && <span className="truncate">Cerrar sesión</span>}
-        </button>
-        {!collapsed && (
+      {/* Footer */}
+      {!collapsed && (
+        <div className="shrink-0 border-t border-sidebar-border p-2">
           <p className="text-[11px] text-sidebar-foreground/40 text-center truncate px-2">
             SoftwArt Admin v1.0
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </aside>
   )
 }
