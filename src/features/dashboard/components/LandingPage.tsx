@@ -4,10 +4,15 @@ import { Link, useNavigate } from 'react-router-dom'
 import { LazyMotion, domAnimation, m, useInView } from 'framer-motion'
 import {
   CalendarPlus, LogOut, ArrowRight, BadgeCheck,
-  Clock, MapPin, MessageCircle, X,
+  Clock, MapPin, MessageCircle, X, UserPlus,
 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
+import { Input } from '@/src/shared/components/ui/input'
+import { Label } from '@/src/shared/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/components/ui/dialog'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
+import { toast } from 'sonner'
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('token') ?? sessionStorage.getItem('token') }
@@ -113,6 +118,47 @@ export function LandingPage() {
   const handleLogout = () => {
     clearAuth()
     setToken(null)
+  }
+
+  // ── Registro de invitado (sin crear cuenta) ───────────────────────────────
+  const [guestOpen,  setGuestOpen]  = useState(false)
+  const [guestDone,  setGuestDone]  = useState(false)
+  const [guestBusy,  setGuestBusy]  = useState(false)
+  const [guestForm,  setGuestForm]  = useState({
+    tipoDocumento: '',
+    documento:     '',
+    nombre:        '',
+    correo:        '',
+    telefono:      '',
+  })
+
+  const handleGuestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setGuestBusy(true)
+    try {
+      const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+      const res  = await fetch(`${BASE}/api/auth/register-guest`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(guestForm),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        toast.error(body.message ?? 'Error al registrar datos')
+        return
+      }
+      setGuestDone(true)
+    } catch {
+      toast.error('No se pudo conectar con el servidor')
+    } finally {
+      setGuestBusy(false)
+    }
+  }
+
+  const openGuest = () => {
+    setGuestDone(false)
+    setGuestForm({ tipoDocumento: '', documento: '', nombre: '', correo: '', telefono: '' })
+    setGuestOpen(true)
   }
 
   return (
@@ -287,6 +333,14 @@ export function LandingPage() {
                         Quiero agendar una cita
                       </Button>
                     </Link>
+                    <Button
+                      size="lg" variant="ghost"
+                      className="text-secondary-foreground hover:bg-secondary-foreground/10 hover:text-secondary-foreground gap-2"
+                      onClick={openGuest}
+                    >
+                      <UserPlus className="h-5 w-5" />
+                      Solo registrar mis datos
+                    </Button>
                     <Link to="/login">
                       <Button
                         size="lg" variant="ghost"
@@ -496,12 +550,16 @@ export function LandingPage() {
                 </div>
               </div>
               {!token && (
-                <div className="mt-8">
+                <div className="mt-8 flex flex-col gap-2">
                   <Link to="/register">
                     <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full gap-2">
                       Agendar una Cita <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
+                  <Button variant="outline" className="w-full gap-2" onClick={openGuest}>
+                    <UserPlus className="h-4 w-4" />
+                    Solo registrar mis datos
+                  </Button>
                 </div>
               )}
             </FadeInView>
@@ -535,6 +593,123 @@ export function LandingPage() {
       </footer>
 
     </div>
+
+    {/* ── Dialog registro de invitado ────────────────────────────────────── */}
+    <Dialog open={guestOpen} onOpenChange={setGuestOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-xl">Registrar mis datos</DialogTitle>
+        </DialogHeader>
+
+        {guestDone ? (
+          <div className="flex flex-col items-center gap-4 py-4 text-center">
+            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+              <BadgeCheck className="w-6 h-6 text-emerald-600" />
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              ¡Listo! Tus datos quedaron registrados. Nos pondremos en contacto contigo pronto.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              ¿Quieres rastrear tus pedidos?{' '}
+              <Link
+                to="/register"
+                className="text-primary underline underline-offset-2"
+                onClick={() => setGuestOpen(false)}
+              >
+                Crea una cuenta
+              </Link>
+            </p>
+            <Button className="w-full" onClick={() => setGuestOpen(false)}>Cerrar</Button>
+          </div>
+        ) : (
+          <form onSubmit={handleGuestSubmit} className="flex flex-col gap-4 pt-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="g-tipo">Tipo de documento</Label>
+                <Select
+                  value={guestForm.tipoDocumento}
+                  onValueChange={v => setGuestForm(f => ({ ...f, tipoDocumento: v }))}
+                  required
+                >
+                  <SelectTrigger id="g-tipo">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CC">Cédula de Ciudadanía</SelectItem>
+                    <SelectItem value="CE">Cédula de Extranjería</SelectItem>
+                    <SelectItem value="TI">Tarjeta de Identidad</SelectItem>
+                    <SelectItem value="PP">Pasaporte</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="g-doc">Número de documento</Label>
+                <Input
+                  id="g-doc"
+                  value={guestForm.documento}
+                  onChange={e => setGuestForm(f => ({ ...f, documento: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="g-nombre">Nombre completo</Label>
+              <Input
+                id="g-nombre"
+                value={guestForm.nombre}
+                onChange={e => setGuestForm(f => ({ ...f, nombre: e.target.value }))}
+                minLength={2}
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="g-correo">Correo electrónico</Label>
+              <Input
+                id="g-correo"
+                type="email"
+                value={guestForm.correo}
+                onChange={e => setGuestForm(f => ({ ...f, correo: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="g-tel">
+                Teléfono <span className="text-muted-foreground text-xs">(opcional)</span>
+              </Label>
+              <Input
+                id="g-tel"
+                type="tel"
+                value={guestForm.telefono}
+                onChange={e => setGuestForm(f => ({ ...f, telefono: e.target.value }))}
+              />
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              ¿Prefieres acceso completo con rastreo de pedidos?{' '}
+              <Link
+                to="/register"
+                className="text-primary underline underline-offset-2"
+                onClick={() => setGuestOpen(false)}
+              >
+                Crear una cuenta
+              </Link>
+            </p>
+
+            <Button
+              type="submit"
+              disabled={guestBusy || !guestForm.tipoDocumento}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {guestBusy ? 'Guardando…' : 'Registrar datos'}
+            </Button>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+
     </LazyMotion>
   )
 }
