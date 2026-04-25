@@ -595,7 +595,7 @@ export function LandingPage() {
               className="rounded-xl overflow-hidden border border-border shadow-sm min-h-[380px]"
             >
               <iframe
-                src="https://maps.google.com/maps?q=6.2606,-75.5902&z=17&output=embed"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1589.1411649985575!2d-75.5900702757797!3d6.26116392340876!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e44290015ff5b7d%3A0x17b7e0f09ebe520e!2zQXJ0ZUNhZsOp!5e0!3m2!1ses-419!2sco!4v1777095655596!5m2!1ses-419!2sco"
                 width="100%"
                 height="100%"
                 style={{ border: 0, minHeight: '380px' }}
