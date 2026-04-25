@@ -618,7 +618,7 @@ export function LandingPage() {
 
     {/* ── Dialog agendar cita sin cuenta ────────────────────────────────── */}
     <Dialog open={apptOpen} onOpenChange={setApptOpen}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-xl">
             {apptDone ? '¡Cita agendada!' : apptStep === 1 ? 'Tus datos' : 'Elige tu cita'}
