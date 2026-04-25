@@ -25,10 +25,14 @@ type VentaReciente = { id_venta: number; fecha: string; total: number; cliente_n
 type VentaSemana   = { semana: string; total: number }
 type MetodoPago    = { metodo: string; total: number }
 
+export type AlertaVenta   = { id_venta: number; cliente_nombre: string; fecha: string; total: number }
+export type AlertaCita    = { id_cita: number; cliente_nombre: string; fecha: string; hora: string }
+export type AlertaPedido  = { id_detalle: number; servicio: string; cliente_nombre: string; fecha: string }
+
 type DashboardAlertas = {
-  ventas_sin_pago:   number
-  pedidos_atrasados: number
-  citas_sin_venta:   number
+  ventas_sin_pago:   AlertaVenta[]
+  citas_sin_venta:   AlertaCita[]
+  pedidos_atrasados: AlertaPedido[]
 }
 
 type DashboardData = {

@@ -1,20 +1,23 @@
 // src/features/dashboard/components/DashboardPage.tsx
-import { useDashboard } from '../hooks/useDashboard'
+import { useDashboard, AlertaVenta, AlertaCita, AlertaPedido } from '../hooks/useDashboard'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { Badge } from '@/src/shared/components/ui/badge'
 import { Alert, AlertDescription } from '@/src/shared/components/ui/alert'
+import { Popover, PopoverContent, PopoverTrigger } from '@/src/shared/components/ui/popover'
 import {
   TrendingUp, TrendingDown, Minus,
   CalendarClock, Clock, PackageSearch,
   AlertTriangle, RefreshCw, Wallet,
   CreditCard, ClipboardList, DollarSign, ShoppingBag,
+  ChevronRight, X,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 
 const fmt = formatCurrency
 
@@ -63,16 +66,73 @@ function KpiCard({
   )
 }
 
-// ── Alerta chip ───────────────────────────────────────────────────────────────
-function AlertChip({ count, label }: { count: number; label: string }) {
-  if (count === 0) return null
+// ── Ignore helpers (localStorage) ────────────────────────────────────────────
+function getIgnored(key: string): number[] {
+  try { return JSON.parse(localStorage.getItem(key) ?? '[]') } catch { return [] }
+}
+function persistIgnored(key: string, ids: number[]) {
+  localStorage.setItem(key, JSON.stringify(ids))
+}
+
+// ── Alerta chip con popover ───────────────────────────────────────────────────
+function AlertChip<T extends { href: string }>({
+  items,
+  label,
+  ignoredIds,
+  onIgnore,
+  renderRow,
+}: {
+  items:      T[]
+  label:      string
+  ignoredIds: number[]
+  onIgnore:   (id: number) => void
+  renderRow:  (item: T) => { id: number; primary: string; secondary: string }
+}) {
+  const visible = items.filter(i => !ignoredIds.includes(renderRow(i).id))
+  if (visible.length === 0) return null
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
-      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-      <span className="text-sm text-amber-800">
-        <strong>{count}</strong> {label}
-      </span>
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 hover:bg-amber-100 transition-colors">
+          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+          <span className="text-sm text-amber-800">
+            <strong>{visible.length}</strong> {label}
+          </span>
+          <ChevronRight className="h-3.5 w-3.5 text-amber-500 ml-1" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80 p-0">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+          <Link
+            to={(items[0] as unknown as { href: string }).href}
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
+            Ver todos <ChevronRight className="h-3 w-3" />
+          </Link>
+        </div>
+        <ul className="max-h-64 overflow-y-auto divide-y divide-border">
+          {visible.map(item => {
+            const { id, primary, secondary } = renderRow(item)
+            return (
+              <li key={id} className="flex items-center justify-between px-3 py-2.5 gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{primary}</p>
+                  <p className="text-xs text-muted-foreground">{secondary}</p>
+                </div>
+                <button
+                  onClick={() => onIgnore(id)}
+                  title="Ignorar"
+                  className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -90,6 +150,14 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 // ── Page principal ────────────────────────────────────────────────────────────
 export function DashboardPage() {
   const { data, isLoading, error, refetch } = useDashboard()
+
+  const [ignoredVentas,  setIgnoredVentas]  = useState<number[]>(() => getIgnored('ign_ventas'))
+  const [ignoredCitas,   setIgnoredCitas]   = useState<number[]>(() => getIgnored('ign_citas'))
+  const [ignoredPedidos, setIgnoredPedidos] = useState<number[]>(() => getIgnored('ign_pedidos'))
+
+  const ignoreVenta  = (id: number) => { const n = [...ignoredVentas,  id]; setIgnoredVentas(n);  persistIgnored('ign_ventas',  n) }
+  const ignoreCita   = (id: number) => { const n = [...ignoredCitas,   id]; setIgnoredCitas(n);   persistIgnored('ign_citas',   n) }
+  const ignorePedido = (id: number) => { const n = [...ignoredPedidos, id]; setIgnoredPedidos(n); persistIgnored('ign_pedidos', n) }
 
   if (error) {
     return (
@@ -142,11 +210,29 @@ export function DashboardPage() {
       </div>
 
       {/* Alertas operativas */}
-      {data && (data.alertas.ventas_sin_pago > 0 || data.alertas.pedidos_atrasados > 0 || data.alertas.citas_sin_venta > 0) && (
+      {data && (
         <div className="flex flex-wrap gap-2">
-          <AlertChip count={data.alertas.ventas_sin_pago}   label="ventas sin pago registrado" />
-          <AlertChip count={data.alertas.pedidos_atrasados} label="pedidos pendientes hace +3 días" />
-          <AlertChip count={data.alertas.citas_sin_venta}   label="citas completadas sin venta" />
+          <AlertChip<AlertaVenta & { href: string }>
+            items={data.alertas.ventas_sin_pago.map(v => ({ ...v, href: '/admin/sales' }))}
+            label="ventas sin pago registrado"
+            ignoredIds={ignoredVentas}
+            onIgnore={ignoreVenta}
+            renderRow={v => ({ id: v.id_venta, primary: v.cliente_nombre, secondary: `${v.fecha?.slice(0,10)} · ${formatCurrency(v.total)}` })}
+          />
+          <AlertChip<AlertaCita & { href: string }>
+            items={data.alertas.citas_sin_venta.map(c => ({ ...c, href: '/admin/appointments' }))}
+            label="citas completadas sin venta"
+            ignoredIds={ignoredCitas}
+            onIgnore={ignoreCita}
+            renderRow={c => ({ id: c.id_cita, primary: c.cliente_nombre, secondary: `${c.fecha?.slice(0,10)} · ${c.hora?.slice(0,5)}` })}
+          />
+          <AlertChip<AlertaPedido & { href: string }>
+            items={data.alertas.pedidos_atrasados.map(p => ({ ...p, href: '/admin/orders' }))}
+            label="pedidos pendientes hace +3 días"
+            ignoredIds={ignoredPedidos}
+            onIgnore={ignorePedido}
+            renderRow={p => ({ id: p.id_detalle, primary: `${p.servicio} — ${p.cliente_nombre}`, secondary: p.fecha?.slice(0,10) })}
+          />
         </div>
       )}
 
