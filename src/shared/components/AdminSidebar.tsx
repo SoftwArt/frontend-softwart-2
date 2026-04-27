@@ -7,11 +7,13 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, LayoutDashboard,
 } from 'lucide-react'
 import { cn } from '@/src/shared/lib/utils'
+import { useMyPermissions } from '@/src/shared/hooks/useMyPermissions'
 
 interface NavItem {
-  label: string
-  href:  string
-  icon:  React.ComponentType<{ className?: string }>
+  label:   string
+  href:    string
+  icon:    React.ComponentType<{ className?: string }>
+  permiso?: string
 }
 
 // Grupos según el flujo real del negocio
@@ -19,27 +21,27 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'General',
     items: [
-      { label: 'Dashboard',   href: '/admin/dashboard',   icon: LayoutDashboard },
+      { label: 'Dashboard',        href: '/admin/dashboard',    icon: LayoutDashboard },
     ],
   },
   {
     label: 'Flujo de venta',
     items: [
-      { label: 'Clientes',    href: '/admin/clients',    icon: UserCircle },
-      { label: 'Citas',       href: '/admin/appointments',       icon: Calendar },
-      { label: 'Ventas',      href: '/admin/sales',      icon: ShoppingBag },
-      { label: 'Servicios',       href: '/admin/orders',     icon: ClipboardList },
-      { label: 'Pagos',       href: '/admin/payments',       icon: CreditCard },
+      { label: 'Clientes',         href: '/admin/clients',      icon: UserCircle,    permiso: 'CLIENTES.VER' },
+      { label: 'Citas',            href: '/admin/appointments', icon: Calendar,      permiso: 'CITAS.VER' },
+      { label: 'Ventas',           href: '/admin/sales',        icon: ShoppingBag,   permiso: 'VENTAS.VER' },
+      { label: 'Servicios',        href: '/admin/orders',       icon: ClipboardList, permiso: 'PEDIDOS.VER' },
+      { label: 'Pagos',            href: '/admin/payments',     icon: CreditCard,    permiso: 'PAGOS.VER' },
     ],
   },
   {
     label: 'Configuración',
     items: [
-      { label: 'Tipos de Servicio',   href: '/admin/services',   icon: Wrench },
-      { label: 'Calculadora', href: '/admin/calculator', icon: Calculator },
-      { label: 'Usuarios',    href: '/admin/users',    icon: Users },
-      { label: 'Roles',       href: '/admin/roles',       icon: Shield },
-      { label: 'Permisos',    href: '/admin/permissions',    icon: ShieldCheck },
+      { label: 'Tipos de Servicio', href: '/admin/services',    icon: Wrench,        permiso: 'SERVICIOS.VER' },
+      { label: 'Calculadora',       href: '/admin/calculator',  icon: Calculator,    permiso: 'MARCOS.VER' },
+      { label: 'Usuarios',          href: '/admin/users',       icon: Users,         permiso: 'USUARIOS.VER' },
+      { label: 'Roles',             href: '/admin/roles',       icon: Shield,        permiso: 'ROLES.VER' },
+      { label: 'Permisos',          href: '/admin/permissions', icon: ShieldCheck,   permiso: 'PERMISOS.VER' },
     ],
   },
 ]
@@ -50,6 +52,7 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ className }: AdminSidebarProps) {
   const { pathname } = useLocation()
+  const { can } = useMyPermissions()
   const [collapsed, setCollapsed] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
     () => Object.fromEntries(NAV_GROUPS.map(g => [g.label, true]))
@@ -117,7 +120,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
               {/* Items del grupo — colapsables en sidebar expandido */}
               {(collapsed || openGroups[group.label]) && (
                 <ul className="flex flex-col gap-0.5 mt-0.5">
-                  {group.items.map((item) => {
+                  {group.items.filter(item => can(item.permiso ?? '')).map((item) => {
                     const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
                     const Icon     = item.icon
                     return (

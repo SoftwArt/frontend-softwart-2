@@ -59,43 +59,63 @@ export function usePermissions() {
   const onTogglePermission = async (id_rol: number, id_permiso: number): Promise<string | null> => {
     const yaExiste = hasPermission(id_rol, id_permiso)
 
+    // Determinar cascadas según el módulo y acción del permiso
+    const permiso = permisos.find(p => p.id_permiso === id_permiso)
+    const [modulo, accion] = permiso?.nombre.split('.') ?? ['', '']
+
+    let idsToAdd: number[] = []
+    let idsToRemove: number[] = []
+
+    if (!yaExiste) {
+      idsToAdd = [id_permiso]
+      // Añadir un permiso que no es VER → también garantizar MODULE.VER
+      if (accion && accion !== 'VER') {
+        const verPermiso = permisos.find(p => p.nombre === `${modulo}.VER`)
+        if (verPermiso && !hasPermission(id_rol, verPermiso.id_permiso)) {
+          idsToAdd.push(verPermiso.id_permiso)
+        }
+      }
+    } else {
+      if (accion === 'VER') {
+        // Quitar VER → quitar todos los permisos asignados del mismo módulo
+        idsToRemove = permisos
+          .filter(p => p.nombre.startsWith(`${modulo}.`) && hasPermission(id_rol, p.id_permiso))
+          .map(p => p.id_permiso)
+      } else {
+        idsToRemove = [id_permiso]
+      }
+    }
+
     // Optimistic update
     setAsignaciones(prev => {
       const next = new Map(prev)
-      if (yaExiste) {
-        next.get(id_rol)?.delete(id_permiso)
-      } else {
-        if (!next.has(id_rol)) next.set(id_rol, new Set())
-        next.get(id_rol)!.add(id_permiso)
-      }
+      const rolePerms = new Set(prev.get(id_rol) ?? [])
+      idsToAdd.forEach(id => rolePerms.add(id))
+      idsToRemove.forEach(id => rolePerms.delete(id))
+      next.set(id_rol, rolePerms)
       return next
     })
 
     try {
-      if (yaExiste) {
-        // DELETE /api/role-permissions con body { id_permiso, id_rol }
-        await apiRequest('/api/role-permissions', {
-          method: 'DELETE',
-          body: JSON.stringify({ id_permiso, id_rol }),
-        })
-      } else {
-        // POST /api/role-permissions con body plano { id_permiso, id_rol }
-        await apiRequest('/api/role-permissions', {
+      await Promise.all([
+        ...idsToAdd.map(id => apiRequest('/api/role-permissions', {
           method: 'POST',
-          body: JSON.stringify({ id_permiso, id_rol }),
-        })
-      }
+          body: JSON.stringify({ id_permiso: id, id_rol }),
+        })),
+        ...idsToRemove.map(id => apiRequest('/api/role-permissions', {
+          method: 'DELETE',
+          body: JSON.stringify({ id_permiso: id, id_rol }),
+        })),
+      ])
       return null
     } catch (e) {
       // Rollback
       setAsignaciones(prev => {
         const next = new Map(prev)
-        if (yaExiste) {
-          if (!next.has(id_rol)) next.set(id_rol, new Set())
-          next.get(id_rol)!.add(id_permiso)
-        } else {
-          next.get(id_rol)?.delete(id_permiso)
-        }
+        const rolePerms = new Set(prev.get(id_rol) ?? [])
+        idsToAdd.forEach(id => rolePerms.delete(id))
+        idsToRemove.forEach(id => rolePerms.add(id))
+        next.set(id_rol, rolePerms)
         return next
       })
       return e instanceof Error ? e.message : 'Error desconocido'
