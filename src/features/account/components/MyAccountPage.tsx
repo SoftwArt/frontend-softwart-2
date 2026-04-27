@@ -243,21 +243,40 @@ export function MyAccountPage() {
       <main className="py-10 md:py-16 px-6">
         <div className="max-w-4xl mx-auto">
 
-          {/* ── Welcome header ───────────────────────────────────────────────── */}
+          {/* ── Welcome header + chips ───────────────────────────────────────── */}
           <header className="mb-8 text-center">
-            <div className="mb-3">
-              <span className="font-serif italic text-3xl font-bold text-secondary tracking-tight">
-                Arte Café
-              </span>
-            </div>
             {isLoading ? (
-              <Skeleton className="h-12 w-56 mx-auto mb-2" />
+              <Skeleton className="h-8 w-48 mx-auto mb-4" />
             ) : (
-              <h1 className="text-4xl md:text-5xl font-serif text-secondary mb-2">
-                Hola, {primerNombre || 'bienvenido'} 👋
-              </h1>
+              <h2 className="text-2xl font-serif text-secondary mb-4">
+                Bienvenido, {primerNombre || 'bienvenido'}
+              </h2>
             )}
-            <p className="text-muted-foreground">Gestiona tus citas, datos personales y preferencias.</p>
+            {!isLoading && (
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                {(() => {
+                  const proxima = citas
+                    .filter(c => c.appointmentStatus?.nombre?.toLowerCase().includes('pend'))
+                    .sort((a, b) => a.fecha.localeCompare(b.fecha))[0]
+                  const { mes, dia } = proxima ? parseFechaBloque(proxima.fecha) : { mes: '', dia: '' }
+                  return (
+                    <span className="inline-flex items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5 text-sm shadow-sm">
+                      <CalendarDays className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-foreground">
+                        {proxima ? `Próxima cita: ${dia} ${mes} · ${proxima.hora?.slice(0, 5)}` : 'Sin citas próximas'}
+                      </span>
+                    </span>
+                  )
+                })()}
+                <span className="inline-flex items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5 text-sm shadow-sm">
+                  <Wrench className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-foreground">
+                    {servicios.filter(s => !s.estado.toLowerCase().includes('finaliz')).length}
+                  </span>
+                  <span className="text-muted-foreground">servicios activos</span>
+                </span>
+              </div>
+            )}
           </header>
 
           {error && (
