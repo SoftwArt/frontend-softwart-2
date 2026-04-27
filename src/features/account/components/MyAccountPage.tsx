@@ -11,6 +11,11 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/src/shared/components/ui/dropdown-menu'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/src/shared/components/ui/alert-dialog'
 
 // ── Helpers storage ───────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('token') ?? sessionStorage.getItem('token') }
@@ -266,21 +271,42 @@ export function MyAccountPage() {
                                 {c.appointmentStatus?.nombre ?? 'Sin estado'}
                               </span>
                               {esPendiente && (
-                                <button
-                                  disabled={cancelingId === c.id_cita}
-                                  onClick={async () => {
-                                    if (!confirm('¿Seguro que deseas cancelar esta cita?')) return
-                                    setCancelingId(c.id_cita)
-                                    try {
-                                      await onCancelAppointment(c.id_cita)
-                                    } catch (e2) {
-                                      alert(e2 instanceof Error ? e2.message : 'Error al cancelar')
-                                    } finally { setCancelingId(null) }
-                                  }}
-                                  className="text-destructive text-xs font-medium hover:underline disabled:opacity-50 transition-all"
-                                >
-                                  {cancelingId === c.id_cita ? 'Cancelando...' : 'Cancelar'}
-                                </button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <button
+                                      disabled={cancelingId === c.id_cita}
+                                      className="text-destructive text-xs font-medium hover:underline disabled:opacity-50 transition-all"
+                                    >
+                                      {cancelingId === c.id_cita ? 'Cancelando...' : 'Cancelar'}
+                                    </button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="bg-card text-card-foreground border-border">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle className="font-serif text-secondary">
+                                        ¿Cancelar esta cita?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        La cita del {parseFechaBloque(c.fecha).dia} de {parseFechaBloque(c.fecha).mes} a las {c.hora?.slice(0, 5)} será cancelada. Esta acción no se puede deshacer.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel className="border-border text-foreground">Volver</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-destructive text-destructive-foreground"
+                                        onClick={async () => {
+                                          setCancelingId(c.id_cita)
+                                          try {
+                                            await onCancelAppointment(c.id_cita)
+                                          } catch (e2) {
+                                            alert(e2 instanceof Error ? e2.message : 'Error al cancelar')
+                                          } finally { setCancelingId(null) }
+                                        }}
+                                      >
+                                        Sí, cancelar cita
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
                             </div>
                           </div>
