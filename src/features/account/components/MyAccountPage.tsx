@@ -5,7 +5,7 @@ import { useAccount } from '../hooks/useAccount'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
-import { CalendarDays, LogOut, User, Lock, AlertTriangle, Plus, Clock, Home, CalendarPlus, Wrench } from 'lucide-react'
+import { CalendarDays, LogOut, User, Lock, AlertTriangle, Plus, Clock, Home, CalendarPlus, Wrench, ChevronDown } from 'lucide-react'
 import { TimePicker, BookedSlot } from '@/src/shared/components/TimePicker'
 import { DatePicker } from '@/src/shared/components/DatePicker'
 
@@ -91,6 +91,10 @@ export function MyAccountPage() {
   const [isDeleting,  setIsDeleting]  = useState(false)
   const [cancelingId, setCancelingId] = useState<number | null>(null)
 
+  // ── Estado dropdowns ──────────────────────────────────────────────────────
+  const [citasOpen,     setCitasOpen]     = useState(false)
+  const [serviciosOpen, setServiciosOpen] = useState(false)
+
   // Precargar perfil en form
   useEffect(() => {
     if (!perfil) return
@@ -102,8 +106,9 @@ export function MyAccountPage() {
   // Abrir form de cita si viene desde landing
   useEffect(() => {
     if (searchParams.get('nueva-cita') === 'true') {
+      setCitasOpen(true)
       setShowCitaForm(true)
-      setTimeout(() => citaFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)
+      setTimeout(() => citaFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 300)
     }
   }, [searchParams])
 
@@ -192,7 +197,7 @@ export function MyAccountPage() {
 
       {/* ── Navbar ─────────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 w-full bg-secondary/95 backdrop-blur-md border-b border-secondary-foreground/10">
-        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link
             to="/"
             className="flex items-center gap-1.5 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors text-sm"
@@ -211,12 +216,12 @@ export function MyAccountPage() {
         </div>
       </nav>
 
-      <main className="py-12 md:py-20 px-6">
-        <div className="max-w-3xl mx-auto">
+      <main className="py-10 md:py-16 px-6">
+        <div className="max-w-4xl mx-auto">
 
           {/* ── Welcome header ───────────────────────────────────────────────── */}
-          <header className="mb-10 text-center">
-            <div className="mb-4">
+          <header className="mb-8 text-center">
+            <div className="mb-3">
               <span className="font-serif italic text-3xl font-bold text-secondary tracking-tight">
                 Arte Café
               </span>
@@ -237,230 +242,257 @@ export function MyAccountPage() {
             </div>
           )}
 
-          <div className="space-y-8">
+          {/* ── Grid 2×2 ───────────────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
 
-            {/* ── Mis Citas ──────────────────────────────────────────────────── */}
-            <section className="bg-card rounded-xl p-6 md:p-8 shadow-sm border border-border">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            {/* ── Mis Citas (dropdown) ───────────────────────────────────────── */}
+            <section className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+              {/* Header colapsable */}
+              <button
+                type="button"
+                className="w-full flex items-center justify-between px-6 py-5 hover:bg-accent/40 transition-colors"
+                onClick={() => setCitasOpen(v => !v)}
+              >
                 <div className="flex items-center gap-3">
-                  <CalendarDays className="h-7 w-7 text-primary" />
-                  <h2 className="text-2xl font-serif text-secondary">Mis citas</h2>
+                  <CalendarDays className="h-6 w-6 text-primary shrink-0" />
+                  <h2 className="text-xl font-serif text-secondary">Mis citas</h2>
                 </div>
-                {!showCitaForm && (
-                  <button
-                    onClick={() => {
-                      setShowCitaForm(true)
-                      setTimeout(() => citaFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
-                    }}
-                    className="w-full sm:w-auto bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-95 text-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Nueva cita
-                  </button>
-                )}
-              </div>
-
-              {/* Mensaje post-agendado */}
-              {citaMsg && !showCitaForm && (
-                <div className={`rounded-lg px-4 py-3 text-sm mb-4 border ${citaMsgType === 'ok' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-destructive/10 text-destructive border-destructive/30'}`}>
-                  {citaMsg}
-                </div>
-              )}
-
-              {isLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-16 w-full rounded-lg" />
-                  <Skeleton className="h-16 w-full rounded-lg" />
-                </div>
-              ) : citas.length === 0 && !showCitaForm ? (
-                <div className="text-center py-8">
-                  <CalendarDays className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                  <p className="text-muted-foreground mb-4">Aún no tienes citas agendadas.</p>
-                  <button
-                    onClick={() => setShowCitaForm(true)}
-                    className="bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-medium inline-flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-95 text-sm"
-                  >
-                    <CalendarPlus className="h-4 w-4" />
-                    Agendar mi primera cita
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {citas.map((c) => {
-                    const { mes, dia } = parseFechaBloque(c.fecha)
-                    const esPendiente  = c.appointmentStatus?.nombre?.toLowerCase().includes('pend') ?? false
-                    return (
-                      <div
-                        key={c.id_cita}
-                        className="flex items-center justify-between p-4 rounded-lg bg-muted border border-transparent hover:border-primary/20 transition-all"
-                      >
-                        <div className="flex gap-4">
-                          <div className="bg-secondary/5 rounded-lg p-2.5 flex flex-col items-center justify-center min-w-[52px]">
-                            <span className="text-[10px] uppercase font-bold text-secondary/60">{mes}</span>
-                            <span className="text-lg font-bold text-secondary">{dia}</span>
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground text-sm">Cita #{c.id_cita}</p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Clock className="h-3 w-3" />
-                              {c.hora?.slice(0, 5)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${estadoBadgeClasses(c.appointmentStatus?.nombre)}`}>
-                            {c.appointmentStatus?.nombre ?? 'Sin estado'}
-                          </span>
-                          {esPendiente && (
-                            <button
-                              disabled={cancelingId === c.id_cita}
-                              onClick={async () => {
-                                if (!confirm('¿Seguro que deseas cancelar esta cita?')) return
-                                setCancelingId(c.id_cita)
-                                try {
-                                  await onCancelAppointment(c.id_cita)
-                                } catch (e2) {
-                                  alert(e2 instanceof Error ? e2.message : 'Error al cancelar')
-                                } finally { setCancelingId(null) }
-                              }}
-                              className="text-destructive text-xs font-medium hover:underline disabled:opacity-50 transition-all"
-                            >
-                              {cancelingId === c.id_cita ? 'Cancelando...' : 'Cancelar'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* ── Formulario nueva cita ─────────────────────────────────────── */}
-              {showCitaForm && (
-                <div ref={citaFormRef} className="mt-6 border border-secondary/15 bg-secondary/5 rounded-xl p-5 flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-secondary">Agendar nueva cita</h3>
-                    <button
-                      onClick={() => { setShowCitaForm(false); setCitaErrors({}); setCitaMsg(null) }}
-                      className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                <div className="flex items-center gap-2">
+                  {citasOpen && !showCitaForm && (
+                    <span
+                      role="button"
+                      onClick={e => {
+                        e.stopPropagation()
+                        setShowCitaForm(true)
+                        setTimeout(() => citaFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100)
+                      }}
+                      className="bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 hover:bg-primary/90 transition-all active:scale-95 text-xs"
                     >
-                      Cancelar
-                    </button>
-                  </div>
+                      <Plus className="h-3.5 w-3.5" />
+                      Nueva cita
+                    </span>
+                  )}
+                  <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 shrink-0 ${citasOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
 
-                  {citaMsg && (
-                    <div className={`rounded-lg px-3 py-2 text-sm border ${citaMsgType === 'ok' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-destructive/10 text-destructive border-destructive/30'}`}>
+              {/* Contenido colapsable */}
+              {citasOpen && (
+                <div className="px-6 pb-6 border-t border-border bg-background/40 overflow-y-auto max-h-[420px] pt-5">
+
+                  {/* Mensaje post-agendado */}
+                  {citaMsg && !showCitaForm && (
+                    <div className={`rounded-lg px-4 py-3 text-sm mb-4 border ${citaMsgType === 'ok' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-destructive/10 text-destructive border-destructive/30'}`}>
                       {citaMsg}
                     </div>
                   )}
 
-                  <form onSubmit={submitCita} className="flex flex-col gap-4">
-                    {/* Fecha */}
-                    <div>
-                      <label className={labelCls} htmlFor="cita-fecha-mc">Fecha <span className="text-destructive">*</span></label>
-                      <DatePicker
-                        id="cita-fecha-mc"
-                        value={citaFecha}
-                        min={tomorrowString()}
-                        error={citaErrors.fecha}
-                        onChange={async (f) => {
-                          setCitaFecha(f)
-                          setCitaHora('')
-                          setCitaErrors(p => ({ ...p, fecha: '', hora: '' }))
-                          try {
-                            const res = await apiRequest<{ success: boolean; data: { id_cita: number; hora: string }[] }>(
-                              `/api/account/availability?fecha=${f}`
-                            )
-                            setDisponibilidad(
-                              (res.data ?? []).map(d => ({ hora: d.hora, id_cita: d.id_cita, clienteNombre: 'Ocupado' }))
-                            )
-                          } catch { setDisponibilidad([]) }
-                        }}
-                      />
-                      {citaErrors.fecha && <p className="text-xs text-destructive mt-1">{citaErrors.fecha}</p>}
+                  {isLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-16 w-full rounded-lg" />
+                      <Skeleton className="h-16 w-full rounded-lg" />
                     </div>
-
-                    {/* Hora */}
-                    <TimePicker
-                      value={citaHora}
-                      onChange={v => { setCitaHora(v); setCitaErrors(p => ({ ...p, hora: '' })) }}
-                      error={citaErrors.hora}
-                      bookedSlots={disponibilidad}
-                    />
-
-                    {/* Observaciones */}
-                    <div>
-                      <label className={labelCls} htmlFor="cita-obs">
-                        Observaciones{' '}
-                        <span className="text-muted-foreground font-normal normal-case tracking-normal">(opcional)</span>
-                      </label>
-                      <textarea
-                        id="cita-obs"
-                        value={citaObs}
-                        onChange={e => setCitaObs(e.target.value)}
-                        placeholder="Cuéntanos qué necesitas, medidas, tipo de marco, etc."
-                        rows={3}
-                        className={`${inputCls} resize-none`}
-                      />
+                  ) : citas.length === 0 && !showCitaForm ? (
+                    <div className="text-center py-8">
+                      <CalendarDays className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                      <p className="text-muted-foreground mb-4">Aún no tienes citas agendadas.</p>
+                      <button
+                        onClick={() => setShowCitaForm(true)}
+                        className="bg-primary text-primary-foreground px-5 py-2.5 rounded-lg font-medium inline-flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-95 text-sm"
+                      >
+                        <CalendarPlus className="h-4 w-4" />
+                        Agendar mi primera cita
+                      </button>
                     </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {citas.map((c) => {
+                        const { mes, dia } = parseFechaBloque(c.fecha)
+                        const esPendiente  = c.appointmentStatus?.nombre?.toLowerCase().includes('pend') ?? false
+                        return (
+                          <div
+                            key={c.id_cita}
+                            className="flex items-center justify-between p-4 rounded-lg bg-muted border border-transparent hover:border-primary/20 transition-all"
+                          >
+                            <div className="flex gap-4">
+                              <div className="bg-secondary/5 rounded-lg p-2.5 flex flex-col items-center justify-center min-w-[52px]">
+                                <span className="text-[10px] uppercase font-bold text-secondary/60">{mes}</span>
+                                <span className="text-lg font-bold text-secondary">{dia}</span>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-foreground text-sm">Cita #{c.id_cita}</p>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                  <Clock className="h-3 w-3" />
+                                  {c.hora?.slice(0, 5)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${estadoBadgeClasses(c.appointmentStatus?.nombre)}`}>
+                                {c.appointmentStatus?.nombre ?? 'Sin estado'}
+                              </span>
+                              {esPendiente && (
+                                <button
+                                  disabled={cancelingId === c.id_cita}
+                                  onClick={async () => {
+                                    if (!confirm('¿Seguro que deseas cancelar esta cita?')) return
+                                    setCancelingId(c.id_cita)
+                                    try {
+                                      await onCancelAppointment(c.id_cita)
+                                    } catch (e2) {
+                                      alert(e2 instanceof Error ? e2.message : 'Error al cancelar')
+                                    } finally { setCancelingId(null) }
+                                  }}
+                                  className="text-destructive text-xs font-medium hover:underline disabled:opacity-50 transition-all"
+                                >
+                                  {cancelingId === c.id_cita ? 'Cancelando...' : 'Cancelar'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
 
-                    <button
-                      type="submit"
-                      disabled={isAgendando}
-                      className="bg-secondary text-secondary-foreground py-3 rounded-lg font-medium hover:bg-secondary/90 transition-colors active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60"
-                    >
-                      <CalendarPlus className="h-4 w-4" />
-                      {isAgendando ? 'Agendando...' : 'Confirmar cita'}
-                    </button>
-                  </form>
+                  {/* ── Formulario nueva cita ─────────────────────────────────── */}
+                  {showCitaForm && (
+                    <div ref={citaFormRef} className="mt-4 border border-secondary/15 bg-secondary/5 rounded-xl p-5 flex flex-col gap-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-secondary">Agendar nueva cita</h3>
+                        <button
+                          onClick={() => { setShowCitaForm(false); setCitaErrors({}); setCitaMsg(null) }}
+                          className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+
+                      {citaMsg && (
+                        <div className={`rounded-lg px-3 py-2 text-sm border ${citaMsgType === 'ok' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-destructive/10 text-destructive border-destructive/30'}`}>
+                          {citaMsg}
+                        </div>
+                      )}
+
+                      <form onSubmit={submitCita} className="flex flex-col gap-4">
+                        <div>
+                          <label className={labelCls} htmlFor="cita-fecha-mc">Fecha <span className="text-destructive">*</span></label>
+                          <DatePicker
+                            id="cita-fecha-mc"
+                            value={citaFecha}
+                            min={tomorrowString()}
+                            error={citaErrors.fecha}
+                            onChange={async (f) => {
+                              setCitaFecha(f)
+                              setCitaHora('')
+                              setCitaErrors(p => ({ ...p, fecha: '', hora: '' }))
+                              try {
+                                const res = await apiRequest<{ success: boolean; data: { id_cita: number; hora: string }[] }>(
+                                  `/api/account/availability?fecha=${f}`
+                                )
+                                setDisponibilidad(
+                                  (res.data ?? []).map(d => ({ hora: d.hora, id_cita: d.id_cita, clienteNombre: 'Ocupado' }))
+                                )
+                              } catch { setDisponibilidad([]) }
+                            }}
+                          />
+                          {citaErrors.fecha && <p className="text-xs text-destructive mt-1">{citaErrors.fecha}</p>}
+                        </div>
+
+                        <TimePicker
+                          value={citaHora}
+                          onChange={v => { setCitaHora(v); setCitaErrors(p => ({ ...p, hora: '' })) }}
+                          error={citaErrors.hora}
+                          bookedSlots={disponibilidad}
+                        />
+
+                        <div>
+                          <label className={labelCls} htmlFor="cita-obs">
+                            Observaciones{' '}
+                            <span className="text-muted-foreground font-normal normal-case tracking-normal">(opcional)</span>
+                          </label>
+                          <textarea
+                            id="cita-obs"
+                            value={citaObs}
+                            onChange={e => setCitaObs(e.target.value)}
+                            placeholder="Cuéntanos qué necesitas, medidas, tipo de marco, etc."
+                            rows={3}
+                            className={`${inputCls} resize-none`}
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isAgendando}
+                          className="bg-secondary text-secondary-foreground py-3 rounded-lg font-medium hover:bg-secondary/90 transition-colors active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60"
+                        >
+                          <CalendarPlus className="h-4 w-4" />
+                          {isAgendando ? 'Agendando...' : 'Confirmar cita'}
+                        </button>
+                      </form>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
 
-            {/* ── Mis Servicios ──────────────────────────────────────────────── */}
-            <section className="bg-card rounded-xl p-6 md:p-8 shadow-sm border border-border">
-              <div className="flex items-center gap-3 mb-6">
-                <Wrench className="h-7 w-7 text-primary" />
-                <h2 className="text-2xl font-serif text-secondary">Mis servicios</h2>
-              </div>
+            {/* ── Mis Servicios (dropdown) ───────────────────────────────────── */}
+            <section className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+              {/* Header colapsable */}
+              <button
+                type="button"
+                className="w-full flex items-center justify-between px-6 py-5 hover:bg-accent/40 transition-colors"
+                onClick={() => setServiciosOpen(v => !v)}
+              >
+                <div className="flex items-center gap-3">
+                  <Wrench className="h-6 w-6 text-primary shrink-0" />
+                  <h2 className="text-xl font-serif text-secondary">Mis servicios</h2>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${serviciosOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-              {isLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-14 w-full rounded-lg" />
-                  <Skeleton className="h-14 w-full rounded-lg" />
-                </div>
-              ) : servicios.length === 0 ? (
-                <div className="text-center py-8">
-                  <Wrench className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                  <p className="text-muted-foreground">Aún no tienes servicios registrados.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {servicios.map((s) => (
-                    <div
-                      key={s.id_detalle}
-                      className="flex items-center justify-between p-4 rounded-lg bg-muted border border-transparent hover:border-primary/20 transition-all"
-                    >
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{s.servicio}</p>
-                        {s.observacion && (
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">{s.observacion}</p>
-                        )}
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${estadoServicioBadgeClasses(s.estado)}`}>
-                        {s.estado}
-                      </span>
+              {/* Contenido colapsable */}
+              {serviciosOpen && (
+                <div className="px-6 pb-6 border-t border-border bg-background/40 overflow-y-auto max-h-[420px] pt-5">
+                  {isLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-14 w-full rounded-lg" />
+                      <Skeleton className="h-14 w-full rounded-lg" />
                     </div>
-                  ))}
+                  ) : servicios.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Wrench className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                      <p className="text-muted-foreground">Aún no tienes servicios registrados.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {servicios.map((s) => (
+                        <div
+                          key={s.id_detalle}
+                          className="flex items-center justify-between p-4 rounded-lg bg-muted border border-transparent hover:border-primary/20 transition-all"
+                        >
+                          <div>
+                            <p className="font-semibold text-foreground text-sm">{s.servicio}</p>
+                            {s.observacion && (
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">{s.observacion}</p>
+                            )}
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${estadoServicioBadgeClasses(s.estado)}`}>
+                            {s.estado}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </section>
 
             {/* ── Mis Datos ──────────────────────────────────────────────────── */}
-            <section className="bg-card rounded-xl p-6 md:p-8 shadow-sm border border-border">
+            <section className="bg-card rounded-xl p-6 shadow-sm border border-border">
               <div className="flex items-center gap-3 mb-6">
-                <User className="h-7 w-7 text-primary" />
-                <h2 className="text-2xl font-serif text-secondary">Mis datos</h2>
+                <User className="h-6 w-6 text-primary" />
+                <h2 className="text-xl font-serif text-secondary">Mis datos</h2>
               </div>
 
               {isLoading ? (
@@ -502,10 +534,10 @@ export function MyAccountPage() {
             </section>
 
             {/* ── Cambiar contraseña ─────────────────────────────────────────── */}
-            <section className="bg-card rounded-xl p-6 md:p-8 shadow-sm border border-border">
+            <section className="bg-card rounded-xl p-6 shadow-sm border border-border">
               <div className="flex items-center gap-3 mb-6">
-                <Lock className="h-7 w-7 text-primary" />
-                <h2 className="text-2xl font-serif text-secondary">Cambiar contraseña</h2>
+                <Lock className="h-6 w-6 text-primary" />
+                <h2 className="text-xl font-serif text-secondary">Cambiar contraseña</h2>
               </div>
               <form onSubmit={submitClave} className="space-y-4">
                 <input type="password" placeholder="Contraseña actual" value={claveActual} onChange={e => setClaveActual(e.target.value)} className={inputCls} />
@@ -528,10 +560,13 @@ export function MyAccountPage() {
               </form>
             </section>
 
-            {/* ── Eliminar cuenta ────────────────────────────────────────────── */}
-            <div className="bg-destructive/5 rounded-xl p-6 md:p-8 border border-destructive/10">
-              <div className="flex items-start gap-4">
-                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+          </div>
+
+          {/* ── Eliminar cuenta ────────────────────────────────────────────── */}
+          <div className="mt-5 flex justify-center">
+            <div className="bg-destructive/5 rounded-xl p-6 border border-destructive/10 max-w-md w-full text-center">
+              <div className="flex flex-col items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
                 <div>
                   <h3 className="font-serif text-xl text-destructive mb-2">Eliminar cuenta</h3>
                   <p className="text-sm text-muted-foreground mb-4">
@@ -548,25 +583,25 @@ export function MyAccountPage() {
                 </div>
               </div>
             </div>
-
-            {/* ── Cerrar sesión ───────────────────────────────────────────────── */}
-            <div className="text-center py-4">
-              <button
-                onClick={handleLogout}
-                className="text-primary font-medium inline-flex items-center gap-2 hover:underline transition-all"
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </button>
-            </div>
-
           </div>
+
+          {/* ── Cerrar sesión ───────────────────────────────────────────────── */}
+          <div className="text-center py-6">
+            <button
+              onClick={handleLogout}
+              className="text-primary font-medium inline-flex items-center gap-2 hover:underline transition-all"
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
+            </button>
+          </div>
+
         </div>
       </main>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <footer className="bg-secondary border-t border-secondary-foreground/10 py-8">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-1 text-center">
+        <div className="max-w-4xl mx-auto px-6 flex flex-col items-center gap-1 text-center">
           <span className="font-serif text-lg font-bold italic text-secondary-foreground">Arte Café</span>
           <span className="text-xs text-secondary-foreground/50">
             © {new Date().getFullYear()} SoftwArt · Todos los derechos reservados
