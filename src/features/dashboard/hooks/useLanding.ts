@@ -8,7 +8,7 @@ export function useLanding() {
   const [servicios, setServicios] = useState<Servicio[]>([])
 
   useEffect(() => {
-    apiRequest<{ data: Servicio[] }>('/api/services?limit=6')
+    apiRequest<{ data: Servicio[] }>('/api/services?limit=6&activos=true')
       .then(r => setServicios(r.data ?? []))
       .catch(() => {})
   }, [])

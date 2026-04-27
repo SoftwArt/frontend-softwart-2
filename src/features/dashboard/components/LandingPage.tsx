@@ -418,15 +418,19 @@ export function LandingPage() {
                 </p>
               </FadeInView>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="flex flex-wrap justify-center gap-4">
                 {servicios.map((s, i) => {
                   const isActive = activeService === s.id_servicio
                   return (
-                    <FadeInView key={s.id_servicio} delay={i * 0.08}>
+                    <FadeInView
+                      key={s.id_servicio}
+                      delay={i * 0.08}
+                      className="w-[calc(50%-8px)] sm:w-[calc(33.333%-11px)] lg:w-[calc(20%-13px)]"
+                    >
                       <div
                         role="button"
                         tabIndex={0}
-                        className={`relative h-72 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ${
+                        className={`relative h-72 w-full rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ${
                           isActive
                             ? 'ring-2 ring-primary shadow-xl scale-[1.02]'
                             : 'shadow-sm hover:shadow-md hover:scale-[1.01]'
