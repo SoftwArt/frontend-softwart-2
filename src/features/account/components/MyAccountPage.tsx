@@ -260,7 +260,10 @@ export function MyAccountPage() {
                     .sort((a, b) => a.fecha.localeCompare(b.fecha))[0]
                   const { mes, dia } = proxima ? parseFechaBloque(proxima.fecha) : { mes: '', dia: '' }
                   return (
-                    <span className="inline-flex items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5 text-sm shadow-sm">
+                    <span
+                      className="inline-flex items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5 text-sm shadow-sm cursor-pointer hover:border-primary/40 transition-colors"
+                      onClick={() => setCitasOpen(true)}
+                    >
                       <CalendarDays className="h-4 w-4 text-primary" />
                       <span className="font-medium text-foreground">
                         {proxima ? `Próxima cita: ${dia} ${mes} · ${proxima.hora?.slice(0, 5)}` : 'Sin citas próximas'}
@@ -268,7 +271,10 @@ export function MyAccountPage() {
                     </span>
                   )
                 })()}
-                <span className="inline-flex items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5 text-sm shadow-sm">
+                <span
+                  className="inline-flex items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5 text-sm shadow-sm cursor-pointer hover:border-primary/40 transition-colors"
+                  onClick={() => setServiciosOpen(true)}
+                >
                   <Wrench className="h-4 w-4 text-primary" />
                   <span className="font-medium text-foreground">
                     {servicios.filter(s => !s.estado.toLowerCase().includes('finaliz')).length}
@@ -285,11 +291,11 @@ export function MyAccountPage() {
             </div>
           )}
 
-          {/* ── Grid 2×2 ───────────────────────────────────────────────────── */}
+          {/* ── Grid fila 1: dropdowns ─────────────────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
 
             {/* ── Mis Citas (dropdown) ───────────────────────────────────────── */}
-            <section className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+            <section className="bg-card rounded-xl shadow-sm border border-border border-l-4 border-l-primary overflow-hidden">
               {/* Header colapsable */}
               <button
                 type="button"
@@ -348,13 +354,13 @@ export function MyAccountPage() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {citas.map((c) => {
+                      {[...citas].sort((a, b) => a.fecha.localeCompare(b.fecha)).map((c) => {
                         const { mes, dia } = parseFechaBloque(c.fecha)
                         const esPendiente  = c.appointmentStatus?.nombre?.toLowerCase().includes('pend') ?? false
                         return (
                           <div
                             key={c.id_cita}
-                            className="flex items-center justify-between p-4 rounded-lg bg-muted border border-transparent hover:border-primary/20 transition-all"
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg bg-muted border border-transparent hover:border-primary/20 transition-all"
                           >
                             <div className="flex gap-4">
                               <div className="bg-secondary/5 rounded-lg p-2.5 flex flex-col items-center justify-center min-w-[52px]">
@@ -369,7 +375,7 @@ export function MyAccountPage() {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 self-end sm:self-auto">
                               <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${estadoBadgeClasses(c.appointmentStatus?.nombre)}`}>
                                 {c.appointmentStatus?.nombre ?? 'Sin estado'}
                               </span>
@@ -402,7 +408,7 @@ export function MyAccountPage() {
             </section>
 
             {/* ── Mis Servicios (dropdown) ───────────────────────────────────── */}
-            <section className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+            <section className="bg-card rounded-xl shadow-sm border border-border border-l-4 border-l-primary overflow-hidden">
               {/* Header colapsable */}
               <button
                 type="button"
@@ -453,8 +459,13 @@ export function MyAccountPage() {
               )}
             </section>
 
+          </div>
+
+          {/* ── Grid fila 2: forms (stretch para igualar alto) ─────────────── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+
             {/* ── Mis Datos ──────────────────────────────────────────────────── */}
-            <section className="bg-card rounded-xl p-6 shadow-sm border border-border">
+            <section className="bg-card rounded-xl p-6 shadow-sm border border-border border-l-4 border-l-primary">
               <div className="flex items-center gap-3 mb-6">
                 <User className="h-6 w-6 text-primary" />
                 <h2 className="text-xl font-serif text-secondary">Mis datos</h2>
@@ -499,15 +510,24 @@ export function MyAccountPage() {
             </section>
 
             {/* ── Cambiar contraseña ─────────────────────────────────────────── */}
-            <section className="bg-card rounded-xl p-6 shadow-sm border border-border">
+            <section className="bg-card rounded-xl p-6 shadow-sm border border-border border-l-4 border-l-primary">
               <div className="flex items-center gap-3 mb-6">
                 <Lock className="h-6 w-6 text-primary" />
                 <h2 className="text-xl font-serif text-secondary">Cambiar contraseña</h2>
               </div>
-              <form onSubmit={submitClave} className="space-y-4">
-                <input type="password" placeholder="Contraseña actual" value={claveActual} onChange={e => setClaveActual(e.target.value)} className={inputCls} />
-                <input type="password" placeholder="Nueva contraseña" value={claveNueva} onChange={e => setClaveNueva(e.target.value)} className={inputCls} />
-                <input type="password" placeholder="Confirmar contraseña" value={claveConfirm} onChange={e => setClaveConfirm(e.target.value)} className={inputCls} />
+              <form onSubmit={submitClave} className="space-y-5">
+                <div>
+                  <label className={labelCls} htmlFor="clave-actual">Contraseña actual</label>
+                  <input id="clave-actual" type="password" value={claveActual} onChange={e => setClaveActual(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls} htmlFor="clave-nueva">Nueva contraseña</label>
+                  <input id="clave-nueva" type="password" value={claveNueva} onChange={e => setClaveNueva(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls} htmlFor="clave-confirm">Confirmar contraseña</label>
+                  <input id="clave-confirm" type="password" value={claveConfirm} onChange={e => setClaveConfirm(e.target.value)} className={inputCls} />
+                </div>
                 <div className="pt-2">
                   <button
                     type="submit"
@@ -535,7 +555,7 @@ export function MyAccountPage() {
                 <div>
                   <h3 className="font-serif text-xl text-destructive mb-2">Eliminar cuenta</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Esta acción es permanente y eliminará todo tu historial de citas y trabajos en el taller.
+                    Esta acción es permanente y eliminará toda tu información de usuario en el sistema.
                     Si tienes historial activo, la cuenta se desactivará en su lugar.
                   </p>
                   <button
