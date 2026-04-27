@@ -29,11 +29,10 @@ const MODULO_LABELS: Record<string, string> = {
   USUARIOS:  '👥 Usuarios',
   ROLES:     '🔑 Roles',
   PERMISOS:  '🛡️ Permisos',
-  CATALOGOS: '📋 Catálogos',
 }
 
 // Orden fijo de módulos para que siempre salgan igual
-const MODULO_ORDER = ['CUENTA','CLIENTES','CITAS','VENTAS','PEDIDOS','PAGOS','MARCOS','SERVICIOS','USUARIOS','ROLES','PERMISOS','CATALOGOS']
+const MODULO_ORDER = ['CUENTA','CLIENTES','CITAS','VENTAS','PEDIDOS','PAGOS','MARCOS','SERVICIOS','USUARIOS','ROLES','PERMISOS']
 
 // "CLIENTES.VER" → "CLIENTES" | "CUENTA.VER_PERFIL" → "CUENTA"
 function getModulo(nombre: string): string {
