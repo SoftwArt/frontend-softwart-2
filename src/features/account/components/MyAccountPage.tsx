@@ -8,6 +8,10 @@ import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { CalendarDays, LogOut, User, Lock, AlertTriangle, Plus, Clock, Home, CalendarPlus, Wrench, ChevronDown, X } from 'lucide-react'
 import { TimePicker, BookedSlot } from '@/src/shared/components/TimePicker'
 import { DatePicker } from '@/src/shared/components/DatePicker'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/src/shared/components/ui/dropdown-menu'
 
 // ── Helpers storage ───────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('token') ?? sessionStorage.getItem('token') }
@@ -193,8 +197,8 @@ export function MyAccountPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
 
-      {/* ── Navbar ─────────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 w-full bg-secondary/95 backdrop-blur-md border-b border-secondary-foreground/10">
+      {/* ── Topbar ─────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 w-full bg-secondary/95 backdrop-blur-md border-b border-secondary-foreground/10">
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link
             to="/"
@@ -204,15 +208,37 @@ export function MyAccountPage() {
             Inicio
           </Link>
           <span className="font-serif italic font-bold text-secondary-foreground tracking-tight">Arte Café</span>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors text-sm"
-          >
-            <LogOut className="h-4 w-4" />
-            Salir
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-secondary-foreground/10 transition-colors outline-none">
+                <div className="h-7 w-7 rounded-full bg-secondary-foreground/15 border border-secondary-foreground/30 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-semibold text-secondary-foreground">
+                    {primerNombre ? primerNombre.charAt(0).toUpperCase() : '?'}
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-secondary-foreground hidden sm:block truncate max-w-[120px]">
+                  {primerNombre || 'Mi cuenta'}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 text-secondary-foreground/70 hidden sm:block shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <div className="px-2 py-1.5">
+                <p className="text-xs font-medium text-foreground truncate">{perfil?.nombre ?? ''}</p>
+                <p className="text-[10px] text-muted-foreground">Cliente</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-rose-500 focus:text-rose-500 focus:bg-rose-500/10 cursor-pointer"
+              >
+                <LogOut className="h-4 w-4 mr-2 shrink-0" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </nav>
+      </header>
 
       <main className="py-10 md:py-16 px-6">
         <div className="max-w-4xl mx-auto">
@@ -505,16 +531,6 @@ export function MyAccountPage() {
             </div>
           </div>
 
-          {/* ── Cerrar sesión ───────────────────────────────────────────────── */}
-          <div className="text-center py-6">
-            <button
-              onClick={handleLogout}
-              className="text-primary font-medium inline-flex items-center gap-2 hover:underline transition-all"
-            >
-              <LogOut className="h-4 w-4" />
-              Cerrar sesión
-            </button>
-          </div>
 
         </div>
       </main>
