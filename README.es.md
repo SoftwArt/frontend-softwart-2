@@ -69,16 +69,18 @@ const { items, isLoading, onCreate, onEdit, onDelete } = useModulo()
 - Tabla de Servicios muestra nombre de cliente con referencia de venta; cliente buscable por nombre
 
 ### Portal cliente (`/my-account`)
-- Agendar citas con verificación de disponibilidad en tiempo real
+- Grid 2×2 responsivo: citas + servicios (arriba, dropdowns colapsables) / datos + contraseña (abajo, siempre visibles)
+- Agendar citas mediante modal con verificación de slots en tiempo real (`GET /api/account/availability`)
 - Ver y cancelar citas propias
 - Seguimiento de servicios activos con estado en tiempo real (Sin empezar / En preparación / Finalizado)
 - Actualizar perfil y cambiar contraseña
 - Eliminar cuenta
 
 ### Landing pública (`/`)
-- Galería de servicios con imágenes en Cloudinary
-- CTA de agendamiento directo
-- SEO completo: OG tags, Twitter Card, JSON-LD schema, verificado en Google Search Console
+- Galería de servicios (solo tipos activos, filtrados con `?activos=true`)
+- Hero ajustado al alto del viewport (`h-dvh`), tipografía responsiva hasta 2xl
+- CTA de agendamiento (modal para invitados, `/my-account?nueva-cita=true` para clientes autenticados)
+- SEO completo: título keyword-first, OG tags, Twitter Card, JSON-LD schema LocalBusiness, sitemap.xml, geo tags
 
 ---
 

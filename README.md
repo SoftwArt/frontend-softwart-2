@@ -69,16 +69,18 @@ const { items, isLoading, onCreate, onEdit, onDelete } = useModulo()
 - Orders table shows client name with sale reference below; client name searchable
 
 ### Client portal (`/my-account`)
-- Book new appointments with real-time availability check
+- Responsive 2×2 grid layout: appointments + services (top, collapsible dropdowns) / profile + password (bottom, always visible)
+- Book new appointments via modal with real-time slot availability (`GET /api/account/availability`)
 - View and cancel own appointments
 - Track active services with live status (Sin empezar / En preparación / Finalizado)
 - Update profile and change password
 - Delete account
 
 ### Public landing (`/`)
-- Service gallery with Cloudinary images
-- Appointment booking CTA
-- Full SEO: OG tags, Twitter Card, JSON-LD schema, verified in Google Search Console
+- Service gallery (only active service types shown, filtered via `?activos=true`)
+- Hero section fitted to viewport height (`h-dvh`), responsive typography up to 2xl
+- Appointment booking CTA (modal for guests, `/my-account?nueva-cita=true` for logged-in clients)
+- Full SEO: keyword-first title, OG tags, Twitter Card, JSON-LD LocalBusiness schema, sitemap.xml, geo tags
 
 ---
 
