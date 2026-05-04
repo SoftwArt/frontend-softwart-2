@@ -54,13 +54,22 @@ const PASOS = [
 
 const CLD = 'https://res.cloudinary.com/dq1etaydx/image/upload'
 const HERO_IMG = `${CLD}/f_auto,q_auto,w_900/v1774138848/landingPagehero_euzx3s.png`
-const CARD_IMGS = [
-  `${CLD}/f_auto,q_auto,w_600/v1774138848/landingPage1_assbrk.png`,
-  `${CLD}/f_auto,q_auto,w_600/v1774138846/landingPage2restauracion_wpcpl8.png`,
-  `${CLD}/f_auto,q_auto,w_600/v1774138847/landingPage3pinturas_y7uwxs.png`,
-  `${CLD}/f_auto,q_auto,w_600/v1774138847/landingPage4decoracion_clyg0c.png`,
-  `${CLD}/f_auto,q_auto,w_600/v1774138846/landingPage2enmarcacion_ubu86c.png`,
+
+const CARD_IDS = [
+  'v1774138848/landingPage1_assbrk.png',
+  'v1774138846/landingPage2restauracion_wpcpl8.png',
+  'v1774138847/landingPage3pinturas_y7uwxs.png',
+  'v1774138847/landingPage4decoracion_clyg0c.png',
+  'v1774138846/landingPage2enmarcacion_ubu86c.png',
 ]
+
+function cldCard(id: string) {
+  const base = `${CLD}/f_auto,q_auto,c_fill,g_auto`
+  return {
+    src:    `${base},w_400,h_300/${id}`,
+    srcSet: `${base},w_400,h_300/${id} 400w, ${base},w_800,h_600/${id} 800w`,
+  }
+}
 
 // ─── Helper: fade-in al entrar en viewport ───────────────────────────────────
 function FadeInView({
@@ -84,6 +93,52 @@ function FadeInView({
     >
       {children}
     </m.div>
+  )
+}
+
+// ─── Map facade ──────────────────────────────────────────────────────────────
+const MAP_URL =
+  'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1589.1411649985575!2d-75.5900702757797!3d6.26116392340876!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e44290015ff5b7d%3A0x17b7e0f09ebe520e!2zQXJ0ZUNhZsOp!5e0!3m2!1ses-419!2sco!4v1777095655596!5m2!1ses-419!2sco'
+
+function MapFacade() {
+  const [loaded, setLoaded] = useState(false)
+
+  if (loaded) {
+    return (
+      <iframe
+        src={MAP_URL}
+        width="100%"
+        height="100%"
+        style={{ border: 0, minHeight: '380px' }}
+        allowFullScreen
+        loading="eager"
+        referrerPolicy="no-referrer-when-downgrade"
+        title="Ubicación Arte Café"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setLoaded(true)}
+      className="w-full min-h-[380px] flex flex-col items-center justify-center gap-4 bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+      aria-label="Cargar mapa de ubicación"
+    >
+      <div className="flex flex-col items-center gap-3 text-center px-6">
+        <div className="rounded-full bg-primary/10 p-4">
+          <MapPin className="h-8 w-8 text-primary" />
+        </div>
+        <div>
+          <p className="font-semibold text-foreground">Arte Café</p>
+          <p className="text-sm text-muted-foreground">Cra. 74 #50-17, Laureles, Medellín</p>
+        </div>
+        <span className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+          <MapPin className="h-4 w-4" />
+          Ver mapa interactivo
+        </span>
+      </div>
+    </button>
   )
 }
 
@@ -212,6 +267,8 @@ export function LandingPage() {
             src="/softwart-logo.png"
             alt="SoftwArt"
             className="h-9 w-auto object-contain"
+            width="160"
+            height="36"
           />
 
           {/* Links (desktop) */}
@@ -439,8 +496,11 @@ export function LandingPage() {
                         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setActiveService(isActive ? null : s.id_servicio) }}
                       >
                         <img
-                          src={CARD_IMGS[i % CARD_IMGS.length]}
+                          {...cldCard(CARD_IDS[i % CARD_IDS.length])}
                           alt={s.nombre}
+                          width={400}
+                          height={300}
+                          sizes="(max-width: 640px) calc(50vw - 8px), (max-width: 1024px) calc(33vw - 11px), calc(20vw - 13px)"
                           className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${isActive ? 'scale-105 blur-sm' : ''}`}
                         />
                         <div className={`absolute inset-0 z-10 transition-all duration-500 ${isActive ? 'bg-black/70' : 'bg-gradient-to-t from-black/75 via-black/20 to-transparent'}`} />
@@ -600,16 +660,7 @@ export function LandingPage() {
               delay={0.15}
               className="rounded-xl overflow-hidden border border-border shadow-sm min-h-[380px]"
             >
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1589.1411649985575!2d-75.5900702757797!3d6.26116392340876!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e44290015ff5b7d%3A0x17b7e0f09ebe520e!2zQXJ0ZUNhZsOp!5e0!3m2!1ses-419!2sco!4v1777095655596!5m2!1ses-419!2sco"
-                width="100%"
-                height="100%"
-                style={{ border: 0, minHeight: '380px' }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Ubicación Arte Café"
-              />
+              <MapFacade />
             </FadeInView>
           </div>
         </section>
