@@ -330,7 +330,6 @@ export function DashboardPage() {
                 <li key={v.id_venta} className="flex items-center justify-between">
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm text-foreground truncate">{v.cliente_nombre}</span>
-                    <span className="text-xs text-muted-foreground">{v.fecha}</span>
                   </div>
                   <span className="text-sm font-semibold text-foreground tabular-nums shrink-0 ml-2">
                     {formatCurrency(v.total)}
