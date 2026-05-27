@@ -180,7 +180,7 @@ export function useAccount() {
       setCitaMsg('¡Cita agendada! Te contactaremos para confirmarla.')
       setCitaMsgType('ok')
       setCitaFecha(tomorrowString()); setCitaHora(''); setCitaObs('')
-      window.location.reload()
+      await fetchMyAppointments()
       return true
     } catch (e2) {
       setCitaMsg(e2 instanceof Error ? e2.message : 'Error al agendar la cita')
