@@ -91,19 +91,36 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       {/* Nav por grupos */}
       <nav className="flex-1 min-h-0 overflow-y-auto py-2 px-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <ul className="flex flex-col gap-0.5">
-          {NAV_GROUPS.map((group, gi) => (
+          {/* Dashboard — ítem suelto sin grupo */}
+          <li>
+            <Link
+              to={DASHBOARD_ITEM.href}
+              title={collapsed ? DASHBOARD_ITEM.label : undefined}
+              className={cn(
+                'flex items-center gap-3 rounded-md text-sm transition-colors px-2 py-2',
+                collapsed ? 'justify-center' : '',
+                pathname === DASHBOARD_ITEM.href || pathname.startsWith(`${DASHBOARD_ITEM.href}/`)
+                  ? 'bg-sidebar-primary/15 text-sidebar-primary font-semibold'
+                  : 'text-sidebar-accent-foreground hover:bg-sidebar hover:text-sidebar-foreground'
+              )}
+            >
+              <DASHBOARD_ITEM.icon className="h-4 w-4 shrink-0" />
+              {!collapsed && <span className="truncate">{DASHBOARD_ITEM.label}</span>}
+            </Link>
+          </li>
+
+          {NAV_GROUPS.map((group) => (
             <li key={group.label}>
               {/* Separador / cabecera de grupo */}
               {collapsed ? (
-                gi > 0 && <div className="my-1 border-t border-sidebar-border mx-1" />
+                <div className="my-1 border-t border-sidebar-border mx-1" />
               ) : (
                 <button
                   onClick={() => toggleGroup(group.label)}
                   className={cn(
                     'w-full flex items-center justify-between px-2 py-1 rounded-md',
                     'text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40',
-                    'hover:text-sidebar-foreground/70 transition-colors',
-                    gi > 0 ? 'mt-3' : 'mt-1'
+                    'hover:text-sidebar-foreground/70 transition-colors mt-3'
                   )}
                 >
                   <span>{group.label}</span>
