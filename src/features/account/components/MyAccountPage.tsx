@@ -58,7 +58,7 @@ export function MyAccountPage() {
     onCancelAppointment, isDeleting, onDeleteAccount, handleLogout,
   } = useAccount()
 
-  const filteredCitas     = useMemo(() => filterCitasCuenta([...citas].sort((a, b) => a.fecha.localeCompare(b.fecha)), qCitas), [citas, qCitas])
+  const filteredCitas     = useMemo(() => filterCitasCuenta([...citas].sort((a, b) => b.fecha.localeCompare(a.fecha)), qCitas), [citas, qCitas])
   const filteredServicios = useMemo(() => filterServiciosCuenta(servicios, qServicios), [servicios, qServicios])
 
   const citasPag     = usePagination(filteredCitas)
@@ -69,6 +69,10 @@ export function MyAccountPage() {
   useEffect(() => {
     if (searchParams.get('new-appointment') === 'true') setShowCitaForm(true)
   }, [searchParams])
+
+  useEffect(() => {
+    if (showCitaForm) onCitaFechaChange(citaFecha)
+  }, [showCitaForm])
 
   // ── Guards ────────────────────────────────────────────────────────────────
   if (!getAuthToken() || !getAuthRol()) return <Navigate to="/login" replace />
