@@ -16,29 +16,26 @@ interface NavItem {
   permiso?: string
 }
 
+const DASHBOARD_ITEM: NavItem = { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard }
+
 // Grupos según el flujo real del negocio
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: 'General',
-    items: [
-      { label: 'Dashboard',        href: '/admin/dashboard',    icon: LayoutDashboard },
-    ],
-  },
-  {
-    label: 'Flujo de venta',
+    label: 'Operaciones',
     items: [
       { label: 'Clientes',         href: '/admin/clients',      icon: UserCircle,    permiso: 'CLIENTES.VER' },
       { label: 'Citas',            href: '/admin/appointments', icon: Calendar,      permiso: 'CITAS.VER' },
       { label: 'Ventas',           href: '/admin/sales',        icon: ShoppingBag,   permiso: 'VENTAS.VER' },
       { label: 'Servicios',        href: '/admin/orders',       icon: ClipboardList, permiso: 'PEDIDOS.VER' },
       { label: 'Pagos',            href: '/admin/payments',     icon: CreditCard,    permiso: 'PAGOS.VER' },
+      { label: 'Calculadora',       href: '/admin/calculator',  icon: Calculator,    permiso: 'MARCOS.VER' },
     ],
   },
   {
     label: 'Configuración',
     items: [
       { label: 'Tipos de Servicio', href: '/admin/services',    icon: Wrench,        permiso: 'SERVICIOS.VER' },
-      { label: 'Calculadora',       href: '/admin/calculator',  icon: Calculator,    permiso: 'MARCOS.VER' },
+      
       { label: 'Usuarios',          href: '/admin/users',       icon: Users,         permiso: 'USUARIOS.VER' },
       { label: 'Roles',             href: '/admin/roles',       icon: Shield,        permiso: 'ROLES.VER' },
       { label: 'Permisos',          href: '/admin/permissions', icon: ShieldCheck,   permiso: 'PERMISOS.VER' },
