@@ -28,7 +28,7 @@ import {
 import {
   CalendarDays, LogOut, User, Lock, AlertTriangle,
   Plus, Clock, CalendarPlus, Wrench, X, ChevronDown,
-  Sparkles, ArrowRight, MapPin, MessageCircle,
+  ClipboardList, ArrowRight, MapPin, MessageCircle, Phone,
 } from 'lucide-react'
 import { TimePicker } from '@/src/shared/components/TimePicker'
 import { DatePicker }  from '@/src/shared/components/DatePicker'
@@ -87,7 +87,7 @@ export function MyAccountPage() {
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 h-16 bg-card/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 shrink-0">
-        <span className="font-serif italic font-bold text-secondary">Arte Café</span>
+        <img src="/softwart-logo.png" alt="SoftwArt" className="h-8 w-8 object-contain" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -216,7 +216,7 @@ export function MyAccountPage() {
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
+                    <ClipboardList className="h-4 w-4 text-primary" />
                     <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Servicios recientes</h2>
                   </div>
                   {servicios.length > 0 && (
@@ -289,7 +289,10 @@ export function MyAccountPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Contacto</h2>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Phone className="h-4 w-4 text-primary" />
+                    <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Contacto</h2>
+                  </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex gap-3 items-start">
                       <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
