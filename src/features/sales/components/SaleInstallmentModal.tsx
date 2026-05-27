@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import type { AbonoEsperado, EstadoPago, EstadoPagos, MetodoPago, SaleInstallmentModalProps } from '../types'
-import { inputCls, labelCls, selectCls } from '../utils'
+import { inputCls, labelCls } from '../utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
 import { Button }  from '@/src/shared/components/ui/button'
 import { Badge }   from '@/src/shared/components/ui/badge'
@@ -213,17 +213,22 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
                     </div>
 
                     <div>
-                      <label className={labelCls} htmlFor="abono-metodo">Método de pago <span className="text-destructive">*</span></label>
-                      <Select value={idMetodo} onValueChange={setIdMetodo}>
-                        <SelectTrigger id="abono-metodo" className={selectCls}>
-                          <SelectValue placeholder="Seleccionar..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {metodos.map(m => (
-                            <SelectItem key={m.id_metodo_pago} value={String(m.id_metodo_pago)}>{m.nombre}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <label className={labelCls}>Método de pago <span className="text-destructive">*</span></label>
+                      <div className="flex rounded-lg border border-border overflow-hidden mt-1">
+                        {metodos.map(m => (
+                          <button
+                            key={m.id_metodo_pago}
+                            type="button"
+                            onClick={() => setIdMetodo(String(m.id_metodo_pago))}
+                            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors
+                              ${idMetodo === String(m.id_metodo_pago)
+                                ? 'bg-secondary text-secondary-foreground'
+                                : 'bg-background text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                          >
+                            {m.nombre}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="flex gap-2 self-end">
