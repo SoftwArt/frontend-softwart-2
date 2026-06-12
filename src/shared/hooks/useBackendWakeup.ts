@@ -1,30 +1,42 @@
 // src/shared/hooks/useBackendWakeup.ts
 // Pinga el backend al cargar para despertar el servidor (Render cold start).
-// Solo muestra el splash si el backend no responde en SHOW_AFTER_MS.
-// Si el backend ya está caliente (responde rápido), la app carga sin interrupciones.
-import { useEffect, useState } from 'react'
+// Muestra el banner solo si el backend tarda más de SHOW_AFTER_MS.
+// Reintenta hasta que el backend responda — el banner persiste hasta que conecta.
+import { useEffect, useRef, useState } from 'react'
 
-const API_URL      = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
-const SHOW_AFTER_MS = 800    // solo muestra splash si el backend tarda más de esto
-const MAX_MS        = 30000  // tiempo máximo de espera antes de continuar igual
+const API_URL       = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+const SHOW_AFTER_MS = 800   // muestra el banner si el backend tarda más de esto
+const RETRY_MS      = 5000  // intervalo entre reintentos
 
 export function useBackendWakeup() {
-  const [showSplash, setShowSplash] = useState(false)
+  const [showBanner, setShowBanner] = useState(false)
+  const stopped = useRef(false)
 
   useEffect(() => {
-    const controller  = new AbortController()
-    const splashTimer = setTimeout(() => setShowSplash(true), SHOW_AFTER_MS)
-    const giveUp      = setTimeout(() => { controller.abort(); setShowSplash(false) }, MAX_MS)
+    stopped.current = false
+    const showTimer = setTimeout(() => setShowBanner(true), SHOW_AFTER_MS)
 
-    const dismiss = () => { clearTimeout(splashTimer); setShowSplash(false) }
+    async function ping() {
+      while (!stopped.current) {
+        try {
+          await fetch(`${API_URL}/api/services`, { signal: AbortSignal.timeout(RETRY_MS) })
+          clearTimeout(showTimer)
+          setShowBanner(false)
+          return
+        } catch {
+          // backend aún no responde — espera antes de reintentar
+          await new Promise(r => setTimeout(r, RETRY_MS))
+        }
+      }
+    }
 
-    fetch(`${API_URL}/api/services`, { signal: controller.signal })
-      .then(dismiss)
-      .catch(dismiss)
-      .finally(() => clearTimeout(giveUp))
+    ping()
 
-    return () => { clearTimeout(splashTimer); clearTimeout(giveUp); controller.abort() }
+    return () => {
+      stopped.current = true
+      clearTimeout(showTimer)
+    }
   }, [])
 
-  return showSplash
+  return showBanner
 }

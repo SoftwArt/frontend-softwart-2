@@ -3,8 +3,8 @@
 // ============================================================
 
 import { lazy, Suspense } from 'react'
-import { useBackendWakeup } from '@/src/shared/hooks/useBackendWakeup'
-import { SplashScreen }     from '@/src/shared/components/SplashScreen'
+import { useBackendWakeup }      from '@/src/shared/hooks/useBackendWakeup'
+import { BackendWakeupBanner }   from '@/src/shared/components/BackendWakeupBanner'
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { checkAuthValidity } from '@/src/shared/lib/checkAuth'
 import { Toaster } from 'sonner'
@@ -119,7 +119,6 @@ function RouteFallback() {
 
 export default function App() {
   const showSplash = useBackendWakeup()
-  if (showSplash) return <SplashScreen />
 
   return (
     <>
@@ -162,6 +161,7 @@ export default function App() {
       </Suspense>
 
       <Toaster position="bottom-right" richColors closeButton />
+      <BackendWakeupBanner show={showSplash} />
     </>
   )
 }
