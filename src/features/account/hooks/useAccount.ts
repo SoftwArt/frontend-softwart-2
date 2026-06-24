@@ -34,7 +34,10 @@ export function useAccount() {
   , [citas])
 
   const serviciosActivos = useMemo(() =>
-    servicios.filter(s => !s.estado.toLowerCase().includes('finaliz')).length
+    servicios.filter(s => {
+      const e = s.estado.toLowerCase()
+      return !e.includes('finaliz') && !e.includes('cancel')
+    }).length
   , [servicios])
 
   const ultimoServicio = useMemo(() =>

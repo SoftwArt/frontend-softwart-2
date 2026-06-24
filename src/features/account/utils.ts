@@ -65,6 +65,7 @@ export function estadoBadgeClasses(nombre?: string): string {
 
 export function estadoServicioBadgeClasses(estado: string): string {
   const s = estado.toLowerCase()
+  if (s.includes('cancel'))   return 'bg-red-100 text-red-800'
   if (s.includes('finaliz'))  return 'bg-emerald-100 text-emerald-800'
   if (s.includes('preparac')) return 'bg-amber-100 text-amber-800'
   return 'bg-muted text-muted-foreground'

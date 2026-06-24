@@ -4,7 +4,7 @@ import { useEstadosServicio } from '../hooks/useEstadosServicio'
 import { useSalesOptions, useServicesOptions, useFrameOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo } from 'react'
 import type { Pedido } from '../types'
-import { inputCls, labelCls, badgeClass, filterPedidos } from '../utils'
+import { inputCls, labelCls, badgeClassByName, filterPedidos } from '../utils'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
@@ -18,6 +18,7 @@ import { Badge } from '@/src/shared/components/ui/badge'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { StatusSelect } from '@/src/shared/components/StatusSelect'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { ViewDialog } from '@/src/shared/components/ViewDialog'
 import { Combobox } from '@/src/shared/components/Combobox'
@@ -65,8 +66,12 @@ export function OrdersPage() {
     estados.find(e => e.id_estado === id)?.nombre ?? `Estado ${id}`
   const estadoColor = (id: number) => {
     const idx = estados.findIndex(e => e.id_estado === id)
-    return badgeClass(idx === -1 ? 0 : idx)
+    return badgeClassByName(estadoNombre(id), idx === -1 ? 0 : idx)
   }
+  const isCancelado = (id: number) => estadoNombre(id).toLowerCase().includes('cancelado')
+
+  // Confirmación antes de cancelar (estado terminal e irreversible)
+  const [cancelTarget, setCancelTarget] = useState<{ id: number; id_estado: number } | null>(null)
 
   const resetForm = () => {
     setIdVenta(''); setIdServicio(''); setIdMarco(''); setIdEstado('')
@@ -114,10 +119,18 @@ export function OrdersPage() {
     } finally { setIsSubmitting(false) }
   }
 
-  const handleCambiarEstado = async (id: number, id_estado: number) => {
+  const aplicarCambioEstado = async (id: number, id_estado: number) => {
     const err = await onChangeStatus(id, id_estado)
     if (err) { setActionError(err); toast.error(err) }
     else toast.success('Estado actualizado')
+  }
+
+  const handleCambiarEstado = async (id: number, id_estado: number) => {
+    // Cancelar es terminal → pedir confirmación antes de aplicar
+    if (estadoNombre(id_estado).toLowerCase().includes('cancelado')) {
+      setCancelTarget({ id, id_estado }); return
+    }
+    await aplicarCambioEstado(id, id_estado)
   }
 
   return (
@@ -194,10 +207,11 @@ export function OrdersPage() {
                       <StatusSelect
                         value={String(p.id_estado)}
                         onValueChange={(v) => handleCambiarEstado(p.id_detalle, Number(v))}
+                        disabled={isCancelado(p.id_estado)}
                         options={estados.map((e, i) => ({
                           value: String(e.id_estado),
                           label: e.nombre,
-                          badgeCls: badgeClass(i),
+                          badgeCls: badgeClassByName(e.nombre, i),
                         }))}
                       />
                     </TableCell>
@@ -303,6 +317,30 @@ export function OrdersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmación de cancelación (estado terminal) */}
+      <AlertDialog open={cancelTarget !== null} onOpenChange={(o) => { if (!o) setCancelTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cancelar este servicio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción es definitiva: un servicio cancelado no podrá modificarse ni volver a cambiar de estado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (cancelTarget) aplicarCambioEstado(cancelTarget.id, cancelTarget.id_estado)
+                setCancelTarget(null)
+              }}
+            >
+              Sí, cancelar servicio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
