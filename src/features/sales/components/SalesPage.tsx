@@ -66,6 +66,16 @@ export function SalesPage() {
   const [observacion, setObservacion] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const confirmAnular = async () => {
+    if (!anularTarget) return
+    const { id } = anularTarget
+    setAnularTarget(null)
+    try {
+      await withToast(onToggleStatus(id), 'Venta anulada')
+      await refetch() // refrescar: la anulación cambió abonos/servicios en cascada
+    } catch { /* withToast ya mostró el error y el hook revirtió el estado */ }
+  }
+
   const resetForm = () => { setIdCliente(''); setIdCita(''); setFecha(''); setTotal(''); setObservacion(''); setErrors({}); setEditingId(null) }
   const openCreate = () => { resetForm(); setFecha(new Date().toISOString().slice(0, 10)); setIsFormOpen(true) }
   const openEdit = (v: Venta) => {
@@ -277,17 +287,14 @@ export function SalesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Anular esta venta?</AlertDialogTitle>
             <AlertDialogDescription>
-              {anularTarget?.label}. Esta acción es definitiva: una venta anulada no se puede reactivar.
+              {anularTarget?.label}. Se cancelarán los servicios no finalizados y se anularán los abonos pendientes. Esta acción es definitiva y no se puede reactivar. Si la venta tiene pagos validados, primero debes registrar la devolución.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Volver</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (anularTarget) withToast(onToggleStatus(anularTarget.id), 'Venta anulada')
-                setAnularTarget(null)
-              }}
+              onClick={confirmAnular}
             >
               Sí, anular venta
             </AlertDialogAction>

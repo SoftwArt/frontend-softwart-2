@@ -43,7 +43,10 @@ export function useSales() {
   const onToggleStatus = async (id: number) => {
     setVentas(prev => prev.map(v => v.id_venta === id ? { ...v, estado: !v.estado } : v))
     try { await apiRequest(`/api/sales/${id}/estado`, { method: 'PATCH' }) }
-    catch { setVentas(prev => prev.map(v => v.id_venta === id ? { ...v, estado: !v.estado } : v)) }
+    catch (e) {
+      setVentas(prev => prev.map(v => v.id_venta === id ? { ...v, estado: !v.estado } : v))
+      throw e
+    }
   }
 
   return { ventas, isLoading, error, onCreate, onEdit, onDelete, onToggleStatus, refetch: fetchAll }
