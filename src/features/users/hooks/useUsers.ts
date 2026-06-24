@@ -20,11 +20,12 @@ export function useUsers() {
       const res = await apiRequest<ApiResponse<BackendUsuario[]>>('/api/users?limit=500')
       setUsuarios(
         (res.data ?? []).map((u) => ({
-          id_usuario: u.id_usuario,
-          correo:     u.correo,
-          clave:      '',
-          estado:     u.estado,
-          id_rol:     u.role?.id_rol ?? 0,
+          id_usuario:    u.id_usuario,
+          correo:        u.correo,
+          clave:         '',
+          estado:        u.estado,
+          id_rol:        u.role?.id_rol ?? 0,
+          es_admin_base: u.es_admin_base ?? false,
         }))
       )
     } catch (e) {
@@ -58,11 +59,12 @@ export function useUsers() {
     )
     try {
       await apiRequest(`/api/users/${id}/estado`, { method: 'PATCH' })
-    } catch {
+    } catch (e) {
       // Revertir si falla
       setUsuarios((prev) =>
         prev.map((u) => u.id_usuario === id ? { ...u, estado: !u.estado } : u)
       )
+      throw e
     }
   }
 

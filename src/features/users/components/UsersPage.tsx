@@ -121,7 +121,7 @@ export function UsersPage() {
                       {ROL_LABELS[u.id_rol] ?? `Rol ${u.id_rol}`}
                     </Badge>
                   </TableCell>
-                  <TableCell><ToggleSwitch value={u.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(u.id_usuario), 'Estado actualizado')} options={ACTIVO_OPTIONS} /></TableCell>
+                  <TableCell><ToggleSwitch value={u.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(u.id_usuario), 'Estado actualizado')} options={ACTIVO_OPTIONS} disabled={u.es_admin_base} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="icon" onClick={() => openView(u)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>

@@ -36,7 +36,10 @@ export function useRoles() {
   const onToggleStatus = async (id: number) => {
     setRoles(prev => prev.map(r => r.id_rol === id ? { ...r, estado: !r.estado } : r))
     try { await apiRequest(`/api/roles/${id}/estado`, { method: 'PATCH' }) }
-    catch { setRoles(prev => prev.map(r => r.id_rol === id ? { ...r, estado: !r.estado } : r)) }
+    catch (e) {
+      setRoles(prev => prev.map(r => r.id_rol === id ? { ...r, estado: !r.estado } : r))
+      throw e
+    }
   }
 
   return { roles, isLoading, error, onCreate, onEdit, onDelete, onToggleStatus }

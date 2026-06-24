@@ -104,7 +104,7 @@ export function RolesPage() {
           
                     <TableCell className="text-foreground font-medium">{r.nombre}</TableCell>
                     <TableCell className="text-muted-foreground">{r.descripcion ?? '—'}</TableCell>
-                    <TableCell><ToggleSwitch value={r.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(r.id_rol), 'Estado actualizado')} options={ACTIVO_OPTIONS} /></TableCell>
+                    <TableCell><ToggleSwitch value={r.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(r.id_rol), 'Estado actualizado')} options={ACTIVO_OPTIONS} disabled={r.nombre.toLowerCase() === 'admin'} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openView(r)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
