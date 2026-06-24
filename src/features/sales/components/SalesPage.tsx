@@ -48,6 +48,8 @@ export function SalesPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [viewingItem, setViewingItem] = useState<Venta | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // Confirmación de anulación (desactivar es definitivo: no se puede reactivar)
+  const [anularTarget, setAnularTarget] = useState<{ id: number; label: string } | null>(null)
   const [idCliente, setIdCliente] = useState('')
   const [idCita, setIdCita] = useState('')
 
@@ -156,7 +158,7 @@ export function SalesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <ToggleSwitch value={v.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(v.id_venta), 'Estado actualizado')} options={ACTIVO_OPTIONS} disabled={!v.estado} />
+                      <ToggleSwitch value={v.estado ? 1 : 0} onChange={() => setAnularTarget({ id: v.id_venta, label: `Venta #${v.id_venta} · ${clienteLabel}` })} options={ACTIVO_OPTIONS} disabled={!v.estado} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -268,6 +270,30 @@ export function SalesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmación de anulación de venta */}
+      <AlertDialog open={anularTarget !== null} onOpenChange={(o) => { if (!o) setAnularTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Anular esta venta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {anularTarget?.label}. Esta acción es definitiva: una venta anulada no se puede reactivar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (anularTarget) withToast(onToggleStatus(anularTarget.id), 'Venta anulada')
+                setAnularTarget(null)
+              }}
+            >
+              Sí, anular venta
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Modal abonos */}
       {abonoModalVenta && (
