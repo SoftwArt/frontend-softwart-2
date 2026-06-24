@@ -99,7 +99,7 @@ export function PaymentsPage() {
       setAlertEstado({ open: true, msg: 'Un pago validado no puede cambiar de estado. Si es necesario, solo se puede anular.', pagoId: pago.id_pago, showAnular: true })
       return
     }
-    onChangeStatus(pago.id_pago, nuevoIdEstado)
+    withToast(onChangeStatus(pago.id_pago, nuevoIdEstado), 'Estado actualizado')
   }
 
   const idEstadoAnulado = estadosPago.find(e => e.nombre.toLowerCase().includes('anulado'))?.id_estado_pago

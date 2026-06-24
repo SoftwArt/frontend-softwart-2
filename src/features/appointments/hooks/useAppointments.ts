@@ -58,12 +58,19 @@ export function useAppointments() {
   }
 
   // PATCH /api/appointment-status/cita/:id/estado  (endpoint especial del backend)
+  // Optimistic update — refresca solo la fila, sin recargar toda la lista.
   const onChangeStatus = async (id: number, id_estado_cita: number) => {
-    await apiRequest(`/api/appointment-status/cita/${id}/estado`, {
-      method: 'PATCH',
-      body: JSON.stringify({ id_estado_cita }),
-    })
-    await fetchAll()
+    const anterior = citas.find(c => c.id_cita === id)?.id_estado_cita
+    setCitas(prev => prev.map(c => c.id_cita === id ? { ...c, id_estado_cita } : c))
+    try {
+      await apiRequest(`/api/appointment-status/cita/${id}/estado`, {
+        method: 'PATCH',
+        body: JSON.stringify({ id_estado_cita }),
+      })
+    } catch (e) {
+      setCitas(prev => prev.map(c => c.id_cita === id ? { ...c, id_estado_cita: anterior ?? id_estado_cita } : c))
+      throw e
+    }
   }
 
   return { citas, estadosCita, isLoading, error, onCreate, onEdit, onDelete, onChangeStatus, refresh: fetchAll }

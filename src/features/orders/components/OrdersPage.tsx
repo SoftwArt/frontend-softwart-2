@@ -116,7 +116,8 @@ export function OrdersPage() {
 
   const handleCambiarEstado = async (id: number, id_estado: number) => {
     const err = await onChangeStatus(id, id_estado)
-    if (err) setActionError(err)
+    if (err) { setActionError(err); toast.error(err) }
+    else toast.success('Estado actualizado')
   }
 
   return (

@@ -75,12 +75,20 @@ export function usePayments() {
   }
 
   // PATCH /api/payment-status/pago/:id/estado  — endpoint específico del backend
+  // Optimistic update — refresca solo la fila, sin recargar toda la lista.
   const onChangeStatus = async (id: number, id_estado_pago: number) => {
-    await apiRequest(`/api/payment-status/pago/${id}/estado`, {
-      method: 'PATCH',
-      body: JSON.stringify({ id_estado_pago }),
-    })
-    await fetchAll()
+    const prev = pagos.find(p => p.id_pago === id)?.id_estado_pago
+    setPagos(ps => ps.map(p => p.id_pago === id ? { ...p, id_estado_pago } : p))
+    try {
+      await apiRequest(`/api/payment-status/pago/${id}/estado`, {
+        method: 'PATCH',
+        body: JSON.stringify({ id_estado_pago }),
+      })
+    } catch (e) {
+      if (prev !== undefined)
+        setPagos(ps => ps.map(p => p.id_pago === id ? { ...p, id_estado_pago: prev } : p))
+      throw e
+    }
   }
 
   // PATCH /api/payment-methods/pago/:id/metodo  — optimistic update, sin fetchAll

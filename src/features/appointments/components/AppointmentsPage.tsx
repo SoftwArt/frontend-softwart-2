@@ -206,7 +206,7 @@ export function AppointmentsPage() {
                       <TableCell>
                         <StatusSelect
                           value={String(c.id_estado_cita)}
-                          onValueChange={(v) => onChangeStatus(c.id_cita, Number(v))}
+                          onValueChange={(v) => withToast(onChangeStatus(c.id_cita, Number(v)), 'Estado actualizado')}
                           options={estadosCita.map(e => ({
                             value:    String(e.id_estado_cita),
                             label:    e.nombre,
