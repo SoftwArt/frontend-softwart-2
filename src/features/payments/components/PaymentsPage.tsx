@@ -99,6 +99,11 @@ export function PaymentsPage() {
       setAlertEstado({ open: true, msg: 'Un pago validado no puede cambiar de estado. Si es necesario, solo se puede anular.', pagoId: pago.id_pago, showAnular: true })
       return
     }
+    // Anular es terminal e irreversible → pedir confirmación antes de aplicar
+    if (estadoNuevo.includes('anulado')) {
+      setAlertEstado({ open: true, msg: 'Anular un pago es definitivo: no podrá modificarse ni reactivarse después.', pagoId: pago.id_pago, showAnular: true })
+      return
+    }
     withToast(onChangeStatus(pago.id_pago, nuevoIdEstado), 'Estado actualizado')
   }
 
@@ -238,11 +243,11 @@ export function PaymentsPage() {
       <AlertDialog open={alertEstado.open} onOpenChange={v => { if (!v) setAlertEstado({ open: false, msg: '' }) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Estado no modificable</AlertDialogTitle>
+            <AlertDialogTitle>{alertEstado.showAnular ? '¿Anular este pago?' : 'Estado no modificable'}</AlertDialogTitle>
             <AlertDialogDescription>{alertEstado.msg}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cerrar</AlertDialogCancel>
+            <AlertDialogCancel>{alertEstado.showAnular ? 'Volver' : 'Cerrar'}</AlertDialogCancel>
             {alertEstado.showAnular && idEstadoAnulado && (
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
