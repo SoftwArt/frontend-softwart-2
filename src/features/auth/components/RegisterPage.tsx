@@ -5,6 +5,8 @@ import { useRegister } from '../hooks/useRegister'
 import { Button }   from '@/src/shared/components/ui/button'
 import { Input }    from '@/src/shared/components/ui/input'
 import { Checkbox } from '@/src/shared/components/ui/checkbox'
+import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
+import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { ArrowLeft, Eye, EyeOff, LogIn } from 'lucide-react'
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -43,13 +45,14 @@ export function RegisterPage() {
 
   const passwordsMatch    = clave === confirmarClave
   const showMismatchError = confirmarClave.length > 0 && !passwordsMatch
+  const passwordValid     = validatePassword(clave).valid
   const isFormValid =
     tipoDocumento && documento && nombre && correo &&
-    telefono && clave && confirmarClave && passwordsMatch && acceptTerms
+    telefono && clave && confirmarClave && passwordsMatch && passwordValid && acceptTerms
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!passwordsMatch) return
+    if (!passwordsMatch || !passwordValid) return
     await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave })
   }
 
@@ -219,6 +222,8 @@ export function RegisterPage() {
                 )}
               </div>
             </div>
+
+            <PasswordChecklist password={clave} />
 
             {/* Términos */}
             <div className="flex items-start gap-3 pt-2">

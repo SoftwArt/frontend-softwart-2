@@ -13,6 +13,7 @@ import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { formatDate }     from '@/src/shared/lib/formatDate'
 import { SearchInput }    from '@/src/shared/components/SearchInput'
+import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
 import { Pagination }     from '@/src/shared/components/Pagination'
 import { usePagination }  from '@/src/shared/hooks/usePagination'
 import { Skeleton }       from '@/src/shared/components/ui/skeleton'
@@ -638,6 +639,7 @@ export function MyAccountPage() {
                       <label className={labelCls} htmlFor="clave-nueva">Nueva contraseña</label>
                       <input id="clave-nueva" type="password" value={claveNueva}
                         onChange={e => setClaveNueva(e.target.value)} className={inputCls} />
+                      <PasswordChecklist password={claveNueva} />
                     </div>
                     <div>
                       <label className={labelCls} htmlFor="clave-confirm">Confirmar contraseña</label>

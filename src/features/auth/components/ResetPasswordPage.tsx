@@ -5,6 +5,8 @@ import { useResetPassword } from '../hooks/useResetPassword'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { Button } from '@/src/shared/components/ui/button'
 import { Input }  from '@/src/shared/components/ui/input'
+import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
+import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, LogIn, ShieldCheck } from 'lucide-react'
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -44,11 +46,13 @@ export function ResetPasswordPage() {
   const [resendError,   setResendError]   = useState('')
 
   const passwordsMatch = nuevaClave === confirmarClave
+  const passwordValid  = validatePassword(nuevaClave).valid
   const canSubmit =
     token.trim() !== '' &&
     nuevaClave.trim() !== '' &&
     confirmarClave.trim() !== '' &&
     passwordsMatch &&
+    passwordValid &&
     !isLoading
 
   useEffect(() => {
@@ -67,6 +71,8 @@ export function ResetPasswordPage() {
     setErrorToken(''); setErrorNueva(''); setErrorConfirmar('')
     if (!token.trim())          { setErrorToken('Ingresa el código que recibiste en tu correo'); return }
     if (!nuevaClave.trim())     { setErrorNueva('Campo requerido'); return }
+    const pwCheck = validatePassword(nuevaClave)
+    if (!pwCheck.valid)         { setErrorNueva(pwCheck.firstError!); return }
     if (!confirmarClave.trim()) { setErrorConfirmar('Campo requerido'); return }
     if (!passwordsMatch)        { setErrorConfirmar('Las contraseñas no coinciden'); return }
     try {
@@ -247,6 +253,7 @@ export function ResetPasswordPage() {
                           </button>
                         </div>
                         {errorNueva && <p className="text-sm text-destructive mt-1">{errorNueva}</p>}
+                        <PasswordChecklist password={nuevaClave} />
                       </div>
 
                       <div>

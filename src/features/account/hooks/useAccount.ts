@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
+import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { tomorrowString } from '../utils'
 import { BookedSlot } from '@/src/shared/components/TimePicker'
 import type { PerfilCliente, Cita, Servicio } from '../types'
@@ -117,7 +118,8 @@ export function useAccount() {
     e.preventDefault()
     setClaveMsg(null)
     if (!claveActual.trim()) { setClaveMsg('Ingresa tu contraseña actual'); setClaveMsgType('err'); return }
-    if (claveNueva.length < 6) { setClaveMsg('La nueva contraseña debe tener al menos 6 caracteres'); setClaveMsgType('err'); return }
+    const pwCheck = validatePassword(claveNueva)
+    if (!pwCheck.valid) { setClaveMsg(pwCheck.firstError!); setClaveMsgType('err'); return }
     if (claveNueva !== claveConfirm) { setClaveMsg('Las contraseñas no coinciden'); setClaveMsgType('err'); return }
     setIsSavingClave(true)
     try {
