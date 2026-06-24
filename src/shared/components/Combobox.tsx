@@ -3,7 +3,7 @@
 // Searchable select usando Command + Popover de shadcn/ui
 // ============================================================
 import { useState } from 'react'
-import { Check, ChevronsUpDown, Search } from 'lucide-react'
+import { Check, ChevronsUpDown } from 'lucide-react'
 import {
   Command,
   CommandEmpty,
@@ -81,13 +81,10 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 bg-card border-border" align="start">
         <Command id={listId} className="bg-card">
-          <div className="flex items-center border-b border-border px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-            <CommandInput
-              placeholder={searchPlaceholder}
-              className="h-9 bg-transparent text-foreground placeholder:text-muted-foreground border-0 focus:ring-0"
-            />
-          </div>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            className="text-foreground placeholder:text-muted-foreground"
+          />
           <CommandList>
             <CommandEmpty className="py-4 text-center text-sm text-muted-foreground">
               {emptyText}
