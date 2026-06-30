@@ -18,6 +18,8 @@ import { SearchInput }  from '@/src/shared/components/SearchInput'
 import { FilterBar }    from '@/src/shared/components/FilterBar'
 import { usePagination } from '@/src/shared/hooks/usePagination'
 import { Pagination } from '@/src/shared/components/Pagination'
+import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
+import { validatePassword } from '@/src/shared/lib/passwordValidation'
 
 
 export function UsersPage() {
@@ -52,7 +54,13 @@ export function UsersPage() {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
     if (!correo.trim())              newErrors.correo = 'Campo requerido'
-    if (!editingId && !clave.trim()) newErrors.clave  = 'Campo requerido'
+    if (!editingId) {
+      if (!clave.trim())             newErrors.clave  = 'Campo requerido'
+      else {
+        const pw = validatePassword(clave)
+        if (!pw.valid)               newErrors.clave  = pw.firstError ?? 'Contraseña no válida'
+      }
+    }
     if (!idRol)                      newErrors.idRol  = 'Campo requerido'
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
     setIsSubmitting(true)
@@ -169,6 +177,7 @@ export function UsersPage() {
                 <label className={labelCls} htmlFor="usr-clave">Contraseña <span className="text-destructive">*</span></label>
                 <input id="usr-clave" type="password" value={clave} placeholder='Ingrese la contraseña...' onChange={(e) => { setClave(e.target.value); if (errors.clave) setErrors({...errors, clave:''}) }} className={inputCls} />
                 {errors.clave && <p className="mt-1 text-xs text-destructive">{errors.clave}</p>}
+                <PasswordChecklist password={clave} />
               </div>
             )}
             <div>
