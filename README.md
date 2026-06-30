@@ -69,6 +69,8 @@ const { items, isLoading, onCreate, onEdit, onDelete } = useModulo()
 - Sidebar items filtered by the authenticated user's permissions — an item is hidden if the role lacks the corresponding `MODULE.VER` permission; Dashboard is always visible
 - Orders table shows client name with sale reference below; client name searchable
 - Permission assignment cascade: enabling a non-VIEW permission auto-grants VIEW for that module; removing VIEW removes all other permissions for the same module
+- Voiding a sale or payment and cancelling a service require `AlertDialog` confirmation; `Cancelado` (service) and `Anulado` (payment) are terminal — locked in the UI and guarded with 409 server-side. Voiding a sale cascades (or blocks with 409 if it has validated payments)
+- Admin role and the seed admin account (`id_usuario = 1`) cannot be deactivated — their status toggles are disabled in the UI and guarded server-side
 
 ### Client portal (`/my-account`)
 - Sticky topbar with avatar (client name initial), client name, and logout dropdown — no separate navbar
@@ -98,6 +100,7 @@ const { items, isLoading, onCreate, onEdit, onDelete } = useModulo()
 | `AdminSidebar` | Collapsible sidebar (56px/256px), grouped by business flow, filtered by permissions |
 | `withToast(promise, msg)` | Wraps any async op with automatic success/error toast |
 | `useMyPermissions` | Fetches `GET /api/auth/me/permissions`; fail-safe (shows all on error) |
+| `PasswordChecklist` + `validatePassword` | Live password-policy checklist (register, reset, change password, admin user creation) — mirrors backend `claveSchema` |
 
 ---
 
@@ -109,7 +112,7 @@ const { items, isLoading, onCreate, onEdit, onDelete } = useModulo()
 
 **Hook/component separation**: components are pure JSX + local UI state (open/close toggles). All server state, API calls, form state, submit handlers, validation, and derived values live in the feature hook. Pure helper functions (formatters, badge class resolvers) live in a co-located `utils.ts`. Destructive actions use `AlertDialog` (shadcn/ui) instead of `window.confirm()`.
 
-**Backend wakeup**: the mobile companion app pings `/api/dashboard` on launch to pre-warm the Render free-tier server before the user authenticates.
+**Backend wakeup**: the mobile companion app pings `/services` (public route) on launch to pre-warm the Render free-tier server before the user authenticates.
 
 ---
 

@@ -69,6 +69,8 @@ const { items, isLoading, onCreate, onEdit, onDelete } = useModulo()
 - Items del sidebar filtrados por permisos del usuario — se ocultan si el rol no tiene `MÓDULO.VER`; Dashboard siempre visible
 - Tabla de Servicios muestra nombre de cliente con referencia de venta; cliente buscable por nombre
 - Cascada al asignar permisos: activar un permiso que no es VER añade automáticamente VER para ese módulo; quitar VER quita todos los permisos del mismo módulo
+- Anular una venta o un pago y cancelar un servicio piden confirmación (`AlertDialog`); `Cancelado` (servicio) y `Anulado` (pago) son terminales — bloqueados en la UI y protegidos con 409 en el backend. Anular una venta corre en cascada (o bloquea con 409 si tiene pagos validados)
+- El rol Admin y la cuenta de admin base del seed (`id_usuario = 1`) no se pueden desactivar — sus toggles están deshabilitados en la UI y protegidos en el backend
 
 ### Portal cliente (`/my-account`)
 - Topbar sticky con avatar (inicial del nombre), nombre del cliente y dropdown de sesión — sin navbar separada
@@ -98,6 +100,7 @@ const { items, isLoading, onCreate, onEdit, onDelete } = useModulo()
 | `AdminSidebar` | Sidebar colapsable (56px/256px), agrupado por flujo de negocio, filtrado por permisos |
 | `withToast(promise, msg)` | Envuelve cualquier operación async con toast automático de éxito/error |
 | `useMyPermissions` | Obtiene `GET /api/auth/me/permissions`; fail-safe (muestra todo si falla) |
+| `PasswordChecklist` + `validatePassword` | Checklist de política de contraseña en vivo (registro, reset, cambio de clave, creación de usuarios admin) — espeja el `claveSchema` del backend |
 
 ---
 
@@ -109,7 +112,7 @@ const { items, isLoading, onCreate, onEdit, onDelete } = useModulo()
 
 **Separación hook/componente**: los componentes son JSX puro + UI state local (toggles open/close). Todo el estado del servidor, llamadas a API, estado de formularios, handlers de submit, validaciones y valores derivados viven en el hook del feature. Las funciones auxiliares puras (formateadores, resolvedores de clases de badge) viven en un `utils.ts` co-ubicado. Las acciones destructivas usan `AlertDialog` (shadcn/ui) en lugar de `window.confirm()`.
 
-**Wakeup del backend**: la app móvil complementaria hace un ping a `/api/dashboard` al iniciar para pre-calentar el servidor de Render (free tier) antes de que el usuario se autentique.
+**Wakeup del backend**: la app móvil complementaria hace un ping a `/services` (ruta pública) al iniciar para pre-calentar el servidor de Render (free tier) antes de que el usuario se autentique.
 
 ---
 
