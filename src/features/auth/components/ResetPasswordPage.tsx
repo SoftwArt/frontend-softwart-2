@@ -7,17 +7,17 @@ import { Button } from '@/src/shared/components/ui/button'
 import { Input }  from '@/src/shared/components/ui/input'
 import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
-import { ArrowLeft, Eye, EyeOff, LockKeyhole, LogIn, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Lock, LockKeyhole, LogIn, ShieldCheck } from 'lucide-react'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
-const labelCls = 'block text-xs font-medium capitalize tracking-widest text-foreground/70 mb-1'
+const labelCls = 'block text-xs font-medium capitalize tracking-widest text-foreground/70 mb-2'
 
-// Contraseñas — sin fondo, solo línea inferior
-const passCls =
-  'w-full bg-transparent border-0 border-b border-border ' +
-  'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#002926] ' +
-  'py-3 px-0 h-auto transition-all text-foreground placeholder:text-muted-foreground/50'
+// Inputs de contraseña — mismo estilo que Login/Register (fondo suave, borde inferior, rounded-lg)
+const fieldCls =
+  'bg-[#f5f3ef] border-0 border-b-2 border-transparent ' +
+  'focus-visible:border-[#002926] focus-visible:ring-0 focus-visible:ring-offset-0 ' +
+  'rounded-lg py-4 h-auto transition-all text-foreground placeholder:text-muted-foreground/50'
 
 export function ResetPasswordPage() {
   const { onSubmit, isLoading, error } = useResetPassword()
@@ -34,7 +34,7 @@ export function ResetPasswordPage() {
   const [errorConfirmar, setErrorConfirmar] = useState('')
   const [success,        setSuccess]        = useState(false)
 
-  // Reenviar código
+  // Reenviar enlace
   const [correoReenvio, setCorreoReenvio] = useState('')
   const [isResending,   setIsResending]   = useState(false)
   const [resendOk,      setResendOk]      = useState(false)
@@ -87,7 +87,7 @@ export function ResetPasswordPage() {
       })
       setResendOk(true)
     } catch (err) {
-      setResendError(err instanceof Error ? err.message : 'Error al reenviar el código')
+      setResendError(err instanceof Error ? err.message : 'Error al reenviar el enlace')
     } finally {
       setIsResending(false)
     }
@@ -225,18 +225,19 @@ export function ResetPasswordPage() {
 
                       <div>
                         <label className={labelCls} htmlFor="nueva-clave">Nueva contraseña</label>
-                        <div className="relative">
+                        <div className="relative group">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
                           <Input
                             id="nueva-clave"
                             type={showNueva ? 'text' : 'password'}
                             value={nuevaClave}
                             onChange={e => { setNuevaClave(e.target.value); if (errorNueva) setErrorNueva('') }}
                             placeholder="••••••••"
-                            className={`${passCls} pr-8`}
+                            className={`${fieldCls} pl-12 pr-12`}
                           />
                           <button
                             type="button"
-                            className="absolute right-0 bottom-3 text-muted-foreground/50 hover:text-[#805533] transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                             onClick={() => setShowNueva(v => !v)}
                           >
                             {showNueva ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -248,18 +249,19 @@ export function ResetPasswordPage() {
 
                       <div>
                         <label className={labelCls} htmlFor="confirmar-clave">Confirmar contraseña</label>
-                        <div className="relative">
+                        <div className="relative group">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
                           <Input
                             id="confirmar-clave"
                             type={showConfirmar ? 'text' : 'password'}
                             value={confirmarClave}
                             onChange={e => setConfirmarClave(e.target.value)}
                             placeholder="••••••••"
-                            className={`${passCls} pr-8`}
+                            className={`${fieldCls} pl-12 pr-12`}
                           />
                           <button
                             type="button"
-                            className="absolute right-0 bottom-3 text-muted-foreground/50 hover:text-[#805533] transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                             onClick={() => setShowConfirmar(v => !v)}
                           >
                             {showConfirmar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -283,7 +285,7 @@ export function ResetPasswordPage() {
                       </Button>
                     </div>
 
-                    {/* Reenviar código */}
+                    {/* Reenviar enlace */}
                     <div className="border-t border-border/30 pt-6 space-y-3">
                       <p className="text-xs text-muted-foreground text-center">¿No recibiste el enlace?</p>
                       {resendOk ? (
