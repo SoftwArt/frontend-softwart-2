@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 import { useResetPassword } from '../hooks/useResetPassword'
 import { apiRequest } from '@/src/shared/lib/apiClient'
@@ -13,13 +13,6 @@ const EASE = [0.22, 1, 0.36, 1] as const
 
 const labelCls = 'block text-xs font-medium capitalize tracking-widest text-foreground/70 mb-1'
 
-// Código — grande, mono, centrado, fondo suave
-const codeCls =
-  'w-full bg-[#f5f3ef] border-0 border-b-2 border-border ' +
-  'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#002926] ' +
-  'px-4 py-3 h-auto text-2xl tracking-[0.5em] text-center font-mono ' +
-  'transition-all text-foreground placeholder:text-muted-foreground/30'
-
 // Contraseñas — sin fondo, solo línea inferior
 const passCls =
   'w-full bg-transparent border-0 border-b border-border ' +
@@ -29,12 +22,14 @@ const passCls =
 export function ResetPasswordPage() {
   const { onSubmit, isLoading, error } = useResetPassword()
 
-  const [token,          setToken]          = useState('')
+  // El token de recuperación viaja en el link del email: /reset?token=...
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token') ?? ''
+
   const [nuevaClave,     setNuevaClave]     = useState('')
   const [confirmarClave, setConfirmarClave] = useState('')
   const [showNueva,      setShowNueva]      = useState(false)
   const [showConfirmar,  setShowConfirmar]  = useState(false)
-  const [errorToken,     setErrorToken]     = useState('')
   const [errorNueva,     setErrorNueva]     = useState('')
   const [errorConfirmar, setErrorConfirmar] = useState('')
   const [success,        setSuccess]        = useState(false)
@@ -68,8 +63,7 @@ export function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setErrorToken(''); setErrorNueva(''); setErrorConfirmar('')
-    if (!token.trim())          { setErrorToken('Ingresa el código que recibiste en tu correo'); return }
+    setErrorNueva(''); setErrorConfirmar('')
     if (!nuevaClave.trim())     { setErrorNueva('Campo requerido'); return }
     const pwCheck = validatePassword(nuevaClave)
     if (!pwCheck.valid)         { setErrorNueva(pwCheck.firstError!); return }
@@ -204,7 +198,7 @@ export function ResetPasswordPage() {
                       Nueva contraseña
                     </h1>
                     <p className="text-muted-foreground text-sm leading-relaxed">
-                      Introduce el código de 6 dígitos que enviamos a tu correo y establece tu nueva clave de acceso.
+                      Establece tu nueva clave de acceso.
                     </p>
                   </div>
 
@@ -216,19 +210,15 @@ export function ResetPasswordPage() {
 
                   <form onSubmit={handleSubmit} className="space-y-8">
 
-                    {/* Código de recuperación */}
-                    <div className="space-y-2">
-                      <label className={labelCls} htmlFor="token">Código de recuperación</label>
-                      <Input
-                        id="token" type="text"
-                        maxLength={6}
-                        value={token}
-                        onChange={e => { setToken(e.target.value.replace(/\D/g, '')); if (errorToken) setErrorToken('') }}
-                        placeholder="000000"
-                        className={codeCls}
-                      />
-                      {errorToken && <p className="text-sm text-destructive">{errorToken}</p>}
-                    </div>
+                    {/* Aviso si se llega sin token (link inválido/incompleto) */}
+                    {!token && (
+                      <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+                        <p className="text-sm text-destructive">
+                          Enlace inválido o incompleto. Abre el botón desde tu correo o{' '}
+                          <Link to="/recover" className="underline font-medium">solicita uno nuevo</Link>.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Contraseñas */}
                     <div className="space-y-6">
@@ -295,9 +285,9 @@ export function ResetPasswordPage() {
 
                     {/* Reenviar código */}
                     <div className="border-t border-border/30 pt-6 space-y-3">
-                      <p className="text-xs text-muted-foreground text-center">¿No recibiste el código?</p>
+                      <p className="text-xs text-muted-foreground text-center">¿No recibiste el enlace?</p>
                       {resendOk ? (
-                        <p className="text-xs text-emerald-600 text-center">Código reenviado correctamente.</p>
+                        <p className="text-xs text-emerald-600 text-center">Enlace reenviado correctamente.</p>
                       ) : (
                         <div className="flex gap-2">
                           <Input

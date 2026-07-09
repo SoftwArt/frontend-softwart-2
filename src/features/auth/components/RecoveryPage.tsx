@@ -97,16 +97,12 @@ export function RecoveryPage() {
                     <MailCheck className="h-8 w-8 text-emerald-600" />
                   </div>
                   <div>
-                    <h2 className="font-serif text-2xl font-bold text-foreground">¡Código enviado!</h2>
+                    <h2 className="font-serif text-2xl font-bold text-foreground">¡Enlace enviado!</h2>
                     <p className="text-muted-foreground text-sm mt-2">
-                      Revisa tu correo — te enviamos un código de 6 dígitos.
+                      Revisa tu correo y haz clic en el enlace para restablecer tu contraseña.
+                      Expira en 15 minutos.
                     </p>
                   </div>
-                  <Link to="/reset">
-                    <Button className="w-full bg-[#805533] hover:bg-[#70492c] text-white font-semibold gap-2 py-5 mt-2">
-                      Ingresar mi código <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
                 </m.div>
 
               ) : (
@@ -130,7 +126,7 @@ export function RecoveryPage() {
                     Recuperar contraseña
                   </h1>
                   <p className="text-muted-foreground text-center text-sm mb-10 px-4 leading-relaxed">
-                    Ingresa tu correo para enviarte un código de recuperación
+                    Ingresa tu correo para enviarte un enlace de recuperación
                   </p>
 
                   <form onSubmit={handleSubmit} className="space-y-8">
@@ -161,7 +157,7 @@ export function RecoveryPage() {
                     >
                       {isLoading
                         ? <><Loader2 className="h-4 w-4 animate-spin" />Enviando...</>
-                        : <>Enviar código <ArrowRight className="h-4 w-4" /></>
+                        : <>Enviar enlace <ArrowRight className="h-4 w-4" /></>
                       }
                     </Button>
                   </form>
