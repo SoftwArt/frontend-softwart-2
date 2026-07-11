@@ -91,7 +91,7 @@ export function RegisterPage() {
       </m.header>
 
       {/* ── Main ──────────────────────────────────────────────────────── */}
-      <main className="flex-1 flex items-center justify-center px-4 py-24 md:py-32 relative overflow-hidden">
+      <main className="flex-1 flex items-center justify-center px-4 pt-20 pb-8 relative overflow-hidden">
 
         {/* Blobs decorativos de fondo */}
         <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
@@ -101,14 +101,14 @@ export function RegisterPage() {
 
         <div className="relative z-10 w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
         <m.div
-          className="bg-white rounded-xl border border-white/10 p-8 md:p-12 shadow-2xl"
+          className="bg-white rounded-xl border border-white/10 p-6 sm:p-8 md:p-10 shadow-2xl"
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.1, ease: EASE }}
         >
 
           {/* Cabecera */}
-          <div className="text-center mb-10">
+          <div className="text-center mb-6">
             <h1 className="font-serif italic text-3xl sm:text-4xl md:text-5xl text-[#002926] tracking-tight mb-2">
               Crear cuenta
             </h1>
@@ -117,10 +117,10 @@ export function RegisterPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
 
             {/* Tipo + Número de documento */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls} htmlFor="reg-tipo-doc">Tipo de documento</label>
                 <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
@@ -157,7 +157,7 @@ export function RegisterPage() {
             </div>
 
             {/* Correo + Teléfono */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls} htmlFor="correo">Correo electrónico</label>
                 <Input
@@ -179,7 +179,7 @@ export function RegisterPage() {
             </div>
 
             {/* Contraseña + Confirmar */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls} htmlFor="clave">Contraseña</label>
                 <div className="relative">
@@ -253,7 +253,7 @@ export function RegisterPage() {
               <Button
                 type="submit"
                 disabled={isLoading || !isFormValid}
-                className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-6 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98]"
+                className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-4 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98]"
               >
                 {isLoading ? 'Creando cuenta...' : 'Registrarse'}
               </Button>
@@ -261,7 +261,7 @@ export function RegisterPage() {
           </form>
 
           {/* Enlace login */}
-          <div className="mt-10 text-center">
+          <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               ¿Ya tienes una cuenta?{' '}
               <Link
