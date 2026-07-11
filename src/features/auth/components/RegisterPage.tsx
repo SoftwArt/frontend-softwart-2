@@ -99,7 +99,7 @@ export function RegisterPage() {
           <div className="absolute bottom-[-10%] right-[-5%] w-96 h-96 rounded-full bg-[#06403d] blur-[100px]" />
         </div>
 
-        <div className="relative z-10 w-full max-w-2xl">
+        <div className="relative z-10 w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
         <m.div
           className="bg-white rounded-xl border border-white/10 p-8 md:p-12 shadow-2xl"
           initial={{ opacity: 0, y: 28 }}
@@ -109,7 +109,7 @@ export function RegisterPage() {
 
           {/* Cabecera */}
           <div className="text-center mb-10">
-            <h1 className="font-serif italic text-4xl md:text-5xl text-[#002926] tracking-tight mb-2">
+            <h1 className="font-serif italic text-3xl sm:text-4xl md:text-5xl text-[#002926] tracking-tight mb-2">
               Crear cuenta
             </h1>
             <p className="text-muted-foreground text-sm">

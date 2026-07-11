@@ -74,18 +74,18 @@ export function LoginPage() {
           <div className="absolute bottom-[-10%] right-[-5%] w-96 h-96 rounded-full bg-[#06403d] blur-[100px]" />
         </div>
 
-        <div className="relative z-10 w-full max-w-md">
+        <div className="relative z-10 w-full max-w-sm sm:max-w-md md:max-w-lg">
 
           {/* Card */}
           <m.div
-            className="bg-white rounded-xl shadow-2xl p-8 md:p-12 border border-white/10"
+            className="bg-white rounded-xl shadow-2xl p-6 sm:p-8 md:p-10 lg:p-12 border border-white/10"
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, delay: 0.1, ease: EASE }}
           >
 
             <div className="text-center mb-10">
-              <h1 className="font-serif italic text-4xl md:text-5xl text-[#002926] tracking-tight mb-2">
+              <h1 className="font-serif italic text-3xl sm:text-4xl md:text-5xl text-[#002926] tracking-tight mb-2">
                 Bienvenido
               </h1>
               <p className="text-muted-foreground text-sm">
