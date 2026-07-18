@@ -8,6 +8,7 @@ import { Checkbox } from '@/src/shared/components/ui/checkbox'
 import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
+import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
 import { ArrowLeft, Eye, EyeOff, LogIn } from 'lucide-react'
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -51,14 +52,16 @@ export function RegisterPage() {
   const telefonoValido    = telefono.length > 0 && isTelefonoValid(telefono)
   const showTelefonoRequired = submitAttempted && telefono.length === 0
   const showTelefonoError    = telefono.length > 0 && !telefonoValido
+  const nombreValido      = isNombreLongitudValida(nombre)
+  const showNombreError   = submitAttempted && nombre.length > 0 && !nombreValido
   const isFormValid =
-    tipoDocumento && documento && nombre && correo &&
+    tipoDocumento && documento && nombreValido && correo &&
     telefonoValido && clave && confirmarClave && passwordsMatch && passwordValid && acceptTerms
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitAttempted(true)
-    if (!passwordsMatch || !passwordValid || !telefonoValido) return
+    if (!passwordsMatch || !passwordValid || !telefonoValido || !nombreValido) return
     await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave })
   }
 
@@ -156,10 +159,11 @@ export function RegisterPage() {
               <label className={labelCls} htmlFor="nombre">Nombre completo</label>
               <Input
                 id="nombre" type="text"
-                value={nombre} onChange={e => setNombre(e.target.value)}
+                value={nombre} onChange={e => setNombre(stripDigits(e.target.value))}
                 placeholder="Su nombre como aparece en el documento" required
                 className={fieldCls}
               />
+              {showNombreError && <p className="mt-1 text-xs text-destructive">{NOMBRE_MIN_ERROR}</p>}
             </div>
 
             {/* Correo + Teléfono */}

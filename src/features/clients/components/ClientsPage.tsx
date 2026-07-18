@@ -15,6 +15,7 @@ import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { withToast } from '@/src/shared/lib/withToast'
 import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
+import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { FilterBar }     from '@/src/shared/components/FilterBar'
 import { Pagination }    from '@/src/shared/components/Pagination'
@@ -62,7 +63,8 @@ export function ClientsPage() {
     const newErrors: Record<string, string> = {}
     if (!tipoDocumento)    newErrors.tipoDocumento = 'Campo requerido'
     if (!documento.trim()) newErrors.documento     = 'Campo requerido'
-    if (!nombre.trim())    newErrors.nombre        = 'Campo requerido'
+    if (!nombre.trim())              newErrors.nombre = 'Campo requerido'
+    else if (!isNombreLongitudValida(nombre)) newErrors.nombre = NOMBRE_MIN_ERROR
     if (!correo.trim())    newErrors.correo        = 'Campo requerido'
     if (!telefono.trim())           newErrors.telefono = 'Campo requerido'
     else if (!isTelefonoValid(telefono)) newErrors.telefono = TELEFONO_ERROR
@@ -241,7 +243,7 @@ export function ClientsPage() {
             <div>
               <label className={labelCls} htmlFor="cli-nombre">Nombre completo <span className="text-destructive">*</span></label>
               <input id="cli-nombre" value={nombre} placeholder="Nombre completo del cliente"
-                onChange={e => { setNombre(e.target.value); if (errors.nombre) setErrors({...errors, nombre: ''}) }}
+                onChange={e => { setNombre(stripDigits(e.target.value)); if (errors.nombre) setErrors({...errors, nombre: ''}) }}
                 className={inputCls} />
               {errors.nombre && <p className="mt-1 text-xs text-destructive">{errors.nombre}</p>}
             </div>

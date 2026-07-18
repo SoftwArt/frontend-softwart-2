@@ -13,6 +13,7 @@ import {
 import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { usePolling } from '@/src/shared/hooks/usePolling'
+import { stripDigits } from '@/src/shared/lib/validateNombre'
 import type { HistorialEstado } from '../types'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { formatDate }     from '@/src/shared/lib/formatDate'
@@ -681,7 +682,7 @@ export function MyAccountPage() {
                       <div>
                         <label className={labelCls} htmlFor="perfil-nombre">Nombre completo</label>
                         <input id="perfil-nombre" type="text" value={perfilNombre}
-                          onChange={e => setPerfilNombre(e.target.value)} required className={inputCls} />
+                          onChange={e => setPerfilNombre(stripDigits(e.target.value))} required className={inputCls} />
                       </div>
                       <div>
                         <label className={labelCls} htmlFor="perfil-telefono">Teléfono <span className="text-destructive">*</span></label>

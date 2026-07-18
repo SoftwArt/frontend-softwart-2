@@ -5,6 +5,7 @@ import { apiRequest } from '@/src/shared/lib/apiClient'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
+import { isNombreLongitudValida, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
 import { usePolling } from '@/src/shared/hooks/usePolling'
 import { tomorrowString } from '../utils'
 import { BookedSlot } from '@/src/shared/components/TimePicker'
@@ -120,6 +121,9 @@ export function useAccount() {
   const submitPerfil = async (e: React.FormEvent) => {
     e.preventDefault()
     setPerfilMsg(null)
+    if (!isNombreLongitudValida(perfilNombre)) {
+      setPerfilMsg(NOMBRE_MIN_ERROR); setPerfilMsgType('err'); return
+    }
     if (!perfilTelefono.trim()) {
       setPerfilMsg('El teléfono es obligatorio.'); setPerfilMsgType('err'); return
     }

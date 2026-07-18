@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/c
 import { TimePicker } from '@/src/shared/components/TimePicker'
 import { DatePicker } from '@/src/shared/components/DatePicker'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
+import { stripDigits } from '@/src/shared/lib/validateNombre'
 import { toast } from 'sonner'
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
@@ -761,7 +762,7 @@ export function LandingPage() {
               <Input
                 id="g-nombre"
                 value={clientForm.nombre}
-                onChange={e => setClientForm(f => ({ ...f, nombre: e.target.value }))}
+                onChange={e => setClientForm(f => ({ ...f, nombre: stripDigits(e.target.value) }))}
                 minLength={2}
                 required
               />
