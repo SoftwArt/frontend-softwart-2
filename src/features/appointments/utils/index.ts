@@ -4,14 +4,30 @@ export const inputCls  = 'w-full bg-muted border-0 border-b-2 border-transparent
 export const labelCls  = 'block text-xs font-bold capitalize tracking-widest text-muted-foreground mb-2'
 export const selectCls = 'w-full bg-muted border-0 border-b-2 border-transparent data-[state=open]:border-secondary !h-auto rounded-t-lg px-4 py-3 text-sm shadow-none focus-visible:ring-0 focus-visible:border-secondary'
 
-export const ESTADO_BADGE: Record<number, string> = {
-  1: 'border-amber-300 bg-amber-100 text-amber-800',
-  2: 'border-blue-300 bg-blue-100 text-blue-800',
-  3: 'border-emerald-300 bg-emerald-100 text-emerald-800',
-  4: 'border-slate-300 bg-slate-100 text-slate-600',
+// Color por nombre de estado (estable aunque cambie el id/orden del seed),
+// igual al mecanismo ya usado en Pedidos (ver features/orders/utils).
+const ESTADO_BADGE_BY_NAME: Record<string, string> = {
+  'pendiente':   'border-amber-300 bg-amber-100 text-amber-800',
+  'confirmada':  'border-emerald-300 bg-emerald-100 text-emerald-800',
+  'completada':  'border-blue-300 bg-blue-100 text-blue-800',
+  'no asistió':  'border-slate-300 bg-slate-100 text-slate-600',
+  'cancelada':   'border-red-300 bg-red-100 text-red-800',
 }
 
-const ESTADO_ORDER: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3 }
+const FALLBACK_BADGE_COLORS = [
+  'border-amber-300 bg-amber-100 text-amber-800',
+  'border-blue-300 bg-blue-100 text-blue-800',
+  'border-emerald-300 bg-emerald-100 text-emerald-800',
+  'border-slate-300 bg-slate-100 text-slate-600',
+  'border-purple-300 bg-purple-100 text-purple-800',
+]
+
+export function badgeClassByName(nombre: string, index = 0): string {
+  return ESTADO_BADGE_BY_NAME[nombre.trim().toLowerCase()]
+    ?? FALLBACK_BADGE_COLORS[index % FALLBACK_BADGE_COLORS.length]
+}
+
+const ESTADO_ORDER: Record<number, number> = { 1: 0, 5: 1, 2: 2, 3: 3, 4: 4 }
 
 export function filterCitas(
   citas: Cita[],

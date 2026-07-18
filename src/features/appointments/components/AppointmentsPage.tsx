@@ -4,16 +4,17 @@ import { useServicesOptions, useFrameOptions } from '@/src/shared/hooks/useOptio
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { useClientsOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo, useCallback } from 'react'
-import type { Cita, VentaLinea, VentaMsg } from '../types'
-import { inputCls, labelCls, selectCls, ESTADO_BADGE, filterCitas, todayStr, validateFecha, fmtCOP } from '../utils'
+import type { Cita, VentaLinea, VentaMsg, CitaDetalle } from '../types'
+import { inputCls, labelCls, selectCls, badgeClassByName, filterCitas, todayStr, validateFecha, fmtCOP } from '../utils'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
 import { FilterBar } from '@/src/shared/components/FilterBar'
-import { withToast } from '@/src/shared/lib/withToast'   
+import { withToast } from '@/src/shared/lib/withToast'
+import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate, formatTime } from '@/src/shared/lib/formatDate'
-import { Plus, Pencil, Eye, ShoppingCart, PlusCircle, Trash } from 'lucide-react'
+import { Plus, Pencil, Eye, ShoppingCart, PlusCircle, Trash, Trash2 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
 import { Input } from '@/src/shared/components/ui/input'
 import { Badge } from '@/src/shared/components/ui/badge'
@@ -22,15 +23,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusSelect } from '@/src/shared/components/StatusSelect'
 import { TimePicker, BookedSlot } from '@/src/shared/components/TimePicker'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { ViewDialog } from '@/src/shared/components/ViewDialog'
 import { Combobox } from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
+import { CascadePreview } from '@/src/shared/components/CascadePreview'
 import { DatePicker } from '@/src/shared/components/DatePicker'
 
 
 export function AppointmentsPage() {
-  const { citas, estadosCita, isLoading, onCreate, onEdit, onChangeStatus, refresh } = useAppointments()
+  const { citas, estadosCita, isLoading, onCreate, onEdit, onDelete, onChangeStatus, refresh } = useAppointments()
   const { options: clientesOpts }  = useClientsOptions()
   const { options: serviciosOpts } = useServicesOptions()
   const { options: marcosOpts }    = useFrameOptions()
@@ -122,6 +125,71 @@ export function AppointmentsPage() {
   const openView   = (c: Cita) => { setViewingItem(c); setIsViewOpen(true) }
 
   const getEstadoLabel = (id: number) => estadosCita.find(e => e.id_estado_cita === id)?.nombre ?? `Estado ${id}`
+  const isCancelada = (id: number) => getEstadoLabel(id).toLowerCase().includes('cancelada')
+
+  // Protección de estado Cancelada — terminal e irreversible, igual que Anulado en Pagos
+  const MSG_BASE = 'Cancelar una cita es definitivo: no podrá modificarse ni volver a cambiar de estado.'
+  const [alertEstado, setAlertEstado] = useState<{ open: boolean; msg: string; lines: string[]; citaId?: number; nuevoEstado?: number; loading?: boolean; bloqueado?: boolean }>({ open: false, msg: '', lines: [] })
+
+  const handleChangeStatus = (cita: Cita, nuevoIdEstado: number) => {
+    if (!getEstadoLabel(nuevoIdEstado).toLowerCase().includes('cancelada')) {
+      withToast(onChangeStatus(cita.id_cita, nuevoIdEstado), 'Estado actualizado')
+      return
+    }
+
+    setAlertEstado({
+      open: true,
+      loading: true,
+      msg: MSG_BASE,
+      lines: [],
+      citaId: cita.id_cita,
+      nuevoEstado: nuevoIdEstado,
+    })
+
+    apiRequest<{ success: boolean; data: CitaDetalle }>(`/api/appointments/${cita.id_cita}`)
+      .then((res) => {
+        const sale = res.data?.sale
+        if (!sale) {
+          setAlertEstado(prev => ({ ...prev, loading: false, lines: [] }))
+          return
+        }
+
+        const pagosValidados = (sale.payments ?? []).some(
+          p => p.paymentStatus?.nombre?.toLowerCase().includes('validado')
+        )
+        if (pagosValidados) {
+          setAlertEstado(prev => ({
+            ...prev,
+            loading: false,
+            bloqueado: true,
+            msg: `No se puede cancelar: la Venta #${sale.id_venta} asociada tiene pagos validados. Registra la devolución antes de cancelar la cita.`,
+            lines: [],
+          }))
+          return
+        }
+
+        const serviciosACancelar = (sale.saleDetails ?? [])
+          .filter(d => {
+            const n = d.serviceStatus?.nombre?.toLowerCase() ?? ''
+            return !n.includes('finaliz') && !n.includes('cancel')
+          })
+          .map(d => d.id_detalle)
+
+        const abonosAAnular = (sale.payments ?? [])
+          .filter(p => p.paymentStatus?.nombre?.toLowerCase().includes('pendiente'))
+
+        const lines = [
+          `Se anulará la Venta #${sale.id_venta}`,
+          ...serviciosACancelar.map(id => `Servicio #${id} se cancelará`),
+          ...abonosAAnular.map(p => `Abono #${p.id_pago} (${fmtCOP(p.monto)}) se anulará`),
+        ]
+
+        setAlertEstado(prev => ({ ...prev, loading: false, lines }))
+      })
+      .catch(() => {
+        setAlertEstado(prev => ({ ...prev, loading: false, lines: [] }))
+      })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -204,15 +272,21 @@ export function AppointmentsPage() {
                       <TableCell className="text-foreground">{formatDate(c.fecha)}</TableCell>
                       <TableCell className="text-foreground">{formatTime(c.hora)}</TableCell>
                       <TableCell>
-                        <StatusSelect
-                          value={String(c.id_estado_cita)}
-                          onValueChange={(v) => withToast(onChangeStatus(c.id_cita, Number(v)), 'Estado actualizado')}
-                          options={estadosCita.map(e => ({
-                            value:    String(e.id_estado_cita),
-                            label:    e.nombre,
-                            badgeCls: ESTADO_BADGE[e.id_estado_cita] ?? ESTADO_BADGE[4],
-                          }))}
-                        />
+                        {isCancelada(c.id_estado_cita) ? (
+                          <Badge variant="outline" className={`${badgeClassByName(getEstadoLabel(c.id_estado_cita))} cursor-not-allowed opacity-70`}>
+                            {getEstadoLabel(c.id_estado_cita)}
+                          </Badge>
+                        ) : (
+                          <StatusSelect
+                            value={String(c.id_estado_cita)}
+                            onValueChange={(v) => handleChangeStatus(c, Number(v))}
+                            options={estadosCita.map((e, i) => ({
+                              value:    String(e.id_estado_cita),
+                              label:    e.nombre,
+                              badgeCls: badgeClassByName(e.nombre, i),
+                            }))}
+                          />
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -227,6 +301,31 @@ export function AppointmentsPage() {
                               <ShoppingCart className="h-4 w-4 text-emerald-600" />
                             </Button>
                           )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar esta cita?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Se eliminará la cita de <strong>{clienteLabel}</strong>. Si ya tiene una venta
+                                  asociada, no podrá eliminarse. Esta acción no se puede deshacer.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => withToast(onDelete(c.id_cita), 'Cita eliminada')}
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -252,7 +351,7 @@ export function AppointmentsPage() {
           description={`${viewingItem.fecha} — ${viewingItem.hora}`}
           fields={[
             { label: 'ID',      value: viewingItem.id_cita },
-            { label: 'Estado',  value: <Badge variant="outline" className={ESTADO_BADGE[viewingItem.id_estado_cita] ?? ESTADO_BADGE[4]}>{getEstadoLabel(viewingItem.id_estado_cita)}</Badge> },
+            { label: 'Estado',  value: <Badge variant="outline" className={badgeClassByName(getEstadoLabel(viewingItem.id_estado_cita))}>{getEstadoLabel(viewingItem.id_estado_cita)}</Badge> },
             { label: 'Cliente', value: clientesOpts.find(o => o.value === String(viewingItem.id_cliente))?.label ?? `#${viewingItem.id_cliente}`, fullWidth: true },
             { label: 'Fecha',   value: formatDate(viewingItem.fecha) },
             { label: 'Hora',    value: formatTime(viewingItem.hora) },
@@ -458,6 +557,37 @@ export function AppointmentsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmación de cancelación (estado terminal, igual que Anulado en Pagos) */}
+      <AlertDialog open={alertEstado.open} onOpenChange={(v) => { if (!v) setAlertEstado({ open: false, msg: '', lines: [] }) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cancelar esta cita?</AlertDialogTitle>
+            <AlertDialogDescription>{alertEstado.msg}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <CascadePreview lines={alertEstado.lines} loading={alertEstado.loading} />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={alertEstado.loading || alertEstado.bloqueado}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (alertEstado.citaId && alertEstado.nuevoEstado) {
+                  const { citaId, nuevoEstado } = alertEstado
+                  undoableAction({
+                    message: 'Cancelando cita...',
+                    successMsg: 'Cita cancelada',
+                    onCommit: () => onChangeStatus(citaId, nuevoEstado),
+                  })
+                }
+                setAlertEstado({ open: false, msg: '', lines: [] })
+              }}
+            >
+              {alertEstado.bloqueado ? 'No se puede cancelar' : 'Cancelar cita'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
