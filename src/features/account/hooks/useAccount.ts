@@ -1,9 +1,10 @@
 // src/features/account/hooks/useAccount.ts
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
+import { usePolling } from '@/src/shared/hooks/usePolling'
 import { tomorrowString } from '../utils'
 import { BookedSlot } from '@/src/shared/components/TimePicker'
 import type { PerfilCliente, Cita, Servicio } from '../types'
@@ -29,7 +30,10 @@ export function useAccount() {
 
   const proximaCita = useMemo(() =>
     [...citas]
-      .filter(c => c.appointmentStatus?.nombre?.toLowerCase().includes('pend'))
+      .filter(c => {
+        const n = c.appointmentStatus?.nombre?.toLowerCase() ?? ''
+        return n.includes('pend') || n.includes('confirmada')
+      })
       .sort((a, b) => a.fecha.localeCompare(b.fecha))[0] ?? null
   , [citas])
 
@@ -54,14 +58,19 @@ export function useAccount() {
     setPerfil(res.data)
   }, [])
 
+  // Diff antes de reemplazar el estado: si el refetch (manual o del polling) trae
+  // exactamente lo mismo, se conserva la misma referencia y React no re-renderiza
+  // la lista (evita parpadeo cuando no cambió nada).
   const fetchMyAppointments = useCallback(async () => {
     const res = await apiRequest<ApiResponse<Cita[]>>('/api/account/citas')
-    setCitas(res.data ?? [])
+    const nuevas = res.data ?? []
+    setCitas(prev => JSON.stringify(prev) === JSON.stringify(nuevas) ? prev : nuevas)
   }, [])
 
   const fetchMyServices = useCallback(async () => {
     const res = await apiRequest<ApiResponse<Servicio[]>>('/api/account/servicios')
-    setServicios(res.data ?? [])
+    const nuevos = res.data ?? []
+    setServicios(prev => JSON.stringify(prev) === JSON.stringify(nuevos) ? prev : nuevos)
   }, [])
 
   const refresh = useCallback(async () => {
@@ -76,6 +85,21 @@ export function useAccount() {
   }, [fetchProfile, fetchMyAppointments, fetchMyServices])
 
   useEffect(() => { refresh() }, [refresh])
+
+  // ── Refresh dinámico (polling scoped) ──────────────────────────────────────
+  // Citas y servicios ya vienen filtrados por id_cliente del JWT en el backend
+  // (myAppointments/myServices) — nunca puede traer datos de otro cliente.
+  // Se pausa mientras hay una mutación propia en curso (cancelar cita, agendar)
+  // para no pisar un update optimista con una respuesta vieja del servidor.
+  const isMutatingRef = useRef(false)
+
+  const pollQuietly = useCallback(() => {
+    if (isMutatingRef.current) return
+    fetchMyAppointments().catch(() => {})
+    fetchMyServices().catch(() => {})
+  }, [fetchMyAppointments, fetchMyServices])
+
+  usePolling(pollQuietly, 15000)
 
   // ── Form perfil ─────────────────────────────────────────────────────────────
   const [perfilNombre,   setPerfilNombre]   = useState('')
@@ -177,6 +201,7 @@ export function useAccount() {
     if (citaFecha < tomorrowString()) errs.fecha = 'Solo puedes agendar desde mañana'
     if (Object.keys(errs).length) { setCitaErrors(errs); return false }
     setIsAgendando(true); setCitaMsg(null); setCitaErrors({})
+    isMutatingRef.current = true
     try {
       await apiRequest('/api/account/citas', {
         method: 'POST',
@@ -191,7 +216,7 @@ export function useAccount() {
       setCitaMsg(e2 instanceof Error ? e2.message : 'Error al agendar la cita')
       setCitaMsgType('err')
       return false
-    } finally { setIsAgendando(false) }
+    } finally { setIsAgendando(false); isMutatingRef.current = false }
   }
 
   const resetCitaForm = () => {
@@ -200,8 +225,13 @@ export function useAccount() {
 
   // ── Cancelar cita ───────────────────────────────────────────────────────────
   const onCancelAppointment = async (id_cita: number) => {
-    await apiRequest(`/api/account/citas/${id_cita}/cancelar`, { method: 'PATCH' })
-    setCitas(prev => prev.filter(c => c.id_cita !== id_cita))
+    isMutatingRef.current = true
+    try {
+      await apiRequest(`/api/account/citas/${id_cita}/cancelar`, { method: 'PATCH' })
+      setCitas(prev => prev.filter(c => c.id_cita !== id_cita))
+    } finally {
+      isMutatingRef.current = false
+    }
   }
 
   // ── Eliminar cuenta ─────────────────────────────────────────────────────────
