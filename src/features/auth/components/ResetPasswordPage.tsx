@@ -228,74 +228,79 @@ export function ResetPasswordPage() {
                       </div>
                     )}
 
-                    {/* Contraseñas */}
-                    <div className="space-y-6">
+                    {/* Contraseñas — solo si hay token: sin él son campos inútiles que
+                        solo inflan la altura de la card sin aportar nada */}
+                    {token && (
+                      <>
+                        <div className="space-y-6">
 
-                      <div>
-                        <label className={labelCls} htmlFor="nueva-clave">Nueva contraseña</label>
-                        <div className="relative group">
-                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
-                          <Input
-                            id="nueva-clave"
-                            type={showNueva ? 'text' : 'password'}
-                            value={nuevaClave}
-                            onChange={e => { setNuevaClave(e.target.value); if (errorNueva) setErrorNueva('') }}
-                            placeholder="••••••••"
-                            className={`${fieldCls} pl-12 pr-12`}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                            onClick={() => setShowNueva(v => !v)}
-                            title={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                            aria-label={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                          >
-                            {showNueva ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
+                          <div>
+                            <label className={labelCls} htmlFor="nueva-clave">Nueva contraseña</label>
+                            <div className="relative group">
+                              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
+                              <Input
+                                id="nueva-clave"
+                                type={showNueva ? 'text' : 'password'}
+                                value={nuevaClave}
+                                onChange={e => { setNuevaClave(e.target.value); if (errorNueva) setErrorNueva('') }}
+                                placeholder="••••••••"
+                                className={`${fieldCls} pl-12 pr-12`}
+                              />
+                              <button
+                                type="button"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                                onClick={() => setShowNueva(v => !v)}
+                                title={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                aria-label={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                              >
+                                {showNueva ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                            {errorNueva && <p className="text-sm text-destructive mt-1">{errorNueva}</p>}
+                            <PasswordChecklist password={nuevaClave} confirmPassword={confirmarClave} />
+                          </div>
+
+                          <div>
+                            <label className={labelCls} htmlFor="confirmar-clave">Confirmar contraseña</label>
+                            <div className="relative group">
+                              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
+                              <Input
+                                id="confirmar-clave"
+                                type={showConfirmar ? 'text' : 'password'}
+                                value={confirmarClave}
+                                onChange={e => setConfirmarClave(e.target.value)}
+                                placeholder="••••••••"
+                                className={`${fieldCls} pl-12 pr-12`}
+                              />
+                              <button
+                                type="button"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                                onClick={() => setShowConfirmar(v => !v)}
+                                title={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                aria-label={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                              >
+                                {showConfirmar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                            {errorConfirmar && <p className="text-sm text-destructive mt-1">{errorConfirmar}</p>}
+                          </div>
+
                         </div>
-                        {errorNueva && <p className="text-sm text-destructive mt-1">{errorNueva}</p>}
-                        <PasswordChecklist password={nuevaClave} confirmPassword={confirmarClave} />
-                      </div>
 
-                      <div>
-                        <label className={labelCls} htmlFor="confirmar-clave">Confirmar contraseña</label>
-                        <div className="relative group">
-                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
-                          <Input
-                            id="confirmar-clave"
-                            type={showConfirmar ? 'text' : 'password'}
-                            value={confirmarClave}
-                            onChange={e => setConfirmarClave(e.target.value)}
-                            placeholder="••••••••"
-                            className={`${fieldCls} pl-12 pr-12`}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                            onClick={() => setShowConfirmar(v => !v)}
-                            title={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                            aria-label={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        {/* Submit */}
+                        <div className="pt-2">
+                          <Button
+                            type="submit" disabled={!canSubmit}
+                            className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-6 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98] gap-2"
                           >
-                            {showConfirmar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
+                            {isLoading
+                              ? 'Guardando...'
+                              : <><LockKeyhole className="h-4 w-4" />Guardar nueva contraseña</>
+                            }
+                          </Button>
                         </div>
-                        {errorConfirmar && <p className="text-sm text-destructive mt-1">{errorConfirmar}</p>}
-                      </div>
-
-                    </div>
-
-                    {/* Submit */}
-                    <div className="pt-2">
-                      <Button
-                        type="submit" disabled={!canSubmit}
-                        className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-6 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98] gap-2"
-                      >
-                        {isLoading
-                          ? 'Guardando...'
-                          : <><LockKeyhole className="h-4 w-4" />Guardar nueva contraseña</>
-                        }
-                      </Button>
-                    </div>
+                      </>
+                    )}
 
                     {/* Reenviar enlace */}
                     <div className="border-t border-border/30 pt-6 space-y-3">
