@@ -151,6 +151,9 @@ export function LoginPage() {
                     {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {/* Mensaje genérico a propósito (no se atribuye a correo o clave):
+                    evita que un atacante infiera cuál de los dos falló (anti-enumeración, OWASP A01) */}
+                {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
               </div>
 
               {/* Recordarme */}
@@ -164,8 +167,6 @@ export function LoginPage() {
                   Recordarme en este dispositivo
                 </label>
               </div>
-
-              {error && <p className="text-sm text-destructive">{error}</p>}
 
               {/* CTA */}
               <div className="pt-2">

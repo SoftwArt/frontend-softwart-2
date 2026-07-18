@@ -176,6 +176,7 @@ export function RegisterPage() {
                   placeholder="nombre@ejemplo.com" required
                   className={fieldCls}
                 />
+                {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
               </div>
               <div>
                 <label className={labelCls} htmlFor="telefono">Teléfono <span className="text-destructive">*</span></label>
@@ -257,8 +258,6 @@ export function RegisterPage() {
                 {' '}de Arte Café.
               </label>
             </div>
-
-            {error && <p className="text-sm text-destructive">{error}</p>}
 
             {/* CTA */}
             <div className="pt-2">
