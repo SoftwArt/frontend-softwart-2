@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/src/shared/lib/utils'
 import { useMyPermissions } from '@/src/shared/hooks/useMyPermissions'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 
 interface NavItem {
   label:   string
@@ -77,15 +78,20 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
             <span className="text-base font-bold text-sidebar-foreground truncate">SoftwArt</span>
           </div>
         )}
-        <button
-          onClick={() => setCollapsed(v => !v)}
-          className="shrink-0 rounded-md p-1.5 text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          title={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
-        >
-          {collapsed
-            ? <ChevronRight className="h-4 w-4" />
-            : <ChevronLeft  className="h-4 w-4" />}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => setCollapsed(v => !v)}
+              className="shrink-0 rounded-md p-1.5 text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+              aria-label={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+            >
+              {collapsed
+                ? <ChevronRight className="h-4 w-4" />
+                : <ChevronLeft  className="h-4 w-4" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">{collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Nav por grupos */}
@@ -93,20 +99,38 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
         <ul className="flex flex-col gap-0.5">
           {/* Dashboard — ítem suelto sin grupo */}
           <li>
-            <Link
-              to={DASHBOARD_ITEM.href}
-              title={collapsed ? DASHBOARD_ITEM.label : undefined}
-              className={cn(
-                'flex items-center gap-3 rounded-md text-sm transition-colors px-2 py-2',
-                collapsed ? 'justify-center' : '',
-                pathname === DASHBOARD_ITEM.href || pathname.startsWith(`${DASHBOARD_ITEM.href}/`)
-                  ? 'bg-sidebar-primary/15 text-sidebar-primary font-semibold'
-                  : 'text-sidebar-accent-foreground hover:bg-sidebar hover:text-sidebar-foreground'
-              )}
-            >
-              <DASHBOARD_ITEM.icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span className="truncate">{DASHBOARD_ITEM.label}</span>}
-            </Link>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to={DASHBOARD_ITEM.href}
+                    aria-label={DASHBOARD_ITEM.label}
+                    className={cn(
+                      'flex items-center justify-center gap-3 rounded-md text-sm transition-colors px-2 py-2',
+                      pathname === DASHBOARD_ITEM.href || pathname.startsWith(`${DASHBOARD_ITEM.href}/`)
+                        ? 'bg-sidebar-primary/15 text-sidebar-primary font-semibold'
+                        : 'text-sidebar-accent-foreground hover:bg-sidebar hover:text-sidebar-foreground'
+                    )}
+                  >
+                    <DASHBOARD_ITEM.icon className="h-4 w-4 shrink-0" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">{DASHBOARD_ITEM.label}</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link
+                to={DASHBOARD_ITEM.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-md text-sm transition-colors px-2 py-2',
+                  pathname === DASHBOARD_ITEM.href || pathname.startsWith(`${DASHBOARD_ITEM.href}/`)
+                    ? 'bg-sidebar-primary/15 text-sidebar-primary font-semibold'
+                    : 'text-sidebar-accent-foreground hover:bg-sidebar hover:text-sidebar-foreground'
+                )}
+              >
+                <DASHBOARD_ITEM.icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{DASHBOARD_ITEM.label}</span>
+              </Link>
+            )}
           </li>
 
           {NAV_GROUPS.map((group) => (
@@ -137,22 +161,30 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                   {group.items.filter(item => can(item.permiso ?? '')).map((item) => {
                     const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
                     const Icon     = item.icon
+                    const linkCls = cn(
+                      'flex items-center gap-3 rounded-md text-sm transition-colors px-2 py-2',
+                      collapsed ? 'justify-center' : '',
+                      isActive
+                        ? 'bg-sidebar-primary/15 text-sidebar-primary font-semibold'
+                        : 'text-sidebar-accent-foreground hover:bg-sidebar hover:text-sidebar-foreground'
+                    )
                     return (
                       <li key={item.href}>
-                        <Link
-                          to={item.href}
-                          title={collapsed ? item.label : undefined}
-                          className={cn(
-                            'flex items-center gap-3 rounded-md text-sm transition-colors px-2 py-2',
-                            collapsed ? 'justify-center' : '',
-                            isActive
-                              ? 'bg-sidebar-primary/15 text-sidebar-primary font-semibold'
-                              : 'text-sidebar-accent-foreground hover:bg-sidebar hover:text-sidebar-foreground'
-                          )}
-                        >
-                          <Icon className="h-4 w-4 shrink-0" />
-                          {!collapsed && <span className="truncate">{item.label}</span>}
-                        </Link>
+                        {collapsed ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link to={item.href} aria-label={item.label} className={linkCls}>
+                                <Icon className="h-4 w-4 shrink-0" />
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">{item.label}</TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <Link to={item.href} className={linkCls}>
+                            <Icon className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{item.label}</span>
+                          </Link>
+                        )}
                       </li>
                     )
                   })}
