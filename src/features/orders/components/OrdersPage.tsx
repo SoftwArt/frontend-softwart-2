@@ -326,7 +326,7 @@ export function OrdersPage() {
       {viewingItem && (
         <ViewDialog
           open={isViewOpen} onOpenChange={setIsViewOpen}
-          title={`Pedido #${viewingItem.id_detalle}`} description={viewingItem.fecha}
+          title={`Pedido #${viewingItem.id_detalle}`}
           fields={[
             { label: 'ID',          value: viewingItem.id_detalle },
             { label: 'Estado',      value: <Badge variant="outline" className={estadoColor(viewingItem.id_estado)}>{estadoNombre(viewingItem.id_estado)}</Badge> },

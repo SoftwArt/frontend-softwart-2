@@ -348,7 +348,6 @@ export function AppointmentsPage() {
         <ViewDialog
           open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Cita #${viewingItem.id_cita}`}
-          description={`${viewingItem.fecha} — ${viewingItem.hora}`}
           fields={[
             { label: 'ID',      value: viewingItem.id_cita },
             { label: 'Estado',  value: <Badge variant="outline" className={badgeClassByName(getEstadoLabel(viewingItem.id_estado_cita))}>{getEstadoLabel(viewingItem.id_estado_cita)}</Badge> },

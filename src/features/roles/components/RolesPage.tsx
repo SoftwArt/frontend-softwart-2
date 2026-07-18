@@ -143,7 +143,7 @@ export function RolesPage() {
 
       {viewingItem && (
         <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
-          title={`Rol — ${viewingItem.nombre}`} description={`Registro #${viewingItem.id_rol}`}
+          title={`Rol — ${viewingItem.nombre}`}
           fields={[
             { label: 'ID',          value: viewingItem.id_rol },
             { label: 'Estado',      value: <EstadoBadge estado={viewingItem.estado} /> },

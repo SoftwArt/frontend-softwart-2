@@ -151,7 +151,7 @@ export function UsersPage() {
 
       {viewingItem && (
         <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
-          title={`Usuario #${viewingItem.id_usuario}`} description={viewingItem.correo}
+          title={`Usuario #${viewingItem.id_usuario}`}
           fields={[
             { label: 'ID',     value: viewingItem.id_usuario },
             { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },

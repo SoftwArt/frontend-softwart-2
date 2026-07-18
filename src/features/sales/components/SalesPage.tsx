@@ -246,7 +246,7 @@ export function SalesPage() {
 
       {viewingItem && (
         <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
-          title={`Venta #${viewingItem.id_venta}`} description={viewingItem.fecha}
+          title={`Venta #${viewingItem.id_venta}`}
           fields={[
             { label: 'ID',     value: viewingItem.id_venta },
             { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },

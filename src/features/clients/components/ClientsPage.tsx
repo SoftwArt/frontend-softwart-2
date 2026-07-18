@@ -205,7 +205,6 @@ export function ClientsPage() {
         <ViewDialog
           open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Cliente — ${viewingItem.nombre}`}
-          description={`Registro #${viewingItem.id_cliente}`}
           fields={[
             { label: 'ID',             value: viewingItem.id_cliente },
             { label: 'Estado',         value: <EstadoBadge estado={viewingItem.estado} /> },

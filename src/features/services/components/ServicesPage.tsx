@@ -153,7 +153,7 @@ export function ServicesPage() {
 
       {viewingItem && (
         <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
-          title={`Servicio — ${viewingItem.nombre}`} description={`Registro #${viewingItem.id_servicio}`}
+          title={`Servicio — ${viewingItem.nombre}`}
           fields={[
             { label: 'ID',          value: viewingItem.id_servicio },
             { label: 'Estado',      value: <EstadoBadge estado={viewingItem.estado} /> },
