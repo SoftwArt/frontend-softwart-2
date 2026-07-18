@@ -211,7 +211,7 @@ export function PaymentsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openView(p)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                        <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de pago" onClick={() => openView(p)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>

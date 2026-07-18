@@ -113,7 +113,7 @@ function AlertChip<T extends { href: string }>({
                 </Link>
                 <button
                   onClick={() => onIgnore(id)}
-                  title="Ignorar"
+                  title="Ignorar" aria-label="Ignorar registro"
                   className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />

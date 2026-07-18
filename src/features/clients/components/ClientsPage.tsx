@@ -156,15 +156,15 @@ export function ClientsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openView(c)}>
+                        <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de cliente" onClick={() => openView(c)}>
                           <Eye className="h-4 w-4 text-muted-foreground" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
+                        <Button variant="ghost" size="icon" title="Editar" aria-label="Editar cliente" onClick={() => openEdit(c)}>
                           <Pencil className="h-4 w-4 text-foreground" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" title="Eliminar" aria-label="Eliminar cliente">
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </AlertDialogTrigger>

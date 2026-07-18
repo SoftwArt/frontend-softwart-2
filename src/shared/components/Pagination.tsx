@@ -39,7 +39,7 @@ export function Pagination({
     label:    string
   ) => (
     <button
-      type="button" disabled={disabled} onClick={onClick} aria-label={label}
+      type="button" disabled={disabled} onClick={onClick} aria-label={label} title={label}
       className={cn(
         'flex h-8 w-8 items-center justify-center rounded-md border text-sm transition-colors',
         'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
@@ -68,6 +68,7 @@ export function Pagination({
             <select
               value={pageSize}
               onChange={e => onPageSizeChange(Number(e.target.value))}
+              aria-label="Registros por página"
               className={cn(
                 'h-7 rounded-md border border-border bg-card px-2 text-xs text-foreground',
                 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
@@ -93,6 +94,7 @@ export function Pagination({
             ) : (
               <button
                 key={p} type="button" onClick={() => onChange(p as number)}
+                aria-current={p === page ? 'page' : undefined}
                 className={cn(
                   'flex h-8 min-w-[2rem] items-center justify-center rounded-md border px-2 text-sm transition-colors',
                   'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',

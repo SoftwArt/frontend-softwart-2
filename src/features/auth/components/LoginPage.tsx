@@ -147,6 +147,8 @@ export function LoginPage() {
                     type="button"
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                     onClick={() => setShowPass(v => !v)}
+                    title={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
                     {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

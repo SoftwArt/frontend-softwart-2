@@ -212,6 +212,8 @@ export function RegisterPage() {
                     type="button"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                     onClick={() => setShowClave(v => !v)}
+                    title={showClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-label={showClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
                     {showClave ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -231,6 +233,8 @@ export function RegisterPage() {
                     type="button"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                     onClick={() => setShowConfirmar(v => !v)}
+                    title={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-label={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
                     {showConfirmar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

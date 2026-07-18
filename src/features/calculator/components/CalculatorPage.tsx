@@ -130,11 +130,11 @@ export function CalculatorPage() {
                  
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openCalc(m)}><Calculator className="h-4 w-4 text-muted-foreground" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => openView(m)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Pencil className="h-4 w-4 text-foreground" /></Button>
+                      <Button variant="ghost" size="icon" title="Calcular precio" aria-label="Calcular precio del marco" onClick={() => openCalc(m)}><Calculator className="h-4 w-4 text-muted-foreground" /></Button>
+                      <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de marco" onClick={() => openView(m)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                      <Button variant="ghost" size="icon" title="Editar" aria-label="Editar marco" onClick={() => openEdit(m)}><Pencil className="h-4 w-4 text-foreground" /></Button>
                       <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" title="Eliminar" aria-label="Eliminar marco"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
                         <AlertDialogContent className="bg-card text-card-foreground border-border">
                           <AlertDialogHeader><AlertDialogTitle className="font-serif text-secondary">Eliminar marco</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
                           <AlertDialogFooter>

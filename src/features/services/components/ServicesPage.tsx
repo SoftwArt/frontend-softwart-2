@@ -133,10 +133,10 @@ export function ServicesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openView(s)}>
+                        <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de servicio" onClick={() => openView(s)}>
                           <Eye className="h-4 w-4 text-muted-foreground" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                        <Button variant="ghost" size="icon" title="Editar" aria-label="Editar servicio" onClick={() => openEdit(s)}>
                           <Pencil className="h-4 w-4 text-foreground" />
                         </Button>
                       </div>

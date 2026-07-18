@@ -132,8 +132,8 @@ export function UsersPage() {
                   <TableCell><ToggleSwitch value={u.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(u.id_usuario), 'Estado actualizado')} options={ACTIVO_OPTIONS} disabled={u.es_admin_base} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openView(u)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(u)}><Pencil className="h-4 w-4 text-foreground" /></Button>
+                      <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de usuario" onClick={() => openView(u)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                      <Button variant="ghost" size="icon" title="Editar" aria-label="Editar usuario" onClick={() => openEdit(u)}><Pencil className="h-4 w-4 text-foreground" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>

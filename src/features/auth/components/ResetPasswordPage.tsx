@@ -239,6 +239,8 @@ export function ResetPasswordPage() {
                             type="button"
                             className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                             onClick={() => setShowNueva(v => !v)}
+                            title={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            aria-label={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                           >
                             {showNueva ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
@@ -263,6 +265,8 @@ export function ResetPasswordPage() {
                             type="button"
                             className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                             onClick={() => setShowConfirmar(v => !v)}
+                            title={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            aria-label={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                           >
                             {showConfirmar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>

@@ -212,13 +212,13 @@ export function SalesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openView(v)}>
+                        <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de venta" onClick={() => openView(v)}>
                           <Eye className="h-4 w-4 text-muted-foreground" />
                         </Button>
-                       
+
                         <Button
                           variant="ghost" size="icon"
-                          title="Gestionar abonos"
+                          title="Gestionar abonos" aria-label="Gestionar abonos"
                           onClick={() => setAbonoModalVenta({
                             id:    v.id_venta,
                             label: `Venta #${v.id_venta} · ${clienteLabel}`,

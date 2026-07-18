@@ -107,11 +107,11 @@ export function RolesPage() {
                     <TableCell><ToggleSwitch value={r.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(r.id_rol), 'Estado actualizado')} options={ACTIVO_OPTIONS} disabled={r.nombre.toLowerCase() === 'admin'} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openView(r)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4 text-foreground" /></Button>
+                        <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de rol" onClick={() => openView(r)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                        <Button variant="ghost" size="icon" title="Editar" aria-label="Editar rol" onClick={() => openEdit(r)}><Pencil className="h-4 w-4 text-foreground" /></Button>
                         {r.id_rol !== 1 && r.id_rol !== 3 && (
                           <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" title="Eliminar" aria-label="Eliminar rol"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
                             <AlertDialogContent className="bg-card text-card-foreground border-border">
                               <AlertDialogHeader>
                                 <AlertDialogTitle className="font-serif text-secondary">¿Eliminar rol "{r.nombre}"?</AlertDialogTitle>
