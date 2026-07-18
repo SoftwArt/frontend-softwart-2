@@ -290,17 +290,17 @@ export function AppointmentsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {c.id_estado_cita === 2 && (
+                            <Button variant="ghost" size="icon" title="Crear venta" onClick={() => openVentaModal(c)}>
+                              <ShoppingCart className="h-4 w-4 text-emerald-600" />
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" onClick={() => openView(c)}>
                             <Eye className="h-4 w-4 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
                             <Pencil className="h-4 w-4 text-foreground" />
                           </Button>
-                          {c.id_estado_cita === 2 && (
-                            <Button variant="ghost" size="icon" title="Crear venta" onClick={() => openVentaModal(c)}>
-                              <ShoppingCart className="h-4 w-4 text-emerald-600" />
-                            </Button>
-                          )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon">
