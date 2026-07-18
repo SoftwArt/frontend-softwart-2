@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { ViewDialog } from '@/src/shared/components/ViewDialog'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { Combobox }    from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { withToast } from '@/src/shared/lib/withToast'
@@ -211,7 +212,12 @@ export function PaymentsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de pago" onClick={() => openView(p)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" aria-label="Ver detalle de pago" onClick={() => openView(p)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Ver detalle</TooltipContent>
+                        </Tooltip>
                       </div>
                     </TableCell>
                   </TableRow>

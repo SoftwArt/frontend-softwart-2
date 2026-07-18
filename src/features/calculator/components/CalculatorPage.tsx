@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/src/shared/components/ui/alert-dialog'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { withToast } from '@/src/shared/lib/withToast'  
 import { SearchInput } from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
@@ -130,11 +131,31 @@ export function CalculatorPage() {
                  
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" title="Calcular precio" aria-label="Calcular precio del marco" onClick={() => openCalc(m)}><Calculator className="h-4 w-4 text-muted-foreground" /></Button>
-                      <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de marco" onClick={() => openView(m)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
-                      <Button variant="ghost" size="icon" title="Editar" aria-label="Editar marco" onClick={() => openEdit(m)}><Pencil className="h-4 w-4 text-foreground" /></Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="Calcular precio del marco" onClick={() => openCalc(m)}><Calculator className="h-4 w-4 text-muted-foreground" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Calcular precio</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="Ver detalle de marco" onClick={() => openView(m)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Ver detalle</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="Editar marco" onClick={() => openEdit(m)}><Pencil className="h-4 w-4 text-foreground" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar</TooltipContent>
+                      </Tooltip>
                       <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" title="Eliminar" aria-label="Eliminar marco"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" aria-label="Eliminar marco"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>Eliminar</TooltipContent>
+                        </Tooltip>
                         <AlertDialogContent className="bg-card text-card-foreground border-border">
                           <AlertDialogHeader><AlertDialogTitle className="font-serif text-secondary">Eliminar marco</AlertDialogTitle><AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader>
                           <AlertDialogFooter>

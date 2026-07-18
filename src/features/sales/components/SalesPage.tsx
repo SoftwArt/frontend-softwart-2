@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/src/shared/components/ui/alert-dialog'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { Combobox } from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { DatePicker } from '@/src/shared/components/DatePicker'
@@ -212,20 +213,30 @@ export function SalesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de venta" onClick={() => openView(v)}>
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" aria-label="Ver detalle de venta" onClick={() => openView(v)}>
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Ver detalle</TooltipContent>
+                        </Tooltip>
 
-                        <Button
-                          variant="ghost" size="icon"
-                          title="Gestionar abonos" aria-label="Gestionar abonos"
-                          onClick={() => setAbonoModalVenta({
-                            id:    v.id_venta,
-                            label: `Venta #${v.id_venta} · ${clienteLabel}`,
-                          })}
-                        >
-                          <CreditCard className="h-4 w-4 text-primary" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost" size="icon"
+                              aria-label="Gestionar abonos"
+                              onClick={() => setAbonoModalVenta({
+                                id:    v.id_venta,
+                                label: `Venta #${v.id_venta} · ${clienteLabel}`,
+                              })}
+                            >
+                              <CreditCard className="h-4 w-4 text-primary" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Gestionar abonos</TooltipContent>
+                        </Tooltip>
                         
                       </div>
                     </TableCell>

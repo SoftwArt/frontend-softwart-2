@@ -27,6 +27,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { ViewDialog } from '@/src/shared/components/ViewDialog'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { Combobox } from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { CascadePreview } from '@/src/shared/components/CascadePreview'
@@ -292,22 +293,42 @@ export function AppointmentsPage() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           {c.id_estado_cita === 2 && (
-                            <Button variant="ghost" size="icon" title="Crear venta" aria-label="Crear venta desde cita" onClick={() => openVentaModal(c)}>
-                              <ShoppingCart className="h-4 w-4 text-emerald-600" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" aria-label="Crear venta desde cita" onClick={() => openVentaModal(c)}>
+                                  <ShoppingCart className="h-4 w-4 text-emerald-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Crear venta</TooltipContent>
+                            </Tooltip>
                           )}
-                          <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de cita" onClick={() => openView(c)}>
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                          <Button variant="ghost" size="icon" title="Editar" aria-label="Editar cita" onClick={() => openEdit(c)}>
-                            <Pencil className="h-4 w-4 text-foreground" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" title="Eliminar" aria-label="Eliminar cita">
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label="Ver detalle de cita" onClick={() => openView(c)}>
+                                <Eye className="h-4 w-4 text-muted-foreground" />
                               </Button>
-                            </AlertDialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>Ver detalle</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label="Editar cita" onClick={() => openEdit(c)}>
+                                <Pencil className="h-4 w-4 text-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Editar</TooltipContent>
+                          </Tooltip>
+                          <AlertDialog>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" aria-label="Eliminar cita">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>Eliminar</TooltipContent>
+                            </Tooltip>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>¿Eliminar esta cita?</AlertDialogTitle>

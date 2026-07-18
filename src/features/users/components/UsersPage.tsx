@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { withToast } from '@/src/shared/lib/withToast'   
 import { SearchInput }  from '@/src/shared/components/SearchInput'
@@ -132,8 +133,18 @@ export function UsersPage() {
                   <TableCell><ToggleSwitch value={u.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(u.id_usuario), 'Estado actualizado')} options={ACTIVO_OPTIONS} disabled={u.es_admin_base} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" title="Ver detalle" aria-label="Ver detalle de usuario" onClick={() => openView(u)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
-                      <Button variant="ghost" size="icon" title="Editar" aria-label="Editar usuario" onClick={() => openEdit(u)}><Pencil className="h-4 w-4 text-foreground" /></Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="Ver detalle de usuario" onClick={() => openView(u)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Ver detalle</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="Editar usuario" onClick={() => openEdit(u)}><Pencil className="h-4 w-4 text-foreground" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar</TooltipContent>
+                      </Tooltip>
                     </div>
                   </TableCell>
                 </TableRow>
