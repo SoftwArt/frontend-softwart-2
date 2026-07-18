@@ -52,6 +52,7 @@ export function MyAccountPage() {
   const [expandedServicioId, setExpandedServicioId] = useState<number | null>(null)
   const [historialById,      setHistorialById]      = useState<Record<number, HistorialEstado[]>>({})
   const [historialLoadingId, setHistorialLoadingId]  = useState<number | null>(null)
+  const [cancelMotivo,       setCancelMotivo]        = useState('')
 
   // silent=true (polling) no toca el spinner de carga ni pisa el estado si el
   // contenido no cambió — mismo patrón de diffing que fetchMyAppointments/
@@ -473,7 +474,7 @@ export function MyAccountPage() {
                                 </span>
                               )}
                               {puedeCancelar && (
-                                <AlertDialog>
+                                <AlertDialog onOpenChange={(open) => { if (!open) setCancelMotivo('') }}>
                                   <AlertDialogTrigger asChild>
                                     <button disabled={cancelingId === c.id_cita}
                                       className="text-destructive text-xs font-medium hover:underline disabled:opacity-50 transition-all">
@@ -487,14 +488,24 @@ export function MyAccountPage() {
                                         La cita del {parseFechaBloque(c.fecha).dia} de {parseFechaBloque(c.fecha).mes} a las {c.hora?.slice(0, 5)} será cancelada. Esta acción no se puede deshacer.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
+                                    <div>
+                                      <label className={labelCls} htmlFor={`cancel-motivo-${c.id_cita}`}>
+                                        Motivo{' '}
+                                        <span className="text-muted-foreground font-normal normal-case tracking-normal">(opcional)</span>
+                                      </label>
+                                      <textarea id={`cancel-motivo-${c.id_cita}`} value={cancelMotivo} onChange={e => setCancelMotivo(e.target.value)}
+                                        placeholder="Cuéntanos por qué cancelas, nos ayuda a mejorar..."
+                                        rows={3} maxLength={500} className={`${inputCls} resize-none`} />
+                                    </div>
                                     <AlertDialogFooter>
                                       <AlertDialogCancel className="border-border text-foreground">Volver</AlertDialogCancel>
                                       <AlertDialogAction className="bg-destructive text-destructive-foreground"
                                         onClick={async () => {
+                                          const motivo = cancelMotivo
                                           setCancelingId(c.id_cita)
-                                          try { await onCancelAppointment(c.id_cita) }
+                                          try { await onCancelAppointment(c.id_cita, motivo) }
                                           catch (e2) { alert(e2 instanceof Error ? e2.message : 'Error al cancelar') }
-                                          finally { setCancelingId(null) }
+                                          finally { setCancelingId(null); setCancelMotivo('') }
                                         }}>
                                         Sí, cancelar cita
                                       </AlertDialogAction>

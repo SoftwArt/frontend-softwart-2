@@ -224,10 +224,13 @@ export function useAccount() {
   }
 
   // ── Cancelar cita ───────────────────────────────────────────────────────────
-  const onCancelAppointment = async (id_cita: number) => {
+  const onCancelAppointment = async (id_cita: number, motivo?: string) => {
     isMutatingRef.current = true
     try {
-      await apiRequest(`/api/account/citas/${id_cita}/cancelar`, { method: 'PATCH' })
+      await apiRequest(`/api/account/citas/${id_cita}/cancelar`, {
+        method: 'PATCH',
+        body: JSON.stringify({ motivo: motivo?.trim() || undefined }),
+      })
       setCitas(prev => prev.filter(c => c.id_cita !== id_cita))
     } finally {
       isMutatingRef.current = false
