@@ -16,6 +16,7 @@ import { EmptyState } from '@/src/shared/components/EmptyState'
 import { withToast } from '@/src/shared/lib/withToast'
 import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
+import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { FilterBar }     from '@/src/shared/components/FilterBar'
 import { Pagination }    from '@/src/shared/components/Pagination'
@@ -45,6 +46,10 @@ export function ClientsPage() {
   const [telefono,      setTelefono]      = useState('')
   const [errors,        setErrors]        = useState<Record<string, string>>({})
 
+  // Reactivo: cambia según el tipo de documento seleccionado (CC/TI numérico
+  // con longitud propia, CE/PP alfanumérico) — no espera al submit.
+  const documentoFormatoError = documento.length > 0 ? validarDocumentoPorTipo(tipoDocumento, documento) : null
+
   const resetForm = () => {
     setTipoDocumento(''); setDocumento(''); setNombre('')
     setCorreo(''); setTelefono(''); setErrors({}); setEditingId(null)
@@ -62,7 +67,8 @@ export function ClientsPage() {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
     if (!tipoDocumento)    newErrors.tipoDocumento = 'Campo requerido'
-    if (!documento.trim()) newErrors.documento     = 'Campo requerido'
+    if (!documento.trim())        newErrors.documento = 'Campo requerido'
+    else if (documentoFormatoError) newErrors.documento = documentoFormatoError
     if (!nombre.trim())              newErrors.nombre = 'Campo requerido'
     else if (!isNombreLongitudValida(nombre)) newErrors.nombre = NOMBRE_MIN_ERROR
     if (!correo.trim())    newErrors.correo        = 'Campo requerido'
@@ -238,7 +244,9 @@ export function ClientsPage() {
               <input id="cli-documento" value={documento} placeholder="Ej: 1234567890"
                 onChange={e => { setDocumento(e.target.value); if (errors.documento) setErrors({...errors, documento: ''}) }}
                 className={inputCls} />
-              {errors.documento && <p className="mt-1 text-xs text-destructive">{errors.documento}</p>}
+              {(errors.documento || documentoFormatoError) && (
+                <p className="mt-1 text-xs text-destructive">{errors.documento || documentoFormatoError}</p>
+              )}
             </div>
             <div>
               <label className={labelCls} htmlFor="cli-nombre">Nombre completo <span className="text-destructive">*</span></label>

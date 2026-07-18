@@ -9,6 +9,7 @@ import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
+import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { ArrowLeft, Eye, EyeOff, LogIn } from 'lucide-react'
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -52,13 +53,14 @@ export function RegisterPage() {
   const showTelefonoError = telefono.length > 0 && !telefonoValido
   const nombreValido      = isNombreLongitudValida(nombre)
   const showNombreError   = nombre.length > 0 && !nombreValido
+  const documentoError    = validarDocumentoPorTipo(tipoDocumento, documento)
   const isFormValid =
-    tipoDocumento && documento && nombreValido && correo &&
+    tipoDocumento && documento && !documentoError && nombreValido && correo &&
     telefonoValido && clave && confirmarClave && passwordsMatch && passwordValid && acceptTerms
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!passwordsMatch || !passwordValid || !telefonoValido || !nombreValido) return
+    if (!passwordsMatch || !passwordValid || !telefonoValido || !nombreValido || documentoError) return
     await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave })
   }
 
@@ -148,6 +150,9 @@ export function RegisterPage() {
                   placeholder="Ej: 1023456789" required
                   className={fieldCls}
                 />
+                {documento.length > 0 && documentoError && (
+                  <p className="mt-1 text-xs text-destructive">{documentoError}</p>
+                )}
               </div>
             </div>
 

@@ -15,6 +15,7 @@ import { TimePicker } from '@/src/shared/components/TimePicker'
 import { DatePicker } from '@/src/shared/components/DatePicker'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
 import { stripDigits } from '@/src/shared/lib/validateNombre'
+import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { toast } from 'sonner'
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
@@ -190,6 +191,9 @@ export function LandingPage() {
   const [clientForm, setClientForm] = useState({
     tipoDocumento: '', documento: '', nombre: '', correo: '', telefono: '',
   })
+  const documentoError = clientForm.documento.length > 0
+    ? validarDocumentoPorTipo(clientForm.tipoDocumento, clientForm.documento)
+    : null
   const tomorrowStr = () => {
     const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10)
   }
@@ -754,6 +758,7 @@ export function LandingPage() {
                   onChange={e => setClientForm(f => ({ ...f, documento: e.target.value }))}
                   required
                 />
+                {documentoError && <p className="text-xs text-destructive">{documentoError}</p>}
               </div>
             </div>
 
@@ -804,7 +809,7 @@ export function LandingPage() {
 
             <Button
               type="submit"
-              disabled={!clientForm.tipoDocumento}
+              disabled={!clientForm.tipoDocumento || !clientForm.documento || !!documentoError}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Siguiente →
