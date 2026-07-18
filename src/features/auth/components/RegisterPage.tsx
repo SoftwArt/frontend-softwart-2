@@ -7,6 +7,7 @@ import { Input }    from '@/src/shared/components/ui/input'
 import { Checkbox } from '@/src/shared/components/ui/checkbox'
 import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
+import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { ArrowLeft, Eye, EyeOff, LogIn } from 'lucide-react'
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -46,13 +47,15 @@ export function RegisterPage() {
   const passwordsMatch    = clave === confirmarClave
   const showMismatchError = confirmarClave.length > 0 && !passwordsMatch
   const passwordValid     = validatePassword(clave).valid
+  const telefonoValido    = telefono.length > 0 && isTelefonoValid(telefono)
+  const showTelefonoError = telefono.length > 0 && !telefonoValido
   const isFormValid =
     tipoDocumento && documento && nombre && correo &&
-    telefono && clave && confirmarClave && passwordsMatch && passwordValid && acceptTerms
+    telefonoValido && clave && confirmarClave && passwordsMatch && passwordValid && acceptTerms
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!passwordsMatch || !passwordValid) return
+    if (!passwordsMatch || !passwordValid || !telefonoValido) return
     await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave })
   }
 
@@ -175,6 +178,7 @@ export function RegisterPage() {
                   placeholder="+57 300 000 0000" required
                   className={fieldCls}
                 />
+                {showTelefonoError && <p className="mt-1 text-xs text-destructive">{TELEFONO_ERROR}</p>}
               </div>
             </div>
 

@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/src/shared/components/ui/alert-dialog'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { EmptyState } from '@/src/shared/components/EmptyState'
-import { withToast } from '@/src/shared/lib/withToast'    
+import { withToast } from '@/src/shared/lib/withToast'
+import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { FilterBar }     from '@/src/shared/components/FilterBar'
 import { Pagination }    from '@/src/shared/components/Pagination'
@@ -63,6 +64,7 @@ export function ClientsPage() {
     if (!documento.trim()) newErrors.documento     = 'Campo requerido'
     if (!nombre.trim())    newErrors.nombre        = 'Campo requerido'
     if (!correo.trim())    newErrors.correo        = 'Campo requerido'
+    if (!isTelefonoValid(telefono)) newErrors.telefono = TELEFONO_ERROR
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
     setIsSubmitting(true)
     try {
@@ -254,8 +256,9 @@ export function ClientsPage() {
             <div>
               <label className={labelCls} htmlFor="cli-telefono">Teléfono (opcional)</label>
               <input id="cli-telefono" type="tel" value={telefono} placeholder="Ej: 3001234567"
-                onChange={e => setTelefono(e.target.value)}
+                onChange={e => { setTelefono(e.target.value); if (errors.telefono) setErrors({...errors, telefono: ''}) }}
                 className={inputCls} />
+              {errors.telefono && <p className="mt-1 text-xs text-destructive">{errors.telefono}</p>}
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button"

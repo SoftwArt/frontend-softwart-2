@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
+import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { usePolling } from '@/src/shared/hooks/usePolling'
 import { tomorrowString } from '../utils'
 import { BookedSlot } from '@/src/shared/components/TimePicker'
@@ -118,7 +119,11 @@ export function useAccount() {
 
   const submitPerfil = async (e: React.FormEvent) => {
     e.preventDefault()
-    setPerfilMsg(null); setIsSavingPerfil(true)
+    setPerfilMsg(null)
+    if (!isTelefonoValid(perfilTelefono)) {
+      setPerfilMsg(TELEFONO_ERROR); setPerfilMsgType('err'); return
+    }
+    setIsSavingPerfil(true)
     try {
       const res = await apiRequest<ApiResponse<PerfilCliente>>('/api/account/perfil', {
         method: 'PUT',
