@@ -45,6 +45,16 @@ export function tomorrowString(): string {
   return d.toISOString().slice(0, 10)
 }
 
+// Espeja la ventana mínima de 6h antes de la cita que valida el backend
+// (ClientAccountController.cancelMyAppointment) — evita ofrecer un botón que
+// siempre fallaría al confirmar.
+export function canCancelCita(fecha: string, hora: string): boolean {
+  const horaNormalizada = hora.length === 5 ? `${hora}:00` : hora
+  const citaDateTime = new Date(`${fecha}T${horaNormalizada}`)
+  const SEIS_HORAS_MS = 6 * 60 * 60 * 1000
+  return citaDateTime.getTime() - Date.now() >= SEIS_HORAS_MS
+}
+
 export function parseFechaBloque(fecha: string): { mes: string; dia: string } {
   const parts = fecha.split(/[-T]/)
   if (parts.length >= 3) {
@@ -56,8 +66,9 @@ export function parseFechaBloque(fecha: string): { mes: string; dia: string } {
 export function estadoBadgeClasses(nombre?: string): string {
   if (!nombre) return 'bg-muted text-muted-foreground'
   const s = nombre.toLowerCase()
-  if (s.includes('pend'))    return 'bg-orange-100 text-orange-800'
-  if (s.includes('complet') || s.includes('conf') || s.includes('val'))
+  if (s.includes('pend'))     return 'bg-orange-100 text-orange-800'
+  if (s.includes('confirmada')) return 'bg-blue-100 text-blue-800'
+  if (s.includes('complet') || s.includes('val'))
     return 'bg-emerald-100 text-emerald-800'
   if (s.includes('cancel'))  return 'bg-destructive/15 text-destructive'
   return 'bg-muted text-muted-foreground'

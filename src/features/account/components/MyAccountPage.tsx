@@ -8,6 +8,7 @@ import {
   estadoBadgeClasses, estadoServicioBadgeClasses,
   filterCitasCuenta, filterServiciosCuenta,
   modalBackdropVariants, modalPanelVariants,
+  canCancelCita,
 } from '../utils'
 import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
@@ -301,7 +302,7 @@ export function MyAccountPage() {
                   <div className="space-y-3 text-sm">
                     <div className="flex gap-3 items-start">
                       <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                      <span className="text-muted-foreground">Cra. 74 #50, Laureles – Estadio, Medellín</span>
+                      <span className="text-muted-foreground">Cra. 74 #50, Los Colores – Estadio, Medellín</span>
                     </div>
                     <div className="flex gap-3 items-start">
                       <Clock className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -406,7 +407,8 @@ export function MyAccountPage() {
                     <div className="space-y-3">
                       {citasPag.paginated.map(c => {
                         const { mes, dia } = parseFechaBloque(c.fecha)
-                        const esPendiente  = c.appointmentStatus?.nombre?.toLowerCase().includes('pend') ?? false
+                        const esPendiente   = c.appointmentStatus?.nombre?.toLowerCase().includes('pend') ?? false
+                        const puedeCancelar = esPendiente && canCancelCita(c.fecha, c.hora)
                         return (
                           <div key={c.id_cita}
                             className="bg-card rounded-xl border border-border p-5 flex flex-col sm:flex-row sm:items-center gap-4 hover:border-primary/20 transition-colors">
@@ -427,7 +429,12 @@ export function MyAccountPage() {
                               <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${estadoBadgeClasses(c.appointmentStatus?.nombre)}`}>
                                 {c.appointmentStatus?.nombre ?? 'Sin estado'}
                               </span>
-                              {esPendiente && (
+                              {esPendiente && !puedeCancelar && (
+                                <span className="text-muted-foreground text-xs italic" title="Solo se puede cancelar hasta 6 horas antes de la cita">
+                                  No cancelable (faltan &lt;6h)
+                                </span>
+                              )}
+                              {puedeCancelar && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <button disabled={cancelingId === c.id_cita}
