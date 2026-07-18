@@ -19,7 +19,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ViewDialog } from '@/src/shared/components/ViewDialog'
 import { Combobox }    from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
-import { withToast } from '@/src/shared/lib/withToast'  
+import { withToast } from '@/src/shared/lib/withToast'
+import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { SearchInput } from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
@@ -253,7 +254,12 @@ export function PaymentsPage() {
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={() => {
                   if (alertEstado.pagoId && idEstadoAnulado) {
-                    withToast(onChangeStatus(alertEstado.pagoId, idEstadoAnulado), 'Pago anulado')
+                    const { pagoId } = alertEstado
+                    undoableAction({
+                      message: 'Anulando pago...',
+                      successMsg: 'Pago anulado',
+                      onCommit: () => onChangeStatus(pagoId, idEstadoAnulado),
+                    })
                   }
                   setAlertEstado({ open: false, msg: '' })
                 }}
