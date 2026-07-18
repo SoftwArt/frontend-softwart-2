@@ -1,17 +1,39 @@
+import type { ComponentType } from 'react'
+import {
+  UserRound, UserCircle, Calendar, ShoppingBag, ClipboardList,
+  CreditCard, Calculator, Wrench, Users, Shield, ShieldCheck,
+} from 'lucide-react'
+
 export const ADMIN_ROL_ID = 1
 
 export const MODULO_LABELS: Record<string, string> = {
-  CUENTA:    '👤 Mi Cuenta (Cliente)',
-  CLIENTES:  '🧑‍💼 Clientes',
-  CITAS:     '📅 Citas',
-  VENTAS:    '💰 Ventas',
-  PEDIDOS:   '📦 Pedidos',
-  PAGOS:     '💳 Pagos',
-  MARCOS:    '🖼️ Marcos / Calculadora',
-  SERVICIOS: '🔧 Tipos de Servicio',
-  USUARIOS:  '👥 Usuarios',
-  ROLES:     '🔑 Roles',
-  PERMISOS:  '🛡️ Permisos',
+  CUENTA:    'Mi Cuenta (Cliente)',
+  CLIENTES:  'Clientes',
+  CITAS:     'Citas',
+  VENTAS:    'Ventas',
+  PEDIDOS:   'Pedidos',
+  PAGOS:     'Pagos',
+  MARCOS:    'Marcos / Calculadora',
+  SERVICIOS: 'Tipos de Servicio',
+  USUARIOS:  'Usuarios',
+  ROLES:     'Roles',
+  PERMISOS:  'Permisos',
+}
+
+// Mismos iconos que AdminSidebar.tsx para el módulo equivalente — consistencia
+// visual (Nielsen H4), ADR-004 tarea 7: reemplazo de emojis por iconos shadcn/lucide.
+export const MODULO_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  CUENTA:    UserRound,
+  CLIENTES:  UserCircle,
+  CITAS:     Calendar,
+  VENTAS:    ShoppingBag,
+  PEDIDOS:   ClipboardList,
+  PAGOS:     CreditCard,
+  MARCOS:    Calculator,
+  SERVICIOS: Wrench,
+  USUARIOS:  Users,
+  ROLES:     Shield,
+  PERMISOS:  ShieldCheck,
 }
 
 export const MODULO_ORDER = [

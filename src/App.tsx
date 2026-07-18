@@ -77,7 +77,7 @@ function AdminLayout() {
         <header className="shrink-0 h-14 border-b border-border bg-card flex items-center justify-end px-6 gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent transition-colors outline-none">
+              <button className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent transition-colors outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]">
                 <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0">
                   <span className="text-xs font-semibold text-primary">{inicial}</span>
                 </div>

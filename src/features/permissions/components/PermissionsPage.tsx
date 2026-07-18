@@ -1,7 +1,7 @@
 // src/features/permissions/components/PermissionsPage.tsx
 import { usePermissions } from '../hooks/usePermissions'
 import { useState, useMemo } from 'react'
-import { ShieldCheck, ShieldOff, Lock, AlertCircle, ChevronDown, CheckSquare, Square } from 'lucide-react'
+import { ShieldCheck, ShieldOff, Lock, AlertCircle, ChevronDown, CheckSquare, Square, X, HelpCircle } from 'lucide-react'
 import { Label } from '@/src/shared/components/ui/label'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { Checkbox } from '@/src/shared/components/ui/checkbox'
@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/src/shared/components/ui/alert'
 import { Badge } from '@/src/shared/components/ui/badge'
 import { Button } from '@/src/shared/components/ui/button'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { EmptyState } from '@/src/shared/components/EmptyState'
-import { ADMIN_ROL_ID, MODULO_LABELS, MODULO_ORDER, getModulo, getAccion } from '../utils'
+import { ADMIN_ROL_ID, MODULO_LABELS, MODULO_ICONS, MODULO_ORDER, getModulo, getAccion } from '../utils'
 
 // ── Card de módulo ────────────────────────────────────────────────────────────
 interface ModuloCardProps {
@@ -46,8 +47,12 @@ function ModuloCard({ moduloKey, permisos, id_rol, isAdmin, hasPermission, onTog
         className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-accent/40 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-foreground">
-            {MODULO_LABELS[moduloKey] ?? `⚙️ ${moduloKey}`}
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            {(() => {
+              const Icon = MODULO_ICONS[moduloKey] ?? HelpCircle
+              return <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+            })()}
+            {MODULO_LABELS[moduloKey] ?? moduloKey}
           </span>
           <Badge
             variant="secondary"
@@ -59,23 +64,28 @@ function ModuloCard({ moduloKey, permisos, id_rol, isAdmin, hasPermission, onTog
         <div className="flex items-center gap-2">
           {/* Checkbox "seleccionar todo el módulo" */}
           {!isAdmin && (
-            <div
-              role="checkbox"
-              tabIndex={0}
-              aria-checked={todosOn ? true : algunoOn ? 'mixed' : false}
-              onClick={e => { e.stopPropagation(); handleToggleAll() }}
-              onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.stopPropagation(); handleToggleAll() } }}
-              className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title={todosOn ? 'Desmarcar todos' : 'Marcar todos'}
-            >
-              {todosOn
-                ? <CheckSquare className="h-4 w-4 text-primary" />
-                : algunoOn
-                  ? <CheckSquare className="h-4 w-4 text-amber-500" />
-                  : <Square className="h-4 w-4" />
-              }
-              <span className="hidden sm:inline">{todosOn ? 'Todos' : 'Marcar todos'}</span>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  role="checkbox"
+                  tabIndex={0}
+                  aria-checked={todosOn ? true : algunoOn ? 'mixed' : false}
+                  aria-label={todosOn ? 'Desmarcar todos' : 'Marcar todos'}
+                  onClick={e => { e.stopPropagation(); handleToggleAll() }}
+                  onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.stopPropagation(); handleToggleAll() } }}
+                  className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  {todosOn
+                    ? <CheckSquare className="h-4 w-4 text-primary" />
+                    : algunoOn
+                      ? <CheckSquare className="h-4 w-4 text-amber-500" />
+                      : <Square className="h-4 w-4" />
+                  }
+                  <span className="hidden sm:inline">{todosOn ? 'Todos' : 'Marcar todos'}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>{todosOn ? 'Desmarcar todos' : 'Marcar todos'}</TooltipContent>
+            </Tooltip>
           )}
           <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
         </div>
@@ -235,7 +245,18 @@ export function PermissionsPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>{actionError}</span>
-            <button onClick={() => setActionError(null)} className="ml-2 opacity-70 hover:opacity-100">✕</button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setActionError(null)}
+                  aria-label="Cerrar aviso"
+                  className="ml-2 opacity-70 hover:opacity-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Cerrar</TooltipContent>
+            </Tooltip>
           </AlertDescription>
         </Alert>
       )}

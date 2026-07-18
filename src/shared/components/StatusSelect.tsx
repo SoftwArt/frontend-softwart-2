@@ -26,7 +26,8 @@ export function StatusSelect({ value, onValueChange, options, disabled }: Status
       <SelectPrimitive.Trigger
         className={cn(
           'group flex items-center gap-1.5 h-8 rounded-md px-1.5',
-          'border-0 bg-transparent outline-none focus:ring-0 focus:ring-offset-0',
+          'border-0 bg-transparent outline-none',
+          'focus-visible:ring-ring/50 focus-visible:ring-[3px]',
           'hover:bg-accent transition-colors cursor-pointer',
           'disabled:cursor-not-allowed disabled:opacity-50 data-[disabled]:opacity-50',
         )}
