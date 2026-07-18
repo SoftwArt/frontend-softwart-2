@@ -10,17 +10,20 @@ import type { ComboboxOption } from '@/src/shared/components/Combobox'
 type ApiResponse<T> = { success: boolean; data: T; meta?: unknown }
 
 // ── Clientes ──────────────────────────────────────────────────
-type ClienteOption = { id_cliente: number; nombre: string; documento: string }
+type ClienteOption = { id_cliente: number; nombre: string; tipoDocumento: string; documento: string }
 
 export function useClientsOptions() {
-  const [options,   setOptions]   = useState<ComboboxOption[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [options,     setOptions]     = useState<ComboboxOption[]>([])
+  const [rawClientes, setRawClientes] = useState<ClienteOption[]>([])
+  const [isLoading,   setIsLoading]   = useState(true)
 
   useEffect(() => {
     apiRequest<ApiResponse<ClienteOption[]>>('/api/clients?limit=100')
       .then((res) => {
+        const data = res.data ?? []
+        setRawClientes(data)
         setOptions(
-          (res.data ?? []).map((c) => ({
+          data.map((c) => ({
             value:    String(c.id_cliente),
             label:    c.nombre,
             sublabel: c.documento,
@@ -31,7 +34,7 @@ export function useClientsOptions() {
       .finally(() => setIsLoading(false))
   }, [])
 
-  return { options, isLoading }
+  return { options, rawClientes, isLoading }
 }
 
 // ── Ventas ────────────────────────────────────────────────────

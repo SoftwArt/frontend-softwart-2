@@ -6,6 +6,7 @@ import { useClientsOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo, useCallback } from 'react'
 import type { Cita, VentaLinea, VentaMsg, CitaDetalle } from '../types'
 import { inputCls, labelCls, selectCls, badgeClassByName, filterCitas, todayStr, validateFecha, fmtCOP } from '../utils'
+import { DOCUMENT_TYPES } from '@/src/features/clients/utils'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
@@ -34,7 +35,7 @@ import { DatePicker } from '@/src/shared/components/DatePicker'
 
 export function AppointmentsPage() {
   const { citas, estadosCita, isLoading, onCreate, onEdit, onDelete, onChangeStatus, refresh } = useAppointments()
-  const { options: clientesOpts }  = useClientsOptions()
+  const { options: clientesOpts, rawClientes } = useClientsOptions()
   const { options: serviciosOpts } = useServicesOptions()
   const { options: marcosOpts }    = useFrameOptions()
   const [searchParams] = useSearchParams()
@@ -344,7 +345,9 @@ export function AppointmentsPage() {
       </div>
 
       {/* ── ViewDialog ──────────────────────────────────────────────────────── */}
-      {viewingItem && (
+      {viewingItem && (() => {
+        const cliente = rawClientes.find(c => c.id_cliente === viewingItem.id_cliente)
+        return (
         <ViewDialog
           open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Cita #${viewingItem.id_cita}`}
@@ -352,6 +355,8 @@ export function AppointmentsPage() {
             { label: 'ID',      value: viewingItem.id_cita },
             { label: 'Estado',  value: <Badge variant="outline" className={badgeClassByName(getEstadoLabel(viewingItem.id_estado_cita))}>{getEstadoLabel(viewingItem.id_estado_cita)}</Badge> },
             { label: 'Cliente', value: clientesOpts.find(o => o.value === String(viewingItem.id_cliente))?.label ?? `#${viewingItem.id_cliente}`, fullWidth: true },
+            { label: 'Tipo de documento', value: DOCUMENT_TYPES.find(t => t.value === cliente?.tipoDocumento)?.label ?? cliente?.tipoDocumento },
+            { label: 'Documento',         value: cliente?.documento },
             { label: 'Fecha',   value: formatDate(viewingItem.fecha) },
             { label: 'Hora',    value: formatTime(viewingItem.hora) },
             ...(viewingItem.motivoCancelacion
@@ -359,7 +364,8 @@ export function AppointmentsPage() {
               : []),
           ]}
         />
-      )}
+        )
+      })()}
 
       {/* ── Dialog Form Cita ────────────────────────────────────────────────── */}
       <Dialog open={isFormOpen} onOpenChange={(v) => { setIsFormOpen(v); if (!v) resetForm() }}>
