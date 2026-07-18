@@ -145,7 +145,7 @@ export function ResetPasswordPage() {
       </m.header>
 
       {/* ── Main ──────────────────────────────────────────────────────── */}
-      <main className="flex-1 flex items-center justify-center px-4 pt-20 pb-12 relative overflow-hidden">
+      <main className="flex-1 flex items-center justify-center px-6 py-24 relative overflow-hidden">
 
         {/* Blobs decorativos de fondo */}
         <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
@@ -153,34 +153,15 @@ export function ResetPasswordPage() {
           <div className="absolute bottom-[-10%] right-[-5%] w-96 h-96 rounded-full bg-[#06403d] blur-[100px]" />
         </div>
 
-        <m.div
-          className="relative z-10 max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 bg-white rounded-xl overflow-hidden shadow-2xl"
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, delay: 0.1, ease: EASE }}
-        >
+        <div className="w-full max-w-md relative z-10">
 
-          {/* ── Panel izquierdo: imagen con overlay ───────────────────── */}
-          <div className="hidden md:block relative bg-[#efeeea] overflow-hidden">
-            <div className="absolute inset-0 opacity-20 mix-blend-multiply bg-[#002926] z-10" />
-            <img
-              alt="Herramientas de marquetería artesanal"
-              src="https://res.cloudinary.com/dq1etaydx/image/upload/v1774138852/resetPasswordimg_letuc5.png"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#002926]/60 to-transparent z-20" />
-            <div className="absolute bottom-8 left-8 right-8 z-30">
-              <h2 className="font-serif text-3xl text-white leading-tight tracking-tight">
-                La paciencia es el alma<br />de la artesanía.
-              </h2>
-              <p className="text-white/80 mt-2 text-sm">
-                Protege tu espacio en nuestro atelier digital.
-              </p>
-            </div>
-          </div>
-
-          {/* ── Panel derecho: formulario ──────────────────────────────── */}
-          <div className="p-8 md:p-12 flex flex-col justify-center">
+          {/* Card */}
+          <m.div
+            className="bg-white p-8 md:p-12 rounded-xl shadow-2xl border border-white/10"
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, delay: 0.1, ease: EASE }}
+          >
             <AnimatePresence mode="wait">
               {success ? (
 
@@ -210,14 +191,20 @@ export function ResetPasswordPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: EASE }}
                 >
-                  <div className="mb-10">
-                    <h1 className="font-serif italic text-4xl text-[#002926] tracking-tight mb-3">
-                      Nueva contraseña
-                    </h1>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Establece tu nueva clave de acceso.
-                    </p>
+                  {/* Ícono */}
+                  <div className="flex justify-center mb-8">
+                    <div className="w-16 h-16 rounded-full bg-[#efeeea] flex items-center justify-center">
+                      <LockKeyhole className="h-7 w-7 text-[#805533]" />
+                    </div>
                   </div>
+
+                  {/* Título */}
+                  <h1 className="font-serif italic text-3xl md:text-4xl text-center text-[#002926] tracking-tight mb-4">
+                    Nueva contraseña
+                  </h1>
+                  <p className="text-muted-foreground text-center text-sm mb-10 px-4 leading-relaxed">
+                    Establece tu nueva clave de acceso.
+                  </p>
 
                   {error && (
                     <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
@@ -350,24 +337,10 @@ export function ResetPasswordPage() {
 
               )}
             </AnimatePresence>
-          </div>
+          </m.div>
 
-        </m.div>
-      </main>
-
-      {/* ── Footer ────────────────────────────────────────────────────── */}
-      <m.footer
-        className="bg-secondary border-t border-secondary-foreground/10 py-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.5, ease: EASE }}
-      >
-        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-1 text-center">
-          <span className="text-xs text-secondary-foreground/50">
-            © {new Date().getFullYear()} SoftwArt · Todos los derechos reservados
-          </span>
         </div>
-      </m.footer>
+      </main>
 
     </div>
     </LazyMotion>
