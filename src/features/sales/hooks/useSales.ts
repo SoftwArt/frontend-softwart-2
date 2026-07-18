@@ -36,10 +36,6 @@ export function useSales() {
     await apiRequest(`/api/sales/${id}`, { method: 'PUT', body: JSON.stringify(data) })
     await fetchAll()
   }
-  const onDelete = async (id: number) => {
-    await apiRequest(`/api/sales/${id}`, { method: 'DELETE' })
-    await fetchAll()
-  }
   const onToggleStatus = async (id: number) => {
     setVentas(prev => prev.map(v => v.id_venta === id ? { ...v, estado: !v.estado } : v))
     try { await apiRequest(`/api/sales/${id}/estado`, { method: 'PATCH' }) }
@@ -49,5 +45,5 @@ export function useSales() {
     }
   }
 
-  return { ventas, isLoading, error, onCreate, onEdit, onDelete, onToggleStatus, refetch: fetchAll }
+  return { ventas, isLoading, error, onCreate, onEdit, onToggleStatus, refetch: fetchAll }
 }

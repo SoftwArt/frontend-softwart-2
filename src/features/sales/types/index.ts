@@ -26,6 +26,10 @@ export type BackendVenta = {
   payments?:     BackendPayment[] | null
 }
 
+export type SaleDetailPreview = { id_detalle: number; serviceStatus?: { nombre: string } | null }
+export type PaymentPreviewFull = { id_pago: number; monto: number; paymentStatus?: { nombre: string } | null }
+export type VentaDetalle = Omit<BackendVenta, 'payments'> & { saleDetails?: SaleDetailPreview[]; payments?: PaymentPreviewFull[] }
+
 export type AbonoEsperado = { number: number; amount: number; percentage: number }
 export type EstadoPago    = { id_estado_pago: number; nombre: string }
 export type MetodoPago    = { id_metodo_pago: number; nombre: string }

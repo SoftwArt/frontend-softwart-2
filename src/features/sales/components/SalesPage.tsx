@@ -4,16 +4,18 @@ import { useClientsOptions, useAppointmentsOptions } from '@/src/shared/hooks/us
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { SaleInstallmentModal } from './SaleInstallmentModal'
 import { useState, useMemo } from 'react'
-import type { Venta } from '../types'
+import type { Venta, VentaDetalle } from '../types'
+import { apiRequest } from '@/src/shared/lib/apiClient'
 import { inputCls, labelCls, filterVentas } from '../utils'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
 import { FilterBar } from '@/src/shared/components/FilterBar'
-import { withToast } from '@/src/shared/lib/withToast'   
+import { withToast } from '@/src/shared/lib/withToast'
+import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate } from '@/src/shared/lib/formatDate'
-import { Plus, Pencil, Trash2, Eye, CreditCard, CheckCircle2, CircleDashed } from 'lucide-react'
+import { Plus, Pencil, Eye, CreditCard, CheckCircle2, CircleDashed } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { ToggleSwitch, ACTIVO_OPTIONS } from '@/src/shared/components/ToggleSwitch'
@@ -24,10 +26,11 @@ import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { Combobox } from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { DatePicker } from '@/src/shared/components/DatePicker'
+import { CascadePreview } from '@/src/shared/components/CascadePreview'
 
 
 export function SalesPage() {
-  const { ventas, isLoading, onCreate, onEdit, onDelete, onToggleStatus, refetch } = useSales()
+  const { ventas, isLoading, onCreate, onEdit, onToggleStatus, refetch } = useSales()
   const [searchParams] = useSearchParams()
 
   // ── Modal de abonos ───────────────────────────────────────────────────────
@@ -49,7 +52,40 @@ export function SalesPage() {
   const [viewingItem, setViewingItem] = useState<Venta | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Confirmación de anulación (desactivar es definitivo: no se puede reactivar)
-  const [anularTarget, setAnularTarget] = useState<{ id: number; label: string } | null>(null)
+  const [anularTarget, setAnularTarget] = useState<{ id: number; label: string; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
+
+  const MSG_ANULAR_BASE = 'Esta acción es definitiva y no se puede reactivar.'
+
+  const openAnular = (id: number, label: string) => {
+    setAnularTarget({ id, label, loading: true, lines: [] })
+    apiRequest<{ success: boolean; data: VentaDetalle }>(`/api/sales/${id}`)
+      .then((res) => {
+        const sale = res.data
+        const pagosValidados = (sale.payments ?? []).some(
+          p => p.paymentStatus?.nombre?.toLowerCase().includes('validado')
+        )
+        if (pagosValidados) {
+          setAnularTarget(prev => prev && prev.id === id
+            ? { ...prev, loading: false, bloqueado: true, msg: 'Tiene pagos validados. Registra la devolución antes de anularla.', lines: [] }
+            : prev)
+          return
+        }
+        const serviciosACancelar = (sale.saleDetails ?? [])
+          .filter(d => {
+            const n = d.serviceStatus?.nombre?.toLowerCase() ?? ''
+            return !n.includes('finaliz') && !n.includes('cancel')
+          })
+          .map(d => d.id_detalle)
+        const abonosAAnular = (sale.payments ?? [])
+          .filter(p => p.paymentStatus?.nombre?.toLowerCase().includes('pendiente'))
+        const lines = [
+          ...serviciosACancelar.map(id_ => `Servicio #${id_} se cancelará`),
+          ...abonosAAnular.map(p => `Abono #${p.id_pago} (${formatCurrency(p.monto)}) se anulará`),
+        ]
+        setAnularTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines } : prev)
+      })
+      .catch(() => setAnularTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines: [] } : prev))
+  }
   const [idCliente, setIdCliente] = useState('')
   const [idCita, setIdCita] = useState('')
 
@@ -66,14 +102,18 @@ export function SalesPage() {
   const [observacion, setObservacion] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const confirmAnular = async () => {
-    if (!anularTarget) return
-    const { id } = anularTarget
+  const confirmAnular = () => {
+    if (!anularTarget || anularTarget.loading || anularTarget.bloqueado) return
+    const { id, label } = anularTarget
     setAnularTarget(null)
-    try {
-      await withToast(onToggleStatus(id), 'Venta anulada')
-      await refetch() // refrescar: la anulación cambió abonos/servicios en cascada
-    } catch { /* withToast ya mostró el error y el hook revirtió el estado */ }
+    undoableAction({
+      message: `Anulando ${label}...`,
+      successMsg: 'Venta anulada',
+      onCommit: async () => {
+        await onToggleStatus(id)
+        await refetch() // refrescar: la anulación cambió abonos/servicios en cascada
+      },
+    })
   }
 
   const resetForm = () => { setIdCliente(''); setIdCita(''); setFecha(''); setTotal(''); setObservacion(''); setErrors({}); setEditingId(null) }
@@ -168,7 +208,7 @@ export function SalesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <ToggleSwitch value={v.estado ? 1 : 0} onChange={() => setAnularTarget({ id: v.id_venta, label: `Venta #${v.id_venta} · ${clienteLabel}` })} options={ACTIVO_OPTIONS} disabled={!v.estado} />
+                      <ToggleSwitch value={v.estado ? 1 : 0} onChange={() => openAnular(v.id_venta, `Venta #${v.id_venta} · ${clienteLabel}`)} options={ACTIVO_OPTIONS} disabled={!v.estado} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -287,16 +327,18 @@ export function SalesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Anular esta venta?</AlertDialogTitle>
             <AlertDialogDescription>
-              {anularTarget?.label}. Se cancelarán los servicios no finalizados y se anularán los abonos pendientes. Esta acción es definitiva y no se puede reactivar. Si la venta tiene pagos validados, primero debes registrar la devolución.
+              {anularTarget?.label}. {anularTarget?.bloqueado ? anularTarget.msg : MSG_ANULAR_BASE}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <CascadePreview lines={anularTarget?.lines ?? []} loading={anularTarget?.loading} />
           <AlertDialogFooter>
             <AlertDialogCancel>Volver</AlertDialogCancel>
             <AlertDialogAction
+              disabled={anularTarget?.loading || anularTarget?.bloqueado}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={confirmAnular}
             >
-              Sí, anular venta
+              {anularTarget?.bloqueado ? 'No se puede anular' : 'Sí, anular venta'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
