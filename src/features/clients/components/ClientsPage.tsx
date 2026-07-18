@@ -64,7 +64,8 @@ export function ClientsPage() {
     if (!documento.trim()) newErrors.documento     = 'Campo requerido'
     if (!nombre.trim())    newErrors.nombre        = 'Campo requerido'
     if (!correo.trim())    newErrors.correo        = 'Campo requerido'
-    if (!isTelefonoValid(telefono)) newErrors.telefono = TELEFONO_ERROR
+    if (!telefono.trim())           newErrors.telefono = 'Campo requerido'
+    else if (!isTelefonoValid(telefono)) newErrors.telefono = TELEFONO_ERROR
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
     setIsSubmitting(true)
     try {
@@ -254,7 +255,7 @@ export function ClientsPage() {
               </div>
             )}
             <div>
-              <label className={labelCls} htmlFor="cli-telefono">Teléfono (opcional)</label>
+              <label className={labelCls} htmlFor="cli-telefono">Teléfono <span className="text-destructive">*</span></label>
               <input id="cli-telefono" type="tel" value={telefono} placeholder="Ej: 3001234567"
                 onChange={e => { setTelefono(e.target.value); if (errors.telefono) setErrors({...errors, telefono: ''}) }}
                 className={inputCls} />

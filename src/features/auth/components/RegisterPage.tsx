@@ -43,18 +43,21 @@ export function RegisterPage() {
   const [showClave,      setShowClave]      = useState(false)
   const [showConfirmar,  setShowConfirmar]  = useState(false)
   const [acceptTerms,    setAcceptTerms]    = useState(false)
+  const [submitAttempted, setSubmitAttempted] = useState(false)
 
   const passwordsMatch    = clave === confirmarClave
   const showMismatchError = confirmarClave.length > 0 && !passwordsMatch
   const passwordValid     = validatePassword(clave).valid
   const telefonoValido    = telefono.length > 0 && isTelefonoValid(telefono)
-  const showTelefonoError = telefono.length > 0 && !telefonoValido
+  const showTelefonoRequired = submitAttempted && telefono.length === 0
+  const showTelefonoError    = telefono.length > 0 && !telefonoValido
   const isFormValid =
     tipoDocumento && documento && nombre && correo &&
     telefonoValido && clave && confirmarClave && passwordsMatch && passwordValid && acceptTerms
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitAttempted(true)
     if (!passwordsMatch || !passwordValid || !telefonoValido) return
     await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave })
   }
@@ -171,13 +174,14 @@ export function RegisterPage() {
                 />
               </div>
               <div>
-                <label className={labelCls} htmlFor="telefono">Teléfono</label>
+                <label className={labelCls} htmlFor="telefono">Teléfono <span className="text-destructive">*</span></label>
                 <Input
                   id="telefono" type="tel"
                   value={telefono} onChange={e => setTelefono(e.target.value)}
                   placeholder="+57 300 000 0000" required
                   className={fieldCls}
                 />
+                {showTelefonoRequired && <p className="mt-1 text-xs text-destructive">El teléfono es obligatorio.</p>}
                 {showTelefonoError && <p className="mt-1 text-xs text-destructive">{TELEFONO_ERROR}</p>}
               </div>
             </div>

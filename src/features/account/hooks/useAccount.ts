@@ -120,6 +120,9 @@ export function useAccount() {
   const submitPerfil = async (e: React.FormEvent) => {
     e.preventDefault()
     setPerfilMsg(null)
+    if (!perfilTelefono.trim()) {
+      setPerfilMsg('El teléfono es obligatorio.'); setPerfilMsgType('err'); return
+    }
     if (!isTelefonoValid(perfilTelefono)) {
       setPerfilMsg(TELEFONO_ERROR); setPerfilMsgType('err'); return
     }

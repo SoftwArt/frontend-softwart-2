@@ -684,9 +684,9 @@ export function MyAccountPage() {
                           onChange={e => setPerfilNombre(e.target.value)} required className={inputCls} />
                       </div>
                       <div>
-                        <label className={labelCls} htmlFor="perfil-telefono">Teléfono</label>
+                        <label className={labelCls} htmlFor="perfil-telefono">Teléfono <span className="text-destructive">*</span></label>
                         <input id="perfil-telefono" type="tel" value={perfilTelefono}
-                          onChange={e => setPerfilTelefono(e.target.value)} className={inputCls} />
+                          onChange={e => setPerfilTelefono(e.target.value)} required className={inputCls} />
                       </div>
                       <div>
                         <label className={labelCls} htmlFor="perfil-correo">Correo electrónico</label>
