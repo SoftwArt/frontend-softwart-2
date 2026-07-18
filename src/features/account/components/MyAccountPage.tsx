@@ -11,6 +11,8 @@ import {
   canCancelCita,
 } from '../utils'
 import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
+import { apiRequest } from '@/src/shared/lib/apiClient'
+import type { HistorialEstado } from '../types'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { formatDate }     from '@/src/shared/lib/formatDate'
 import { SearchInput }    from '@/src/shared/components/SearchInput'
@@ -46,6 +48,24 @@ export function MyAccountPage() {
   const [cancelingId,        setCancelingId]        = useState<number | null>(null)
   const [qCitas,             setQCitas]             = useState('')
   const [qServicios,         setQServicios]         = useState('')
+  const [expandedServicioId, setExpandedServicioId] = useState<number | null>(null)
+  const [historialById,      setHistorialById]      = useState<Record<number, HistorialEstado[]>>({})
+  const [historialLoadingId, setHistorialLoadingId]  = useState<number | null>(null)
+
+  const toggleHistorial = async (id_detalle: number) => {
+    if (expandedServicioId === id_detalle) { setExpandedServicioId(null); return }
+    setExpandedServicioId(id_detalle)
+    if (historialById[id_detalle]) return
+    setHistorialLoadingId(id_detalle)
+    try {
+      const res = await apiRequest<{ success: boolean; data: HistorialEstado[] }>(`/api/account/servicios/${id_detalle}/historial`)
+      setHistorialById(prev => ({ ...prev, [id_detalle]: res.data ?? [] }))
+    } catch {
+      setHistorialById(prev => ({ ...prev, [id_detalle]: [] }))
+    } finally {
+      setHistorialLoadingId(null)
+    }
+  }
 
   const {
     perfil, citas, servicios, isLoading, error,
@@ -528,20 +548,48 @@ export function MyAccountPage() {
                   <div className="space-y-3">
                     {serviciosPag.paginated.map(s => (
                       <div key={s.id_detalle}
-                        className="bg-card rounded-xl border border-border p-5 flex flex-col sm:flex-row sm:items-start gap-4 hover:border-primary/20 transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground">{s.servicio}</p>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                            <span className="text-xs text-muted-foreground">{formatDate(s.fecha)}</span>
-                            <span className="text-xs font-medium text-primary">{formatCurrency(s.precio)}</span>
+                        className="bg-card rounded-xl border border-border p-5 hover:border-primary/20 transition-colors">
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground">{s.servicio}</p>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                              <span className="text-xs text-muted-foreground">{formatDate(s.fecha)}</span>
+                              <span className="text-xs font-medium text-primary">{formatCurrency(s.precio)}</span>
+                            </div>
+                            {s.observacion && (
+                              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{s.observacion}</p>
+                            )}
                           </div>
-                          {s.observacion && (
-                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{s.observacion}</p>
-                          )}
+                          <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shrink-0 ${estadoServicioBadgeClasses(s.estado)}`}>
+                            {s.estado}
+                          </span>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shrink-0 ${estadoServicioBadgeClasses(s.estado)}`}>
-                          {s.estado}
-                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => toggleHistorial(s.id_detalle)}
+                          className="mt-3 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                        >
+                          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expandedServicioId === s.id_detalle ? 'rotate-180' : ''}`} />
+                          {expandedServicioId === s.id_detalle ? 'Ocultar historial' : 'Ver historial'}
+                        </button>
+
+                        {expandedServicioId === s.id_detalle && (
+                          <div className="mt-3 pl-2 border-l-2 border-border space-y-2">
+                            {historialLoadingId === s.id_detalle ? (
+                              <p className="text-xs text-muted-foreground">Cargando...</p>
+                            ) : (historialById[s.id_detalle]?.length ?? 0) === 0 ? (
+                              <p className="text-xs text-muted-foreground">Sin historial disponible.</p>
+                            ) : (
+                              historialById[s.id_detalle]!.map(h => (
+                                <div key={h.id_historial} className="text-xs">
+                                  <span className="font-medium text-foreground">{h.estado}</span>
+                                  <span className="text-muted-foreground"> — {new Date(h.fecha).toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

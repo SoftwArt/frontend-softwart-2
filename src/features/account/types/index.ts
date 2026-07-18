@@ -23,3 +23,9 @@ export type Servicio = {
   precio:      number
   observacion: string | null
 }
+
+export type HistorialEstado = {
+  id_historial: number
+  estado:       string
+  fecha:        string
+}

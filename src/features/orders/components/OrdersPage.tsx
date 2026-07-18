@@ -3,7 +3,7 @@ import { useOrders } from '../hooks/useOrders'
 import { useEstadosServicio } from '../hooks/useEstadosServicio'
 import { useSalesOptions, useServicesOptions, useFrameOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo } from 'react'
-import type { Pedido, PedidoDetalle } from '../types'
+import type { Pedido, PedidoDetalle, HistorialEstado } from '../types'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { inputCls, labelCls, badgeClassByName, filterPedidos } from '../utils'
 import { useSearchParams } from 'react-router-dom'
@@ -99,7 +99,14 @@ export function OrdersPage() {
       if (total != null) setPrecio(String(total))
     }
   }
-  const openView = (p: Pedido) => { setViewingItem(p); setIsViewOpen(true) }
+  const [historial, setHistorial] = useState<HistorialEstado[] | null>(null)
+
+  const openView = (p: Pedido) => {
+    setViewingItem(p); setIsViewOpen(true); setHistorial(null)
+    apiRequest<{ success: boolean; data: HistorialEstado[] }>(`/api/sale-details/${p.id_detalle}/historial`)
+      .then(res => setHistorial(res.data ?? []))
+      .catch(() => setHistorial([]))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -329,6 +336,24 @@ export function OrdersPage() {
             { label: 'Fecha',       value: formatDate(viewingItem.fecha) },
             { label: 'Precio',      value: formatCurrency(viewingItem.precio) },
             { label: 'Observación', value: viewingItem.observacion, fullWidth: true },
+            {
+              label: 'Historial de estado',
+              fullWidth: true,
+              value: historial === null
+                ? 'Cargando...'
+                : historial.length === 0
+                  ? 'Sin historial disponible.'
+                  : (
+                    <div className="space-y-1">
+                      {historial.map(h => (
+                        <div key={h.id_historial} className="text-sm">
+                          <span className="font-medium">{h.estado}</span>
+                          <span className="text-muted-foreground"> — {new Date(h.fecha).toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ),
+            },
           ]}
         />
       )}
