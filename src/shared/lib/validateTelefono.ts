@@ -7,3 +7,10 @@ export const TELEFONO_ERROR = 'El teléfono debe tener al menos 10 dígitos num�
 export function isTelefonoValid(telefono: string): boolean {
   return telefono === '' || /^\d{10,15}$/.test(telefono)
 }
+
+// Filtra todo lo que no sea 0-9 del valor tecleado — se usa en el onChange de
+// los inputs de teléfono para que sea imposible escribir letras/símbolos, en
+// vez de solo marcarlo como error después de intentar guardar.
+export function onlyDigits(value: string): string {
+  return value.replace(/[^0-9]/g, '')
+}

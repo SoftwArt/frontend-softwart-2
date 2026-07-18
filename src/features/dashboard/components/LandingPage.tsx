@@ -15,6 +15,7 @@ import { TimePicker } from '@/src/shared/components/TimePicker'
 import { DatePicker } from '@/src/shared/components/DatePicker'
 import { clearAuth } from '@/src/features/auth/hooks/useLogin'
 import { stripDigits } from '@/src/shared/lib/validateNombre'
+import { onlyDigits } from '@/src/shared/lib/validateTelefono'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { toast } from 'sonner'
 
@@ -792,7 +793,7 @@ export function LandingPage() {
                 id="g-tel"
                 type="tel"
                 value={clientForm.telefono}
-                onChange={e => setClientForm(f => ({ ...f, telefono: e.target.value }))}
+                onChange={e => setClientForm(f => ({ ...f, telefono: onlyDigits(e.target.value) }))}
               />
             </div>
 

@@ -9,12 +9,18 @@ import { validatePassword } from '@/src/shared/lib/passwordValidation'
 
 interface Props {
   password: string
+  confirmPassword?: string
   className?: string
 }
 
-export function PasswordChecklist({ password, className = '' }: Props) {
+export function PasswordChecklist({ password, confirmPassword, className = '' }: Props) {
   if (!password) return null
-  const { checks } = validatePassword(password)
+  const { checks: baseChecks } = validatePassword(password)
+  // Se agrega solo si el caller pasa confirmPassword (forms con campo de
+  // confirmación) — omitido no aparece, ej. UsersPage que solo pide una clave.
+  const checks = confirmPassword === undefined
+    ? baseChecks
+    : [...baseChecks, { label: 'Las contraseñas coinciden', ok: confirmPassword.length > 0 && confirmPassword === password }]
 
   return (
     <ul className={`mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 ${className}`}>

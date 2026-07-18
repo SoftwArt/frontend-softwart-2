@@ -244,7 +244,7 @@ export function ResetPasswordPage() {
                           </button>
                         </div>
                         {errorNueva && <p className="text-sm text-destructive mt-1">{errorNueva}</p>}
-                        <PasswordChecklist password={nuevaClave} />
+                        <PasswordChecklist password={nuevaClave} confirmPassword={confirmarClave} />
                       </div>
 
                       <div>

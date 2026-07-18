@@ -14,6 +14,7 @@ import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { usePolling } from '@/src/shared/hooks/usePolling'
 import { stripDigits } from '@/src/shared/lib/validateNombre'
+import { onlyDigits } from '@/src/shared/lib/validateTelefono'
 import type { HistorialEstado } from '../types'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { formatDate }     from '@/src/shared/lib/formatDate'
@@ -688,7 +689,7 @@ export function MyAccountPage() {
                       <div>
                         <label className={labelCls} htmlFor="perfil-telefono">Teléfono <span className="text-destructive">*</span></label>
                         <input id="perfil-telefono" type="tel" value={perfilTelefono}
-                          onChange={e => setPerfilTelefono(e.target.value)} required className={inputCls} />
+                          onChange={e => setPerfilTelefono(onlyDigits(e.target.value))} required className={inputCls} />
                         {perfilErrors.telefono && <p className="mt-1 text-xs text-destructive">{perfilErrors.telefono}</p>}
                       </div>
                       <div>
@@ -726,7 +727,7 @@ export function MyAccountPage() {
                       <label className={labelCls} htmlFor="clave-nueva">Nueva contraseña</label>
                       <input id="clave-nueva" type="password" value={claveNueva}
                         onChange={e => setClaveNueva(e.target.value)} className={inputCls} />
-                      <PasswordChecklist password={claveNueva} />
+                      <PasswordChecklist password={claveNueva} confirmPassword={claveConfirm} />
                     </div>
                     <div>
                       <label className={labelCls} htmlFor="clave-confirm">Confirmar contraseña</label>

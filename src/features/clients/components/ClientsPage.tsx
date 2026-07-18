@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { withToast } from '@/src/shared/lib/withToast'
-import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
+import { isTelefonoValid, onlyDigits, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
@@ -267,7 +267,7 @@ export function ClientsPage() {
             <div>
               <label className={labelCls} htmlFor="cli-telefono">Teléfono <span className="text-destructive">*</span></label>
               <input id="cli-telefono" type="tel" value={telefono} placeholder="Ej: 3001234567"
-                onChange={e => { setTelefono(e.target.value); if (errors.telefono) setErrors({...errors, telefono: ''}) }}
+                onChange={e => { setTelefono(onlyDigits(e.target.value)); if (errors.telefono) setErrors({...errors, telefono: ''}) }}
                 className={inputCls} />
               {errors.telefono && <p className="mt-1 text-xs text-destructive">{errors.telefono}</p>}
             </div>
