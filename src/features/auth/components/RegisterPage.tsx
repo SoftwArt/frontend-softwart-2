@@ -8,6 +8,7 @@ import { Checkbox } from '@/src/shared/components/ui/checkbox'
 import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { isTelefonoValid, onlyDigits, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
+import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
 import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { ArrowLeft, Eye, EyeOff, LogIn } from 'lucide-react'
@@ -53,14 +54,16 @@ export function RegisterPage() {
   const showTelefonoError = telefono.length > 0 && !telefonoValido
   const nombreValido      = isNombreLongitudValida(nombre)
   const showNombreError   = nombre.length > 0 && !nombreValido
+  const correoValido      = correo.length > 0 && isEmailValid(correo)
+  const showCorreoError   = correo.length > 0 && !correoValido
   const documentoError    = validarDocumentoPorTipo(tipoDocumento, documento)
   const isFormValid =
-    tipoDocumento && documento && !documentoError && nombreValido && correo &&
+    tipoDocumento && documento && !documentoError && nombreValido && correoValido &&
     telefonoValido && clave && confirmarClave && passwordsMatch && passwordValid && acceptTerms
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!passwordsMatch || !passwordValid || !telefonoValido || !nombreValido || documentoError) return
+    if (!passwordsMatch || !passwordValid || !telefonoValido || !nombreValido || !correoValido || documentoError) return
     await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave })
   }
 
@@ -178,6 +181,7 @@ export function RegisterPage() {
                   placeholder="nombre@ejemplo.com" required
                   className={fieldCls}
                 />
+                {showCorreoError && <p className="mt-1 text-xs text-destructive">{EMAIL_ERROR}</p>}
                 {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
               </div>
               <div>

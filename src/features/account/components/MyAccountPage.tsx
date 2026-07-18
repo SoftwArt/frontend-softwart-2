@@ -696,6 +696,7 @@ export function MyAccountPage() {
                         <label className={labelCls} htmlFor="perfil-correo">Correo electrónico</label>
                         <input id="perfil-correo" type="email" value={perfilCorreo}
                           onChange={e => setPerfilCorreo(e.target.value)} required className={inputCls} />
+                        {perfilErrors.correo && <p className="mt-1 text-xs text-destructive">{perfilErrors.correo}</p>}
                       </div>
                       <div className="pt-1 flex items-center gap-4">
                         <button type="submit" disabled={isSavingPerfil}

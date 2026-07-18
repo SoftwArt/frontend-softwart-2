@@ -6,6 +6,7 @@ import { clearAuth } from '@/src/features/auth/hooks/useLogin'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { isNombreLongitudValida, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
+import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
 import { usePolling } from '@/src/shared/hooks/usePolling'
 import { tomorrowString } from '../utils'
 import { BookedSlot } from '@/src/shared/components/TimePicker'
@@ -109,7 +110,7 @@ export function useAccount() {
   const [perfilCorreo,   setPerfilCorreo]   = useState('')
   const [perfilMsg,      setPerfilMsg]      = useState<string | null>(null)
   const [perfilMsgType,  setPerfilMsgType]  = useState<'ok' | 'err'>('ok')
-  const [perfilErrors,   setPerfilErrors]   = useState<{ nombre?: string; telefono?: string }>({})
+  const [perfilErrors,   setPerfilErrors]   = useState<{ nombre?: string; telefono?: string; correo?: string }>({})
   const [isSavingPerfil, setIsSavingPerfil] = useState(false)
 
   useEffect(() => {
@@ -122,10 +123,12 @@ export function useAccount() {
   const submitPerfil = async (e: React.FormEvent) => {
     e.preventDefault()
     setPerfilMsg(null)
-    const fieldErrors: { nombre?: string; telefono?: string } = {}
+    const fieldErrors: { nombre?: string; telefono?: string; correo?: string } = {}
     if (!isNombreLongitudValida(perfilNombre)) fieldErrors.nombre = NOMBRE_MIN_ERROR
     if (!perfilTelefono.trim())                fieldErrors.telefono = 'El teléfono es obligatorio.'
     else if (!isTelefonoValid(perfilTelefono))  fieldErrors.telefono = TELEFONO_ERROR
+    if (!perfilCorreo.trim())                   fieldErrors.correo = 'Campo requerido'
+    else if (!isEmailValid(perfilCorreo))       fieldErrors.correo = EMAIL_ERROR
     setPerfilErrors(fieldErrors)
     if (Object.keys(fieldErrors).length > 0) return
     setIsSavingPerfil(true)

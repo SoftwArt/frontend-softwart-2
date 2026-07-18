@@ -17,6 +17,7 @@ import { withToast } from '@/src/shared/lib/withToast'
 import { isTelefonoValid, onlyDigits, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
+import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { FilterBar }     from '@/src/shared/components/FilterBar'
 import { Pagination }    from '@/src/shared/components/Pagination'
@@ -49,6 +50,7 @@ export function ClientsPage() {
   // Reactivo: cambia según el tipo de documento seleccionado (CC/TI numérico
   // con longitud propia, CE/PP alfanumérico) — no espera al submit.
   const documentoFormatoError = documento.length > 0 ? validarDocumentoPorTipo(tipoDocumento, documento) : null
+  const correoFormatoError = correo.length > 0 && !isEmailValid(correo) ? EMAIL_ERROR : null
 
   const resetForm = () => {
     setTipoDocumento(''); setDocumento(''); setNombre('')
@@ -72,6 +74,7 @@ export function ClientsPage() {
     if (!nombre.trim())              newErrors.nombre = 'Campo requerido'
     else if (!isNombreLongitudValida(nombre)) newErrors.nombre = NOMBRE_MIN_ERROR
     if (!correo.trim())    newErrors.correo        = 'Campo requerido'
+    else if (correoFormatoError) newErrors.correo  = correoFormatoError
     if (!telefono.trim())           newErrors.telefono = 'Campo requerido'
     else if (!isTelefonoValid(telefono)) newErrors.telefono = TELEFONO_ERROR
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
@@ -261,7 +264,9 @@ export function ClientsPage() {
                 <input id="cli-correo" type="email" value={correo} placeholder="correo@ejemplo.com"
                   onChange={e => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo: ''}) }}
                   className={inputCls} />
-                {errors.correo && <p className="mt-1 text-xs text-destructive">{errors.correo}</p>}
+                {(errors.correo || correoFormatoError) && (
+                  <p className="mt-1 text-xs text-destructive">{errors.correo || correoFormatoError}</p>
+                )}
               </div>
             )}
             <div>

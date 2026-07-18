@@ -17,6 +17,7 @@ import { clearAuth } from '@/src/features/auth/hooks/useLogin'
 import { stripDigits } from '@/src/shared/lib/validateNombre'
 import { onlyDigits } from '@/src/shared/lib/validateTelefono'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
+import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
 import { toast } from 'sonner'
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
@@ -195,6 +196,7 @@ export function LandingPage() {
   const documentoError = clientForm.documento.length > 0
     ? validarDocumentoPorTipo(clientForm.tipoDocumento, clientForm.documento)
     : null
+  const correoError = clientForm.correo.length > 0 && !isEmailValid(clientForm.correo) ? EMAIL_ERROR : null
   const tomorrowStr = () => {
     const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10)
   }
@@ -783,6 +785,7 @@ export function LandingPage() {
                 onChange={e => setClientForm(f => ({ ...f, correo: e.target.value }))}
                 required
               />
+              {correoError && <p className="text-xs text-destructive">{correoError}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -810,7 +813,7 @@ export function LandingPage() {
 
             <Button
               type="submit"
-              disabled={!clientForm.tipoDocumento || !clientForm.documento || !!documentoError}
+              disabled={!clientForm.tipoDocumento || !clientForm.documento || !!documentoError || !clientForm.correo || !!correoError}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Siguiente →
