@@ -13,7 +13,7 @@ export function useServices() {
   const fetchAll = async () => {
     setIsLoading(true); setError(null)
     try {
-      const res = await apiRequest<ApiResponse<Servicio[]>>('/api/services')
+      const res = await apiRequest<ApiResponse<Servicio[]>>('/api/services?limit=500')
       setServicios((res.data ?? []).map(s => ({
         ...s,
         duracion: Number(s.duracion ?? 0),

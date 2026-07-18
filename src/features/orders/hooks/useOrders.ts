@@ -13,7 +13,7 @@ export function useOrders() {
   const fetchAll = async () => {
     setIsLoading(true); setError(null)
     try {
-      const res = await apiRequest<ApiResponse<BackendDetalle[]>>('/api/sale-details')
+      const res = await apiRequest<ApiResponse<BackendDetalle[]>>('/api/sale-details?limit=500')
       setPedidos((res.data ?? []).map(item => ({
         id_detalle:  item.id_detalle,
         fecha:       item.fecha,

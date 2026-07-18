@@ -13,7 +13,7 @@ export function useRoles() {
   const fetchAll = async () => {
     setIsLoading(true); setError(null)
     try {
-      const res = await apiRequest<ApiResponse<Rol[]>>('/api/roles')
+      const res = await apiRequest<ApiResponse<Rol[]>>('/api/roles?limit=500')
       setRoles(res.data ?? [])
     } catch (e) { setError(e instanceof Error ? e.message : 'Error') }
     finally { setIsLoading(false) }

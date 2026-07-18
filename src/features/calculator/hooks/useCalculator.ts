@@ -13,7 +13,7 @@ export function useCalculator() {
   const fetchAll = async () => {
     setIsLoading(true); setError(null)
     try {
-      const res = await apiRequest<ApiResponse<Marco[]>>('/api/frames')
+      const res = await apiRequest<ApiResponse<Marco[]>>('/api/frames?limit=500')
       setMarcos(res.data ?? [])
     } catch (e) { setError(e instanceof Error ? e.message : 'Error') }
     finally { setIsLoading(false) }
