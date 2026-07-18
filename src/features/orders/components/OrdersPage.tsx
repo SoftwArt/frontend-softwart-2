@@ -3,7 +3,8 @@ import { useOrders } from '../hooks/useOrders'
 import { useEstadosServicio } from '../hooks/useEstadosServicio'
 import { useSalesOptions, useServicesOptions, useFrameOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo } from 'react'
-import type { Pedido } from '../types'
+import type { Pedido, PedidoDetalle } from '../types'
+import { apiRequest } from '@/src/shared/lib/apiClient'
 import { inputCls, labelCls, badgeClassByName, filterPedidos } from '../utils'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '@/src/shared/components/SearchInput'
@@ -11,6 +12,7 @@ import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
 import { FilterBar } from '@/src/shared/components/FilterBar'
 import { toast } from 'sonner'
+import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate } from '@/src/shared/lib/formatDate'
 import { Plus, Pencil, Eye } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
@@ -23,6 +25,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ViewDialog } from '@/src/shared/components/ViewDialog'
 import { Combobox } from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
+import { CascadePreview } from '@/src/shared/components/CascadePreview'
 import { DatePicker } from '@/src/shared/components/DatePicker'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 
@@ -35,12 +38,13 @@ export function OrdersPage() {
   const [searchParams] = useSearchParams()
 
   // ── Búsqueda y filtros ─────────────────────────────────────────────────
-  const [q,            setQ]            = useState(searchParams.get('q') ?? '')
-  const [filterEstado, setFilterEstado] = useState('')
+  const [q,              setQ]              = useState(searchParams.get('q') ?? '')
+  const [filterEstado,   setFilterEstado]   = useState('')
+  const [filterServicio, setFilterServicio] = useState('')
 
   const filtered = useMemo(
-    () => filterPedidos(pedidos, ventasOpts, serviciosOpts, marcosOpts, rawVentas, estados, q, filterEstado),
-    [pedidos, ventasOpts, serviciosOpts, marcosOpts, rawVentas, estados, q, filterEstado],
+    () => filterPedidos(pedidos, ventasOpts, serviciosOpts, marcosOpts, rawVentas, estados, q, filterEstado, filterServicio),
+    [pedidos, ventasOpts, serviciosOpts, marcosOpts, rawVentas, estados, q, filterEstado, filterServicio],
   )
 
   const { paginated, page, setPage, totalPages, total, pageSize, setPageSize } = usePagination(filtered)
@@ -71,7 +75,8 @@ export function OrdersPage() {
   const isCancelado = (id: number) => estadoNombre(id).toLowerCase().includes('cancelado')
 
   // Confirmación antes de cancelar (estado terminal e irreversible)
-  const [cancelTarget, setCancelTarget] = useState<{ id: number; id_estado: number } | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<{ id: number; id_estado: number; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
+  const MSG_CANCELAR_BASE = 'Esta acción es definitiva: un servicio cancelado no podrá modificarse ni volver a cambiar de estado.'
 
   const resetForm = () => {
     setIdVenta(''); setIdServicio(''); setIdMarco(''); setIdEstado('')
@@ -128,9 +133,77 @@ export function OrdersPage() {
   const handleCambiarEstado = async (id: number, id_estado: number) => {
     // Cancelar es terminal → pedir confirmación antes de aplicar
     if (estadoNombre(id_estado).toLowerCase().includes('cancelado')) {
-      setCancelTarget({ id, id_estado }); return
+      setCancelTarget({ id, id_estado, loading: true, lines: [] })
+      apiRequest<{ success: boolean; data: PedidoDetalle }>(`/api/sale-details/${id}`)
+        .then((res) => {
+          const sale = res.data?.sale
+          if (!sale) {
+            setCancelTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines: [] } : prev)
+            return
+          }
+          const hermanosActivos = (sale.saleDetails ?? [])
+            .filter(d => d.id_detalle !== id)
+            .filter(d => {
+              const n = d.serviceStatus?.nombre?.toLowerCase() ?? ''
+              return !n.includes('finaliz') && !n.includes('cancel')
+            })
+
+          if (hermanosActivos.length > 0) {
+            // Quedan otros servicios activos: no cascadea, solo se informa.
+            setCancelTarget(prev => prev && prev.id === id ? {
+              ...prev,
+              loading: false,
+              lines: [
+                `La Venta #${sale.id_venta} NO se anulará`,
+                ...hermanosActivos.map(d => `Servicio #${d.id_detalle} sigue activo, no se ve afectado`),
+              ],
+            } : prev)
+            return
+          }
+
+          // Es el último servicio activo → cascadea y anula también la Venta.
+          const pagosValidados = (sale.payments ?? []).some(
+            p => p.paymentStatus?.nombre?.toLowerCase().includes('validado')
+          )
+          if (pagosValidados) {
+            setCancelTarget(prev => prev && prev.id === id ? {
+              ...prev,
+              loading: false,
+              bloqueado: true,
+              msg: `Es el único servicio activo de la Venta #${sale.id_venta} y tiene pagos validados. Registra la devolución antes de cancelarlo.`,
+              lines: [],
+            } : prev)
+            return
+          }
+          const abonosAAnular = (sale.payments ?? [])
+            .filter(p => p.paymentStatus?.nombre?.toLowerCase().includes('pendiente'))
+          setCancelTarget(prev => prev && prev.id === id ? {
+            ...prev,
+            loading: false,
+            lines: [
+              `Se anulará también la Venta #${sale.id_venta} (era su último servicio activo)`,
+              ...abonosAAnular.map(p => `Abono #${p.id_pago} (${formatCurrency(p.monto)}) se anulará`),
+            ],
+          } : prev)
+        })
+        .catch(() => setCancelTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines: [] } : prev))
+      return
     }
     await aplicarCambioEstado(id, id_estado)
+  }
+
+  const confirmCancelarServicio = () => {
+    if (!cancelTarget || cancelTarget.loading || cancelTarget.bloqueado) return
+    const { id, id_estado } = cancelTarget
+    setCancelTarget(null)
+    undoableAction({
+      message: 'Cancelando servicio...',
+      successMsg: 'Servicio cancelado',
+      onCommit: async () => {
+        const err = await onChangeStatus(id, id_estado)
+        if (err) throw new Error(err)
+      },
+    })
   }
 
   return (
@@ -153,8 +226,10 @@ export function OrdersPage() {
         filters={[
           { key: 'estado', label: 'Estado', type: 'select', value: filterEstado, onChange: setFilterEstado,
             options: estados.map((e, i) => ({ value: String(e.id_estado), label: e.nombre })) },
+          { key: 'servicio', label: 'Tipo de Servicio', type: 'select', value: filterServicio, onChange: setFilterServicio,
+            options: serviciosOpts },
         ]}
-        onClear={() => setFilterEstado('')}
+        onClear={() => { setFilterEstado(''); setFilterServicio('') }}
       />
 
       {actionError && (
@@ -324,19 +399,18 @@ export function OrdersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Cancelar este servicio?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción es definitiva: un servicio cancelado no podrá modificarse ni volver a cambiar de estado.
+              {cancelTarget?.bloqueado ? cancelTarget.msg : MSG_CANCELAR_BASE}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <CascadePreview lines={cancelTarget?.lines ?? []} loading={cancelTarget?.loading} />
           <AlertDialogFooter>
             <AlertDialogCancel>Volver</AlertDialogCancel>
             <AlertDialogAction
+              disabled={cancelTarget?.loading || cancelTarget?.bloqueado}
               className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
-                if (cancelTarget) aplicarCambioEstado(cancelTarget.id, cancelTarget.id_estado)
-                setCancelTarget(null)
-              }}
+              onClick={confirmCancelarServicio}
             >
-              Sí, cancelar servicio
+              {cancelTarget?.bloqueado ? 'No se puede cancelar' : 'Sí, cancelar servicio'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -37,6 +37,7 @@ export function filterPedidos(
   estados:      { id_estado: number }[],
   q:            string,
   filterEstado: string,
+  filterServicio: string = '',
 ): Pedido[] {
   const s = q.toLowerCase()
   const estadoOrder = new Map(estados.map((e, i) => [e.id_estado, i]))
@@ -51,8 +52,9 @@ export function filterPedidos(
       servicioLabel.toLowerCase().includes(s) ||
       marcoLabel.toLowerCase().includes(s) ||
       p.fecha.includes(s)
-    const matchEstado   = !filterEstado || String(p.id_estado) === filterEstado
-    return matchQ && matchEstado
+    const matchEstado   = !filterEstado   || String(p.id_estado)   === filterEstado
+    const matchServicio = !filterServicio || String(p.id_servicio) === filterServicio
+    return matchQ && matchEstado && matchServicio
   }).sort((a, b) => {
     const estCmp = (estadoOrder.get(a.id_estado) ?? 9) - (estadoOrder.get(b.id_estado) ?? 9)
     if (estCmp !== 0) return estCmp

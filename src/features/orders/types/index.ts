@@ -26,3 +26,8 @@ export type BackendDetalle = {
 }
 
 export type EstadoServicio = { id_estado: number; nombre: string }
+
+export type SiblingDetallePreview = { id_detalle: number; serviceStatus?: { nombre: string } | null }
+export type PaymentPreview        = { id_pago: number; monto: number; paymentStatus?: { nombre: string } | null }
+export type SalePreview           = { id_venta: number; saleDetails?: SiblingDetallePreview[]; payments?: PaymentPreview[] }
+export type PedidoDetalle         = BackendDetalle & { sale?: SalePreview | null }
