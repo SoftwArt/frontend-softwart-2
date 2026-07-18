@@ -131,7 +131,7 @@ function MapFacade() {
         </div>
         <div>
           <p className="font-semibold text-foreground">Arte Café</p>
-          <p className="text-sm text-muted-foreground">Cra. 74 #50-17, Laureles, Medellín</p>
+          <p className="text-sm text-muted-foreground">Cra. 74 #50-17, Los Colores, Medellín</p>
         </div>
         <span className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
           <MapPin className="h-4 w-4" />
@@ -602,7 +602,7 @@ export function LandingPage() {
               </div>
               <h2 className="font-serif text-3xl font-bold text-foreground">Sobre Arte Café</h2>
               <p className="text-muted-foreground text-pretty leading-relaxed">
-                Somos una marquetería ubicada en el barrio Laureles – Estadio de Medellín,
+                Somos una marquetería ubicada en el barrio Los Colores – Estadio de Medellín,
                 con años de experiencia enmarcando fotografías, pinturas, diplomas y todo
                 lo que quieras conservar con estilo. Cada trabajo es personalizado y hecho
                 con dedicación para que el resultado supere tus expectativas.
@@ -624,7 +624,7 @@ export function LandingPage() {
                     <MapPin className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                     <div>
                       <p className="font-semibold text-foreground text-sm">Taller Principal y Galería</p>
-                      <p className="text-muted-foreground text-sm">Cra. 74 #50, Laureles – Estadio, Medellín</p>
+                      <p className="text-muted-foreground text-sm">Cra. 74 #50, Los Colores – Estadio, Medellín</p>
                     </div>
                   </div>
                   <div className="flex gap-4 items-start">
