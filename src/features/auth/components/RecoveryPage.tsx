@@ -97,10 +97,10 @@ export function RecoveryPage() {
                     <MailCheck className="h-8 w-8 text-emerald-600" />
                   </div>
                   <div>
-                    <h2 className="font-serif text-2xl font-bold text-foreground">¡Enlace enviado!</h2>
+                    <h2 className="font-serif text-2xl font-bold text-foreground">¡Solicitud enviada!</h2>
                     <p className="text-muted-foreground text-sm mt-2">
-                      Revisa tu correo y haz clic en el enlace para restablecer tu contraseña.
-                      Expira en 15 minutos.
+                      Si el correo <span className="font-medium text-foreground">{correo}</span> está registrado,
+                      te llegará un enlace para restablecer tu contraseña. Expira en 15 minutos.
                     </p>
                   </div>
                 </m.div>
@@ -177,34 +177,8 @@ export function RecoveryPage() {
             </AnimatePresence>
           </m.div>
 
-          {/* Decorativo */}
-          <m.div
-            className="mt-8 flex justify-center items-center gap-4 opacity-40"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: EASE }}
-          >
-            <div className="h-px w-12 bg-white/40" />
-            <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">Artesanía &amp; Precisión</span>
-            <div className="h-px w-12 bg-white/40" />
-          </m.div>
-
         </div>
       </main>
-
-      {/* ── Footer ────────────────────────────────────────────────────── */}
-      <m.footer
-        className="bg-secondary border-t border-secondary-foreground/10 py-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.5, ease: EASE }}
-      >
-        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-1 text-center">
-          <span className="text-xs text-secondary-foreground/50">
-            © {new Date().getFullYear()} SoftwArt · Todos los derechos reservados
-          </span>
-        </div>
-      </m.footer>
 
     </div>
     </LazyMotion>
