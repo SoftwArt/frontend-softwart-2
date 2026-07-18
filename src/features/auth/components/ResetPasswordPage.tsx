@@ -191,13 +191,6 @@ export function ResetPasswordPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: EASE }}
                 >
-                  {/* Ícono */}
-                  <div className="flex justify-center mb-8">
-                    <div className="w-16 h-16 rounded-full bg-[#efeeea] flex items-center justify-center">
-                      <LockKeyhole className="h-7 w-7 text-[#805533]" />
-                    </div>
-                  </div>
-
                   {/* Título */}
                   <h1 className="font-serif italic text-3xl md:text-4xl text-center text-[#002926] tracking-tight mb-4">
                     Nueva contraseña
