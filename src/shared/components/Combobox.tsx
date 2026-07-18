@@ -3,7 +3,7 @@
 // Searchable select usando Command + Popover de shadcn/ui
 // ============================================================
 import { useState } from 'react'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, X } from 'lucide-react'
 import {
   Command,
   CommandEmpty,
@@ -35,6 +35,10 @@ interface ComboboxProps {
   disabled?:         boolean
   className?:        string
   id?:               string
+  // Muestra un botón "×" para volver a value='' sin tener que reabrir la
+  // lista y reencontrar la misma opción ya seleccionada. Opt-in porque no
+  // tiene sentido en combos de selección obligatoria (Venta, Cliente, etc).
+  clearable?:        boolean
 }
 
 let _comboboxId = 0
@@ -49,6 +53,7 @@ export function Combobox({
   disabled         = false,
   className,
   id,
+  clearable        = false,
 }: ComboboxProps) {
   const [open, setOpen] = useState(false)
   const [listId] = useState(() => `combobox-list-${++_comboboxId}`)
@@ -76,7 +81,19 @@ export function Combobox({
           <span className="truncate">
             {selected ? selected.label : placeholder}
           </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <span className="flex items-center gap-1 shrink-0">
+            {clearable && selected && (
+              <span
+                role="button"
+                aria-label="Quitar selección"
+                onClick={(e) => { e.stopPropagation(); onValueChange('') }}
+                className="rounded-sm p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"
+              >
+                <X className="h-3.5 w-3.5" />
+              </span>
+            )}
+            <ChevronsUpDown className="h-4 w-4 opacity-50" />
+          </span>
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 bg-card border-border" align="start">

@@ -378,7 +378,7 @@ export function OrdersPage() {
             </div>
             <div>
               <label className={labelCls} htmlFor="ped-marco">Marco (opcional)</label>
-              <Combobox id="ped-marco" options={marcosOpts} value={idMarco} onValueChange={setIdMarco} placeholder="Seleccionar marco..." searchPlaceholder="Código del marco..." />
+              <Combobox id="ped-marco" options={marcosOpts} value={idMarco} onValueChange={setIdMarco} placeholder="Seleccionar marco..." searchPlaceholder="Código del marco..." clearable />
             </div>
           
             <div>
