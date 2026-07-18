@@ -109,6 +109,7 @@ export function useAccount() {
   const [perfilCorreo,   setPerfilCorreo]   = useState('')
   const [perfilMsg,      setPerfilMsg]      = useState<string | null>(null)
   const [perfilMsgType,  setPerfilMsgType]  = useState<'ok' | 'err'>('ok')
+  const [perfilErrors,   setPerfilErrors]   = useState<{ nombre?: string; telefono?: string }>({})
   const [isSavingPerfil, setIsSavingPerfil] = useState(false)
 
   useEffect(() => {
@@ -121,15 +122,12 @@ export function useAccount() {
   const submitPerfil = async (e: React.FormEvent) => {
     e.preventDefault()
     setPerfilMsg(null)
-    if (!isNombreLongitudValida(perfilNombre)) {
-      setPerfilMsg(NOMBRE_MIN_ERROR); setPerfilMsgType('err'); return
-    }
-    if (!perfilTelefono.trim()) {
-      setPerfilMsg('El teléfono es obligatorio.'); setPerfilMsgType('err'); return
-    }
-    if (!isTelefonoValid(perfilTelefono)) {
-      setPerfilMsg(TELEFONO_ERROR); setPerfilMsgType('err'); return
-    }
+    const fieldErrors: { nombre?: string; telefono?: string } = {}
+    if (!isNombreLongitudValida(perfilNombre)) fieldErrors.nombre = NOMBRE_MIN_ERROR
+    if (!perfilTelefono.trim())                fieldErrors.telefono = 'El teléfono es obligatorio.'
+    else if (!isTelefonoValid(perfilTelefono))  fieldErrors.telefono = TELEFONO_ERROR
+    setPerfilErrors(fieldErrors)
+    if (Object.keys(fieldErrors).length > 0) return
     setIsSavingPerfil(true)
     try {
       const res = await apiRequest<ApiResponse<PerfilCliente>>('/api/account/perfil', {
@@ -276,7 +274,7 @@ export function useAccount() {
     perfilNombre,   setPerfilNombre,
     perfilTelefono, setPerfilTelefono,
     perfilCorreo,   setPerfilCorreo,
-    perfilMsg, perfilMsgType, isSavingPerfil, submitPerfil,
+    perfilMsg, perfilMsgType, perfilErrors, isSavingPerfil, submitPerfil,
     // form clave
     claveActual,  setClaveActual,
     claveNueva,   setClaveNueva,

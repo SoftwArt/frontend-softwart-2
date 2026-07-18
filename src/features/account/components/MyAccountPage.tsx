@@ -91,7 +91,7 @@ export function MyAccountPage() {
     perfil, citas, servicios, isLoading, error,
     primerNombre, proximaCita, serviciosActivos, serviciosRecientes,
     perfilNombre, setPerfilNombre, perfilTelefono, setPerfilTelefono,
-    perfilCorreo, setPerfilCorreo, perfilMsg, perfilMsgType, isSavingPerfil, submitPerfil,
+    perfilCorreo, setPerfilCorreo, perfilMsg, perfilMsgType, perfilErrors, isSavingPerfil, submitPerfil,
     claveActual, setClaveActual, claveNueva, setClaveNueva, claveConfirm, setClaveConfirm,
     claveMsg, claveMsgType, isSavingClave, submitClave,
     citaFecha, citaHora, citaObs, setCitaObs,
@@ -683,11 +683,13 @@ export function MyAccountPage() {
                         <label className={labelCls} htmlFor="perfil-nombre">Nombre completo</label>
                         <input id="perfil-nombre" type="text" value={perfilNombre}
                           onChange={e => setPerfilNombre(stripDigits(e.target.value))} required className={inputCls} />
+                        {perfilErrors.nombre && <p className="mt-1 text-xs text-destructive">{perfilErrors.nombre}</p>}
                       </div>
                       <div>
                         <label className={labelCls} htmlFor="perfil-telefono">Teléfono <span className="text-destructive">*</span></label>
                         <input id="perfil-telefono" type="tel" value={perfilTelefono}
                           onChange={e => setPerfilTelefono(e.target.value)} required className={inputCls} />
+                        {perfilErrors.telefono && <p className="mt-1 text-xs text-destructive">{perfilErrors.telefono}</p>}
                       </div>
                       <div>
                         <label className={labelCls} htmlFor="perfil-correo">Correo electrónico</label>
