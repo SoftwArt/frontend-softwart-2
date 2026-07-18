@@ -33,6 +33,8 @@ export function ResetPasswordPage() {
   const [errorNueva,     setErrorNueva]     = useState('')
   const [errorConfirmar, setErrorConfirmar] = useState('')
   const [success,        setSuccess]        = useState(false)
+  const [tokenExpired,   setTokenExpired]   = useState(false)
+  const [checkingToken,  setCheckingToken]  = useState(!!token)
 
   // Reenviar enlace
   const [correoReenvio, setCorreoReenvio] = useState('')
@@ -44,6 +46,7 @@ export function ResetPasswordPage() {
   const passwordValid  = validatePassword(nuevaClave).valid
   const canSubmit =
     token.trim() !== '' &&
+    !tokenExpired &&
     nuevaClave.trim() !== '' &&
     confirmarClave.trim() !== '' &&
     passwordsMatch &&
@@ -60,6 +63,20 @@ export function ResetPasswordPage() {
     const t = setTimeout(() => { window.location.href = '/login' }, 2000)
     return () => clearTimeout(t)
   }, [success])
+
+  // Chequeo proactivo: si el link ya expiró, avisar de inmediato en vez de que
+  // el usuario lo descubra recién al llenar el formulario y darle submit.
+  useEffect(() => {
+    if (!token) { setCheckingToken(false); return }
+    let cancelled = false
+    apiRequest<{ success: boolean; data: { valid: boolean; expired: boolean } }>(
+      `/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`
+    )
+      .then(res => { if (!cancelled) setTokenExpired(res.data.expired) })
+      .catch(() => { /* si falla el chequeo, se deja que el submit lo valide igual */ })
+      .finally(() => { if (!cancelled) setCheckingToken(false) })
+    return () => { cancelled = true }
+  }, [token])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,7 +98,7 @@ export function ResetPasswordPage() {
     setResendError('')
     setResendOk(false)
     try {
-      await apiRequest('/api/auth/resend-code', {
+      await apiRequest('/api/auth/reenviar-codigo', {
         method: 'POST',
         body: JSON.stringify({ correo: correoReenvio }),
       })
@@ -216,6 +233,17 @@ export function ResetPasswordPage() {
                         <p className="text-sm text-destructive">
                           Enlace inválido o incompleto. Abre el botón desde tu correo o{' '}
                           <Link to="/recover" className="underline font-medium">solicita uno nuevo</Link>.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Aviso proactivo: el token existe pero ya expiró — se detecta al
+                        cargar la página, no hay que esperar a que el usuario le dé submit */}
+                    {token && !checkingToken && tokenExpired && (
+                      <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+                        <p className="text-sm text-destructive">
+                          Este enlace ya expiró. Pide uno nuevo con tu correo en "¿No recibiste el enlace?"
+                          más abajo.
                         </p>
                       </div>
                     )}

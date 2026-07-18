@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
 import { Button }   from '@/src/shared/components/ui/button'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { ToggleSwitch, ACTIVO_OPTIONS } from '@/src/shared/components/ToggleSwitch'
+import { Checkbox } from '@/src/shared/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
@@ -46,6 +47,7 @@ export function ClientsPage() {
   const [nombre,        setNombre]        = useState('')
   const [correo,        setCorreo]        = useState('')
   const [telefono,      setTelefono]      = useState('')
+  const [crearAccesoPortal, setCrearAccesoPortal] = useState(false)
   const [errors,        setErrors]        = useState<Record<string, string>>({})
 
   // Reactivo: cambia según el tipo de documento seleccionado (CC/TI numérico
@@ -55,7 +57,7 @@ export function ClientsPage() {
 
   const resetForm = () => {
     setTipoDocumento(''); setDocumento(''); setNombre('')
-    setCorreo(''); setTelefono(''); setErrors({}); setEditingId(null)
+    setCorreo(''); setTelefono(''); setCrearAccesoPortal(false); setErrors({}); setEditingId(null)
   }
   const openCreate = () => { resetForm(); setIsFormOpen(true) }
   const openEdit   = (c: Cliente) => {
@@ -84,8 +86,10 @@ export function ClientsPage() {
       await withToast(
         editingId
           ? onEdit(editingId, { tipoDocumento, documento, nombre, telefono })
-          : onCreate({ tipoDocumento, documento, nombre, correo, telefono, estado: true }),
-        editingId ? 'Cliente actualizado correctamente' : 'Cliente registrado correctamente'
+          : onCreate({ tipoDocumento, documento, nombre, correo, telefono, estado: true, crearAccesoPortal }),
+        editingId
+          ? 'Cliente actualizado correctamente'
+          : crearAccesoPortal ? 'Cliente registrado y correo de invitación enviado' : 'Cliente registrado correctamente'
       )
       setIsFormOpen(false); resetForm()
     } catch { } finally { setIsSubmitting(false) }
@@ -291,6 +295,25 @@ export function ClientsPage() {
                 className={inputCls} />
               {errors.telefono && <p className="mt-1 text-xs text-destructive">{errors.telefono}</p>}
             </div>
+            {!editingId && (
+              <label
+                htmlFor="cli-acceso-portal"
+                className="flex items-start gap-2.5 rounded-md border border-border px-3 py-2.5 cursor-pointer select-none hover:bg-accent/50 transition-colors"
+              >
+                <Checkbox
+                  id="cli-acceso-portal"
+                  checked={crearAccesoPortal}
+                  onCheckedChange={v => setCrearAccesoPortal(v === true)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">Dar acceso al portal</span>
+                  <span className="text-xs text-muted-foreground">
+                    Crea la cuenta y le envía un correo para que configure su propia contraseña.
+                  </span>
+                </span>
+              </label>
+            )}
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button"
                 onClick={() => { setIsFormOpen(false); resetForm() }}
