@@ -54,6 +54,7 @@ export function ToggleSwitch<T extends string | number>({
             onClick={() => !isActive && onChange(opt.value)}
             className={cn(
               'relative flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
+              'outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]',
               isActive
                 ? textActiveCls
                 : 'text-muted-foreground hover:text-foreground cursor-pointer',
