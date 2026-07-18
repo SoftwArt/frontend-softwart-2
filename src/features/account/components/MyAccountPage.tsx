@@ -1,5 +1,5 @@
 // src/features/account/components/MyAccountPage.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { useAccount } from '../hooks/useAccount'
@@ -12,6 +12,7 @@ import {
 } from '../utils'
 import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
 import { apiRequest } from '@/src/shared/lib/apiClient'
+import { usePolling } from '@/src/shared/hooks/usePolling'
 import type { HistorialEstado } from '../types'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { formatDate }     from '@/src/shared/lib/formatDate'
@@ -52,20 +53,37 @@ export function MyAccountPage() {
   const [historialById,      setHistorialById]      = useState<Record<number, HistorialEstado[]>>({})
   const [historialLoadingId, setHistorialLoadingId]  = useState<number | null>(null)
 
-  const toggleHistorial = async (id_detalle: number) => {
-    if (expandedServicioId === id_detalle) { setExpandedServicioId(null); return }
-    setExpandedServicioId(id_detalle)
-    if (historialById[id_detalle]) return
-    setHistorialLoadingId(id_detalle)
+  // silent=true (polling) no toca el spinner de carga ni pisa el estado si el
+  // contenido no cambió — mismo patrón de diffing que fetchMyAppointments/
+  // fetchMyServices en useAccount.
+  const fetchHistorial = useCallback(async (id_detalle: number, opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setHistorialLoadingId(id_detalle)
     try {
       const res = await apiRequest<{ success: boolean; data: HistorialEstado[] }>(`/api/account/servicios/${id_detalle}/historial`)
-      setHistorialById(prev => ({ ...prev, [id_detalle]: res.data ?? [] }))
+      const nuevo = res.data ?? []
+      setHistorialById(prev =>
+        JSON.stringify(prev[id_detalle]) === JSON.stringify(nuevo) ? prev : { ...prev, [id_detalle]: nuevo }
+      )
     } catch {
-      setHistorialById(prev => ({ ...prev, [id_detalle]: [] }))
+      if (!opts?.silent) setHistorialById(prev => ({ ...prev, [id_detalle]: [] }))
     } finally {
-      setHistorialLoadingId(null)
+      if (!opts?.silent) setHistorialLoadingId(null)
     }
+  }, [])
+
+  const toggleHistorial = (id_detalle: number) => {
+    if (expandedServicioId === id_detalle) { setExpandedServicioId(null); return }
+    setExpandedServicioId(id_detalle)
+    if (!historialById[id_detalle]) fetchHistorial(id_detalle)
   }
+
+  // Refresco scoped: solo mientras el modal "Mis servicios" está abierto y hay
+  // un historial expandido — evita pollear algo que el usuario ni está viendo.
+  const pollHistorial = useCallback(() => {
+    if (expandedServicioId != null && showServiciosModal) fetchHistorial(expandedServicioId, { silent: true })
+  }, [expandedServicioId, showServiciosModal, fetchHistorial])
+
+  usePolling(pollHistorial, 15000)
 
   const {
     perfil, citas, servicios, isLoading, error,
