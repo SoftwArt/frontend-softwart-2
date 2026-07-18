@@ -44,23 +44,20 @@ export function RegisterPage() {
   const [showClave,      setShowClave]      = useState(false)
   const [showConfirmar,  setShowConfirmar]  = useState(false)
   const [acceptTerms,    setAcceptTerms]    = useState(false)
-  const [submitAttempted, setSubmitAttempted] = useState(false)
 
   const passwordsMatch    = clave === confirmarClave
   const showMismatchError = confirmarClave.length > 0 && !passwordsMatch
   const passwordValid     = validatePassword(clave).valid
   const telefonoValido    = telefono.length > 0 && isTelefonoValid(telefono)
-  const showTelefonoRequired = submitAttempted && telefono.length === 0
-  const showTelefonoError    = telefono.length > 0 && !telefonoValido
+  const showTelefonoError = telefono.length > 0 && !telefonoValido
   const nombreValido      = isNombreLongitudValida(nombre)
-  const showNombreError   = submitAttempted && nombre.length > 0 && !nombreValido
+  const showNombreError   = nombre.length > 0 && !nombreValido
   const isFormValid =
     tipoDocumento && documento && nombreValido && correo &&
     telefonoValido && clave && confirmarClave && passwordsMatch && passwordValid && acceptTerms
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitAttempted(true)
     if (!passwordsMatch || !passwordValid || !telefonoValido || !nombreValido) return
     await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave })
   }
@@ -183,10 +180,9 @@ export function RegisterPage() {
                 <Input
                   id="telefono" type="tel"
                   value={telefono} onChange={e => setTelefono(e.target.value)}
-                  placeholder="+57 300 000 0000" required
+                  placeholder="300 000 0000" required
                   className={fieldCls}
                 />
-                {showTelefonoRequired && <p className="mt-1 text-xs text-destructive">El teléfono es obligatorio.</p>}
                 {showTelefonoError && <p className="mt-1 text-xs text-destructive">{TELEFONO_ERROR}</p>}
               </div>
             </div>
