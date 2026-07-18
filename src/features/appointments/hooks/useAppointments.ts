@@ -29,6 +29,7 @@ export function useAppointments() {
         id_cliente:     item.client?.id_cliente ?? 0,
         id_estado_cita: item.appointmentStatus?.id_estado_cita ?? 1,
         clienteNombre:  item.client?.nombre ?? `Cliente #${item.client?.id_cliente ?? '?'}`,
+        motivoCancelacion: item.motivo_cancelacion ?? null,
       }))
 
       setCitas(normalized)

@@ -355,6 +355,9 @@ export function AppointmentsPage() {
             { label: 'Cliente', value: clientesOpts.find(o => o.value === String(viewingItem.id_cliente))?.label ?? `#${viewingItem.id_cliente}`, fullWidth: true },
             { label: 'Fecha',   value: formatDate(viewingItem.fecha) },
             { label: 'Hora',    value: formatTime(viewingItem.hora) },
+            ...(viewingItem.motivoCancelacion
+              ? [{ label: 'Motivo de cancelación', value: viewingItem.motivoCancelacion, fullWidth: true }]
+              : []),
           ]}
         />
       )}

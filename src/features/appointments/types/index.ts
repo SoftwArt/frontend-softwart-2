@@ -1,10 +1,11 @@
 export type Cita = {
-  id_cita:        number
-  fecha:          string
-  hora:           string
-  id_estado_cita: number
-  id_cliente:     number
-  clienteNombre?: string
+  id_cita:            number
+  fecha:              string
+  hora:               string
+  id_estado_cita:     number
+  id_cliente:         number
+  clienteNombre?:     string
+  motivoCancelacion?: string | null
 }
 
 export type CreateCitaDto = Omit<Cita, 'id_cita'>
@@ -21,6 +22,7 @@ export type BackendCita = {
   hora:    string
   client?:            { id_cliente: number; nombre?: string } | null
   appointmentStatus?: { id_estado_cita: number } | null
+  motivo_cancelacion?: string | null
 }
 
 export type VentaLinea = {
