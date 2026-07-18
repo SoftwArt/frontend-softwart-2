@@ -36,13 +36,16 @@ export function ResetPasswordPage() {
   const [tokenExpired,   setTokenExpired]   = useState(false)
   const [checkingToken,  setCheckingToken]  = useState(!!token)
 
-  // Reenviar enlace — colapsado por defecto, salvo que ya sepamos que hace
-  // falta (sin token, o token vencido una vez se confirma).
-  const [correoReenvio,   setCorreoReenvio]   = useState('')
-  const [isResending,     setIsResending]     = useState(false)
-  const [resendOk,        setResendOk]        = useState(false)
-  const [resendError,     setResendError]     = useState('')
-  const [showResendForm,  setShowResendForm]  = useState(!token)
+  // Reenviar enlace
+  const [correoReenvio, setCorreoReenvio] = useState('')
+  const [isResending,   setIsResending]   = useState(false)
+  const [resendOk,      setResendOk]      = useState(false)
+  const [resendError,   setResendError]   = useState('')
+
+  // Uno u otro, nunca ambos: con token válido solo tiene sentido pedir la
+  // nueva contraseña; sin token (o vencido) solo tiene sentido reenviar.
+  const showFields = !!token && !checkingToken && !tokenExpired
+  const showResend = !token || (!checkingToken && tokenExpired)
 
   const passwordsMatch = nuevaClave === confirmarClave
   const passwordValid  = validatePassword(nuevaClave).valid
@@ -74,7 +77,7 @@ export function ResetPasswordPage() {
     apiRequest<{ success: boolean; data: { valid: boolean; expired: boolean } }>(
       `/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`
     )
-      .then(res => { if (!cancelled && res.data.expired) { setTokenExpired(true); setShowResendForm(true) } })
+      .then(res => { if (!cancelled) setTokenExpired(res.data.expired) })
       .catch(() => { /* si falla el chequeo, se deja que el submit lo valide igual */ })
       .finally(() => { if (!cancelled) setCheckingToken(false) })
     return () => { cancelled = true }
@@ -232,7 +235,7 @@ export function ResetPasswordPage() {
 
                     {/* Contraseñas — solo si hay token: sin él son campos inútiles que
                         solo inflan la altura de la card sin aportar nada */}
-                    {token && (
+                    {showFields && (
                       <>
                         <div className="space-y-6">
 
@@ -304,14 +307,15 @@ export function ResetPasswordPage() {
                       </>
                     )}
 
-                    {/* Reenviar enlace — colapsado por defecto: el input+botón solo
-                        aparecen si se pide, así no compite por altura con el checklist
-                        de contraseña ni fuerza scroll en la card. */}
-                    <div className="border-t border-border/30 pt-4">
-                      {resendOk ? (
-                        <p className="text-xs text-emerald-600 text-center">Enlace reenviado correctamente.</p>
-                      ) : showResendForm ? (
-                        <div className="space-y-2">
+                    {/* Reenviar enlace — solo existe cuando no hay campos de contraseña
+                        que mostrar (sin token o vencido). Nunca conviven ambos bloques,
+                        así la card no crece más de lo que un estado a la vez necesita. */}
+                    {showResend && (
+                      <div className="space-y-3">
+                        <p className="text-xs text-muted-foreground text-center">¿No recibiste el enlace?</p>
+                        {resendOk ? (
+                          <p className="text-xs text-emerald-600 text-center">Enlace reenviado correctamente.</p>
+                        ) : (
                           <div className="flex gap-2">
                             <Input
                               type="email"
@@ -330,18 +334,10 @@ export function ResetPasswordPage() {
                               {isResending ? 'Enviando...' : 'Reenviar'}
                             </Button>
                           </div>
-                          {resendError && <p className="text-xs text-destructive">{resendError}</p>}
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setShowResendForm(true)}
-                          className="w-full text-xs text-muted-foreground hover:text-[#805533] transition-colors text-center underline underline-offset-2"
-                        >
-                          ¿No recibiste el enlace? Reenviar
-                        </button>
-                      )}
-                    </div>
+                        )}
+                        {resendError && <p className="text-xs text-destructive">{resendError}</p>}
+                      </div>
+                    )}
 
                   </form>
                 </m.div>
