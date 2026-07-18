@@ -36,11 +36,13 @@ export function ResetPasswordPage() {
   const [tokenExpired,   setTokenExpired]   = useState(false)
   const [checkingToken,  setCheckingToken]  = useState(!!token)
 
-  // Reenviar enlace
-  const [correoReenvio, setCorreoReenvio] = useState('')
-  const [isResending,   setIsResending]   = useState(false)
-  const [resendOk,      setResendOk]      = useState(false)
-  const [resendError,   setResendError]   = useState('')
+  // Reenviar enlace — colapsado por defecto, salvo que ya sepamos que hace
+  // falta (sin token, o token vencido una vez se confirma).
+  const [correoReenvio,   setCorreoReenvio]   = useState('')
+  const [isResending,     setIsResending]     = useState(false)
+  const [resendOk,        setResendOk]        = useState(false)
+  const [resendError,     setResendError]     = useState('')
+  const [showResendForm,  setShowResendForm]  = useState(!token)
 
   const passwordsMatch = nuevaClave === confirmarClave
   const passwordValid  = validatePassword(nuevaClave).valid
@@ -72,7 +74,7 @@ export function ResetPasswordPage() {
     apiRequest<{ success: boolean; data: { valid: boolean; expired: boolean } }>(
       `/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`
     )
-      .then(res => { if (!cancelled) setTokenExpired(res.data.expired) })
+      .then(res => { if (!cancelled && res.data.expired) { setTokenExpired(true); setShowResendForm(true) } })
       .catch(() => { /* si falla el chequeo, se deja que el submit lo valide igual */ })
       .finally(() => { if (!cancelled) setCheckingToken(false) })
     return () => { cancelled = true }
@@ -302,32 +304,43 @@ export function ResetPasswordPage() {
                       </>
                     )}
 
-                    {/* Reenviar enlace */}
-                    <div className="border-t border-border/30 pt-6 space-y-3">
-                      <p className="text-xs text-muted-foreground text-center">¿No recibiste el enlace?</p>
+                    {/* Reenviar enlace — colapsado por defecto: el input+botón solo
+                        aparecen si se pide, así no compite por altura con el checklist
+                        de contraseña ni fuerza scroll en la card. */}
+                    <div className="border-t border-border/30 pt-4">
                       {resendOk ? (
                         <p className="text-xs text-emerald-600 text-center">Enlace reenviado correctamente.</p>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Input
-                            type="email"
-                            placeholder="Tu correo"
-                            value={correoReenvio}
-                            onChange={e => { setCorreoReenvio(e.target.value); if (resendError) setResendError('') }}
-                            className="bg-[#f5f3ef] border-0 border-b border-border focus-visible:ring-0 focus-visible:ring-offset-0 h-9 px-3 text-sm rounded-none flex-1"
-                          />
-                          <Button
-                            type="button"
-                            disabled={isResending || !correoReenvio.trim()}
-                            onClick={handleReenviar}
-                            variant="outline"
-                            className="text-xs px-3 h-9 border-[#805533] text-[#805533] hover:bg-[#805533] hover:text-white shrink-0"
-                          >
-                            {isResending ? 'Enviando...' : 'Reenviar'}
-                          </Button>
+                      ) : showResendForm ? (
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              type="email"
+                              placeholder="Tu correo"
+                              value={correoReenvio}
+                              onChange={e => { setCorreoReenvio(e.target.value); if (resendError) setResendError('') }}
+                              className="bg-[#f5f3ef] border-0 border-b border-border focus-visible:ring-0 focus-visible:ring-offset-0 h-9 px-3 text-sm rounded-none flex-1"
+                            />
+                            <Button
+                              type="button"
+                              disabled={isResending || !correoReenvio.trim()}
+                              onClick={handleReenviar}
+                              variant="outline"
+                              className="text-xs px-3 h-9 border-[#805533] text-[#805533] hover:bg-[#805533] hover:text-white shrink-0"
+                            >
+                              {isResending ? 'Enviando...' : 'Reenviar'}
+                            </Button>
+                          </div>
+                          {resendError && <p className="text-xs text-destructive">{resendError}</p>}
                         </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowResendForm(true)}
+                          className="w-full text-xs text-muted-foreground hover:text-[#805533] transition-colors text-center underline underline-offset-2"
+                        >
+                          ¿No recibiste el enlace? Reenviar
+                        </button>
                       )}
-                      {resendError && <p className="text-xs text-destructive">{resendError}</p>}
                     </div>
 
                   </form>
