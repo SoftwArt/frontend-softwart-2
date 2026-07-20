@@ -5,6 +5,7 @@ import { useLogin, getSavedCredentials } from '../hooks/useLogin'
 import { Button }      from '@/src/shared/components/ui/button'
 import { Input }       from '@/src/shared/components/ui/input'
 import { Checkbox }    from '@/src/shared/components/ui/checkbox'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { ArrowLeft, CalendarPlus, Eye, EyeOff, Lock, Mail, UserPlus } from 'lucide-react'
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -133,29 +134,31 @@ export function LoginPage() {
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
-                  <Input
-                    id="password"
-                    type={showPass ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    value={password} onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••" required
-                    className={`${fieldCls} pl-12 pr-12`}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                    onClick={() => setShowPass(v => !v)}
-                    title={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  >
-                    {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
                 {/* Mensaje genérico a propósito (no se atribuye a correo o clave):
-                    evita que un atacante infiera cuál de los dos falló (anti-enumeración, OWASP A01) */}
-                {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+                    evita que un atacante infiera cuál de los dos falló (anti-enumeración, OWASP A01).
+                    Tooltip flotante, no <p>, para no empujar el resto del formulario. */}
+                <FieldErrorTooltip error={error}>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
+                    <Input
+                      id="password"
+                      type={showPass ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      value={password} onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••" required
+                      className={`${fieldCls} pl-12 pr-12`}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                      onClick={() => setShowPass(v => !v)}
+                      title={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    >
+                      {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </FieldErrorTooltip>
               </div>
 
               {/* Recordarme */}

@@ -35,9 +35,13 @@ function TooltipTrigger({
 function TooltipContent({
   className,
   sideOffset = 4,
+  // Permite que variantes (ej. FieldErrorTooltip, en rojo) recoloreen la
+  // puntita — por defecto queda igual que siempre (bg-primary/fill-primary),
+  // así los 12+ tooltips existentes del panel admin no cambian.
+  arrowClassName,
   children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+}: React.ComponentProps<typeof TooltipPrimitive.Content> & { arrowClassName?: string }) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
@@ -50,7 +54,7 @@ function TooltipContent({
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
+        <TooltipPrimitive.Arrow className={cn('bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]', arrowClassName)} />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )
