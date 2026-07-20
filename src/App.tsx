@@ -23,6 +23,8 @@ const RecoveryPage      = lazy(() => import('@/src/features/auth/components/Reco
 const ResetPasswordPage = lazy(() => import('@/src/features/auth/components/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
 const AuthLayout        = lazy(() => import('@/src/features/auth/components/AuthLayout').then(m => ({ default: m.AuthLayout })))
 const NotFoundPage      = lazy(() => import('@/src/features/auth/components/NotFoundPage').then(m => ({ default: m.NotFoundPage })))
+const PoliticaPrivacidadPage = lazy(() => import('@/src/features/legal/components/PoliticaPrivacidadPage').then(m => ({ default: m.PoliticaPrivacidadPage })))
+const TerminosServicioPage   = lazy(() => import('@/src/features/legal/components/TerminosServicioPage').then(m => ({ default: m.TerminosServicioPage })))
 const MyAccountPage     = lazy(() => import('@/src/features/account/components/MyAccountPage').then(m => ({ default: m.MyAccountPage })))
 const DashboardPage     = lazy(() => import('@/src/features/dashboard/components/DashboardPage').then(m => ({ default: m.DashboardPage })))
 const ClientsPage       = lazy(() => import('@/src/features/clients/components/ClientsPage').then(m => ({ default: m.ClientsPage })))
@@ -126,6 +128,8 @@ export default function App() {
         <Routes>
           {/* Públicas */}
           <Route path="/"          element={<LandingPage />} />
+          <Route path="/politica-privacidad" element={<PoliticaPrivacidadPage />} />
+          <Route path="/terminos-servicio"   element={<TerminosServicioPage />} />
 
           {/* Auth — bajo AuthLayout (header con volver al inicio) */}
           <Route element={<AuthLayout />}>
