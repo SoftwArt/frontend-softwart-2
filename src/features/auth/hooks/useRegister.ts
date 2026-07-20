@@ -12,6 +12,7 @@ type RegisterDto = {
   correo: string
   clave: string
   telefono: string // FIX: era opcional — en el backend es NOT NULL
+  acceptTerms: boolean // el backend re-valida que sea true (z.literal(true))
 }
 
 export function useRegister(loginRedirect?: string) {

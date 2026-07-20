@@ -63,8 +63,8 @@ export function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!passwordsMatch || !passwordValid || !telefonoValido || !nombreValido || !correoValido || documentoError) return
-    await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave })
+    if (!passwordsMatch || !passwordValid || !telefonoValido || !nombreValido || !correoValido || !acceptTerms || documentoError) return
+    await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave, acceptTerms })
   }
 
   return (
