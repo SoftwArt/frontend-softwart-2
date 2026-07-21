@@ -17,7 +17,8 @@ import { usePagination } from '@/src/shared/hooks/usePagination'
 import { FilterBar }   from '@/src/shared/components/FilterBar'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import type { Marco } from '../types'
-import { inputCls, labelCls, fmtCOP as fmt, filterMarcos } from '../utils'
+import { inputCls, labelCls, filterMarcos } from '../utils'
+import { formatCurrency as fmt } from '@/src/shared/lib/formatCurrency'
 
 export function CalculatorPage() {
   const { marcos, isLoading, onCreate, onEdit, onDelete, onToggleStatus } = useCalculator()
@@ -62,6 +63,7 @@ export function CalculatorPage() {
     const newErrors: Record<string, string> = {}
     if (!codigo.trim())     newErrors.codigo  = 'Campo requerido'
     if (!colillaStr.trim()) newErrors.colilla = 'Campo requerido'
+    else if (!Number.isInteger(Number(colillaStr)) || Number(colillaStr) <= 0) newErrors.colilla = 'Debe ser un número entero mayor a 0'
     if (!precioStr.trim())  newErrors.precio  = 'Campo requerido'
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
     setIsSubmitting(true)
@@ -112,7 +114,7 @@ export function CalculatorPage() {
               <TableRow>
     
                 <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[28%]">Código</TableHead>
-                <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[20%]">Colilla</TableHead>
+                <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[20%]">Colilla (mm)</TableHead>
                 <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[24%]">Precio ensamblado</TableHead>
                 <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[14%]">Estado</TableHead>
                 <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[14%]">Acciones</TableHead>
@@ -123,7 +125,7 @@ export function CalculatorPage() {
                 <TableRow key={m.id_marco} className="hover:bg-muted/40 transition-colors border-border">
       
                   <TableCell className="text-foreground font-medium">{m.codigo}</TableCell>
-                  <TableCell className="text-foreground text-right tabular-nums">{fmt(m.colilla)}</TableCell>
+                  <TableCell className="text-foreground text-right tabular-nums">{m.colilla}</TableCell>
                   <TableCell className="text-foreground text-right tabular-nums">{fmt(m.precio_ensamblado)}</TableCell>
                   <TableCell>
                     <ToggleSwitch value={m.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(m.id_marco), 'Estado actualizado')} options={ACTIVO_OPTIONS} />
@@ -186,7 +188,7 @@ export function CalculatorPage() {
             { label: 'ID',              value: viewingItem.id_marco },
             { label: 'Estado',          value: <EstadoBadge estado={viewingItem.estado} /> },
             { label: 'Código',          value: viewingItem.codigo },
-            { label: 'Colilla',         value: fmt(viewingItem.colilla) },
+            { label: 'Colilla',         value: `${viewingItem.colilla} mm` },
             { label: 'Precio Ensamblado', value: fmt(viewingItem.precio_ensamblado) },
             { label: 'Precio Venta (×2)', value: fmt(viewingItem.precio_ensamblado * 2) },
           ]} />
@@ -237,8 +239,8 @@ export function CalculatorPage() {
               {errors.codigo && <p className="mt-1 text-xs text-destructive">{errors.codigo}</p>}
             </div>
             <div>
-              <label className={labelCls} htmlFor="marco-colilla">Colilla <span className="text-destructive">*</span></label>
-              <input id="marco-colilla" type="number" step="0.01" min="0" value={colillaStr} placeholder="Ej: 5" onChange={(e) => { setColillaStr(e.target.value); if (errors.colilla) setErrors({}) }} className={inputCls} />
+              <label className={labelCls} htmlFor="marco-colilla">Colilla (mm) <span className="text-destructive">*</span></label>
+              <input id="marco-colilla" type="number" step="1" min="1" value={colillaStr} placeholder="Ej: 5" onChange={(e) => { setColillaStr(e.target.value); if (errors.colilla) setErrors({}) }} className={inputCls} />
               {errors.colilla && <p className="mt-1 text-xs text-destructive">{errors.colilla}</p>}
             </div>
             <div>
