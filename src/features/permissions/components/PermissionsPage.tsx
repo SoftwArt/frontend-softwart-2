@@ -1,7 +1,8 @@
 // src/features/permissions/components/PermissionsPage.tsx
 import { usePermissions } from '../hooks/usePermissions'
 import { useState, useMemo } from 'react'
-import { ShieldCheck, ShieldOff, Lock, AlertCircle, ChevronDown, CheckSquare, Square, X, HelpCircle } from 'lucide-react'
+import { toast } from 'sonner'
+import { ShieldCheck, ShieldOff, Lock, AlertCircle, ChevronDown, CheckSquare, Square, HelpCircle, Save, Undo2 } from 'lucide-react'
 import { Label } from '@/src/shared/components/ui/label'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { Checkbox } from '@/src/shared/components/ui/checkbox'
@@ -10,6 +11,7 @@ import { Alert, AlertDescription } from '@/src/shared/components/ui/alert'
 import { Badge } from '@/src/shared/components/ui/badge'
 import { Button } from '@/src/shared/components/ui/button'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/src/shared/components/ui/alert-dialog'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { ADMIN_ROL_ID, MODULO_LABELS, MODULO_ICONS, MODULO_ORDER, getModulo, getAccion } from '../utils'
 
@@ -142,12 +144,45 @@ function ModuloCard({ moduloKey, permisos, id_rol, isAdmin, hasPermission, onTog
 
 // ── Page principal ────────────────────────────────────────────────────────────
 export function PermissionsPage() {
-  const { permisos, roles, isLoading, error, hasPermission, onTogglePermission } = usePermissions()
-  const [selectedRol, setSelectedRol] = useState<string>('')
-  const [actionError, setActionError] = useState<string | null>(null)
+  const {
+    permisos, roles, isLoading, error,
+    hasPermission, isDirty,
+    onTogglePermission, onToggleAllPermissions,
+    guardarCambios, descartarCambios,
+  } = usePermissions()
+  const [selectedRol,       setSelectedRol]       = useState<string>('')
+  const [isSaving,          setIsSaving]          = useState(false)
+  // Cambiar de rol con cambios sin guardar pide confirmación antes de
+  // descartarlos — evita perder ediciones por un click accidental en el Select.
+  const [pendingRolChange,  setPendingRolChange]  = useState<string | null>(null)
 
   const selectedRolId = selectedRol ? Number(selectedRol) : null
   const isAdmin = selectedRolId === ADMIN_ROL_ID
+  const dirty = selectedRolId !== null && !isAdmin && isDirty(selectedRolId)
+
+  const handleRolChange = (v: string) => {
+    if (dirty) { setPendingRolChange(v); return }
+    setSelectedRol(v)
+  }
+
+  const confirmDiscardAndSwitch = () => {
+    if (selectedRolId) descartarCambios(selectedRolId)
+    if (pendingRolChange !== null) setSelectedRol(pendingRolChange)
+    setPendingRolChange(null)
+  }
+
+  const handleGuardarCambios = async () => {
+    if (!selectedRolId) return
+    setIsSaving(true)
+    try {
+      await guardarCambios(selectedRolId)
+      toast.success('Permisos guardados')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error al guardar los permisos')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   // Agrupar permisos por módulo
   const modulosAgrupados = useMemo(() => {
@@ -172,22 +207,15 @@ export function PermissionsPage() {
     return permisos.filter(p => hasPermission(selectedRolId, p.id_permiso)).length
   }, [permisos, selectedRolId, hasPermission])
 
-  const handleToggle = async (id_permiso: number) => {
+  const handleToggle = (id_permiso: number) => {
     if (!selectedRolId || isAdmin) return
-    setActionError(null)
-    const err = await onTogglePermission(selectedRolId, id_permiso)
-    if (err) setActionError(err)
+    onTogglePermission(selectedRolId, id_permiso)
   }
 
-  // Marcar/desmarcar todos los permisos de un módulo de golpe
-  const handleToggleAll = async (ids: number[], marcar: boolean) => {
+  // Marcar/desmarcar todos los permisos de un módulo de golpe — local, sin red.
+  const handleToggleAll = (ids: number[], marcar: boolean) => {
     if (!selectedRolId || isAdmin) return
-    setActionError(null)
-    for (const id_permiso of ids) {
-      const actual = hasPermission(selectedRolId, id_permiso)
-      if (marcar && !actual) await onTogglePermission(selectedRolId, id_permiso)
-      if (!marcar && actual) await onTogglePermission(selectedRolId, id_permiso)
-    }
+    onToggleAllPermissions(selectedRolId, ids, marcar)
   }
 
   return (
@@ -202,7 +230,7 @@ export function PermissionsPage() {
         <div className="flex flex-col gap-2 min-w-[200px]">
           <Label htmlFor="perm-rol" className="text-foreground">Rol</Label>
           {isLoading ? <Skeleton className="h-10 w-48 rounded-md" /> : (
-            <Select value={selectedRol} onValueChange={v => { setSelectedRol(v); setActionError(null) }}>
+            <Select value={selectedRol} onValueChange={handleRolChange}>
               <SelectTrigger id="perm-rol" className="bg-card text-foreground border-border">
                 <SelectValue placeholder="Seleccionar rol..." />
               </SelectTrigger>
@@ -239,28 +267,6 @@ export function PermissionsPage() {
         </Alert>
       )}
 
-      {/* Error de acción */}
-      {actionError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="flex items-center justify-between">
-            <span>{actionError}</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setActionError(null)}
-                  aria-label="Cerrar aviso"
-                  className="ml-2 opacity-70 hover:opacity-100"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>Cerrar</TooltipContent>
-            </Tooltip>
-          </AlertDescription>
-        </Alert>
-      )}
-
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -293,6 +299,54 @@ export function PermissionsPage() {
           ))}
         </div>
       )}
+
+      {/* Barra flotante "Guardar cambios" — los toggles de arriba ya no
+          disparan red en tiempo real (la cascada VER↔módulo dejaba de ser
+          idempotente si un request fallaba a mitad de una secuencia). Todo
+          se acumula en el draft del hook y se envía de una sola vez acá. */}
+      {dirty && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-full border border-border bg-card px-4 py-2.5 shadow-lg">
+          <span className="text-sm text-muted-foreground">Tienes cambios sin guardar</span>
+          <Button
+            variant="outline" size="sm"
+            disabled={isSaving}
+            onClick={() => selectedRolId && descartarCambios(selectedRolId)}
+            className="gap-1.5"
+          >
+            <Undo2 className="h-3.5 w-3.5" />Descartar
+          </Button>
+          <Button
+            size="sm"
+            disabled={isSaving}
+            onClick={handleGuardarCambios}
+            className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Save className="h-3.5 w-3.5" />{isSaving ? 'Guardando...' : 'Guardar cambios'}
+          </Button>
+        </div>
+      )}
+
+      {/* Cambiar de rol con cambios sin guardar — confirmar antes de descartar */}
+      <AlertDialog open={pendingRolChange !== null} onOpenChange={(v) => { if (!v) setPendingRolChange(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Descartar cambios sin guardar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tienes permisos modificados sin guardar para el rol actual. Si cambias de rol ahora,
+              esos cambios se perderán.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Seguir editando</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDiscardAndSwitch}
+            >
+              Descartar y cambiar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
