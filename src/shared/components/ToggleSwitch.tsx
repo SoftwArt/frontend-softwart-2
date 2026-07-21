@@ -2,6 +2,7 @@
 import { useId } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/src/shared/lib/utils'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 
 export interface ToggleOption<T extends string | number = string> {
   value:        T
@@ -16,6 +17,10 @@ interface ToggleSwitchProps<T extends string | number> {
   onChange: (v: T) => void
   options:  ToggleOption<T>[]
   disabled?: boolean
+  // Motivo del bloqueo — si se da, se muestra en un tooltip al pasar el mouse
+  // o dar foco (accesibilidad: aria-disabled por botón, no pointer-events-none
+  // en el contenedor, para que el hover del tooltip siga funcionando).
+  disabledReason?: string
   // Clases por defecto si la opción no define las suyas
   defaultIndicatorCls?: string
   defaultTextActiveCls?: string
@@ -32,15 +37,16 @@ export function ToggleSwitch<T extends string | number>({
   onChange,
   options,
   disabled,
+  disabledReason,
   defaultIndicatorCls  = 'bg-secondary',
   defaultTextActiveCls = 'text-secondary-foreground',
 }: ToggleSwitchProps<T>) {
   const uid = useId()
 
-  return (
+  const content = (
     <div className={cn(
       'inline-flex items-center h-8 rounded-lg border border-border bg-muted/40 p-0.5 gap-0.5',
-      disabled && 'opacity-50 pointer-events-none',
+      disabled && 'opacity-50',
     )}>
       {options.map(opt => {
         const isActive      = opt.value === value
@@ -51,13 +57,16 @@ export function ToggleSwitch<T extends string | number>({
           <button
             key={String(opt.value)}
             type="button"
-            onClick={() => !isActive && onChange(opt.value)}
+            aria-disabled={disabled}
+            onClick={() => { if (!disabled && !isActive) onChange(opt.value) }}
             className={cn(
               'relative flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
               'outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]',
-              isActive
-                ? textActiveCls
-                : 'text-muted-foreground hover:text-foreground cursor-pointer',
+              disabled
+                ? 'cursor-not-allowed text-muted-foreground'
+                : isActive
+                  ? textActiveCls
+                  : 'text-muted-foreground hover:text-foreground cursor-pointer',
             )}
           >
             {/* Indicador deslizante — siempre tiene el tamaño exacto del botón activo */}
@@ -77,4 +86,14 @@ export function ToggleSwitch<T extends string | number>({
       })}
     </div>
   )
+
+  if (disabled && disabledReason) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent>{disabledReason}</TooltipContent>
+      </Tooltip>
+    )
+  }
+  return content
 }

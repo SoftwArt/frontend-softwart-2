@@ -100,12 +100,30 @@ export function RolesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginated.map((r) => (
+                {paginated.map((r) => {
+                  // Admin y Cliente son estructurales: inactivar o eliminar cualquiera
+                  // de los dos deja al sistema sin sentido (sin acceso administrativo,
+                  // o sin poder registrar clientes desde el portal). Se muestran los
+                  // controles igual que en el resto de filas, pero aria-disabled con
+                  // el motivo — no se esconden.
+                  // Por nombre, no por id_rol — el id no es un número fijo
+                  // garantizado (depende del orden en que se sembró cada rol).
+                  const nombreLower = r.nombre.toLowerCase()
+                  const esRolEstructural = nombreLower === 'admin' || nombreLower === 'cliente'
+                  return (
                   <TableRow key={r.id_rol} className="hover:bg-muted/40 transition-colors border-border">
-          
+
                     <TableCell className="text-foreground font-medium">{r.nombre}</TableCell>
                     <TableCell className="text-muted-foreground">{r.descripcion ?? '—'}</TableCell>
-                    <TableCell><ToggleSwitch value={r.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(r.id_rol), 'Estado actualizado')} options={ACTIVO_OPTIONS} disabled={r.nombre.toLowerCase() === 'admin'} /></TableCell>
+                    <TableCell>
+                      <ToggleSwitch
+                        value={r.estado ? 1 : 0}
+                        onChange={() => withToast(onToggleStatus(r.id_rol), 'Estado actualizado')}
+                        options={ACTIVO_OPTIONS}
+                        disabled={esRolEstructural}
+                        disabledReason={esRolEstructural ? `El rol ${r.nombre} no puede desactivarse — es necesario para el funcionamiento del sistema` : undefined}
+                      />
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Tooltip>
@@ -120,7 +138,22 @@ export function RolesPage() {
                           </TooltipTrigger>
                           <TooltipContent>Editar</TooltipContent>
                         </Tooltip>
-                        {r.id_rol !== 1 && r.id_rol !== 3 && (
+                        {esRolEstructural ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost" size="icon"
+                                aria-label="Eliminar rol"
+                                aria-disabled
+                                onClick={() => {}}
+                                className="opacity-40 cursor-not-allowed"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>El rol {r.nombre} no puede eliminarse — es necesario para el funcionamiento del sistema</TooltipContent>
+                          </Tooltip>
+                        ) : (
                           <AlertDialog>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -148,7 +181,8 @@ export function RolesPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  )
+                })}
               </TableBody>
             </Table>
           </div>
