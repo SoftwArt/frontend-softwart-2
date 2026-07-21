@@ -30,15 +30,16 @@ export function useLogin(redirectCita = false) {
       else          clearCredentials()
 
       saveAuth({
-        token:      res.token,
-        rol:        res.data.rol,
-        id_usuario: res.data.id_usuario,
-        correo:     res.data.correo,
-        id_cliente: res.data.id_cliente,
+        token:        res.token,
+        refreshToken: res.refreshToken,
+        rol:          res.data.rol,
+        id_usuario:   res.data.id_usuario,
+        correo:       res.data.correo,
+        id_cliente:   res.data.id_cliente,
       }, remember)
 
       // Redirigir según rol
-      if (res.data.rol === 'Admin' || res.data.rol === 'Empleado') {
+      if (res.data.rol === 'Admin') {
         navigate('/admin/dashboard', { replace: true })
       } else if (redirectCita) {
         navigate('/my-account?new-appointment=true', { replace: true })
@@ -46,11 +47,17 @@ export function useLogin(redirectCita = false) {
         navigate('/my-account', { replace: true })
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al iniciar sesión')
+      // fetch() lanza TypeError("Failed to fetch") cuando no hay red o el backend
+      // no responde — no es un mensaje pensado para el usuario final.
+      if (e instanceof TypeError) {
+        setError('No se pudo conectar con el servidor. Verifica tu conexión a internet.')
+      } else {
+        setError(e instanceof Error ? e.message : 'Error al iniciar sesión')
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
-  return { login, isLoading, error }
+  return { login, isLoading, error, clearError: () => setError(null) }
 }

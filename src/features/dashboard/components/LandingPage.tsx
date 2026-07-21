@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/components/ui/dialog'
 import { TimePicker } from '@/src/shared/components/TimePicker'
 import { DatePicker } from '@/src/shared/components/DatePicker'
-import { clearAuth } from '@/src/features/auth/hooks/useLogin'
+import { performLogout } from '@/src/features/auth/utils'
 import { stripDigits } from '@/src/shared/lib/validateNombre'
 import { onlyDigits } from '@/src/shared/lib/validateTelefono'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
@@ -154,7 +154,7 @@ export function LandingPage() {
   const [token, setToken] = useState(getToken)
   const rol         = getRol()
   const isCliente   = token && rol === 'Cliente'
-  const isAdminEmpl = token && (rol === 'Admin' || rol === 'Empleado')
+  const isAdmin = token && rol === 'Admin'
 
   // Navbar: transparente en top → opaca en scroll
   const [scrolled, setScrolled] = useState(false)
@@ -173,11 +173,11 @@ export function LandingPage() {
 
   const handleAgendarCita = () => {
     if (isCliente)        navigate('/my-account?nueva-cita=true')
-    else if (isAdminEmpl) navigate('/admin/dashboard')
+    else if (isAdmin) navigate('/admin/dashboard')
   }
 
-  const handleLogout = () => {
-    clearAuth()
+  const handleLogout = async () => {
+    await performLogout()
     setToken(null)
   }
 
@@ -340,7 +340,7 @@ export function LandingPage() {
                 </Button>
               </>
             )}
-            {isAdminEmpl && (
+            {isAdmin && (
               <>
                 <Link to="/admin/dashboard">
                   <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
@@ -414,7 +414,7 @@ export function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4, ease: EASE }}
               >
-                {(isCliente || isAdminEmpl) ? (
+                {(isCliente || isAdmin) ? (
                   <Button
                     size="lg"
                     onClick={handleAgendarCita}

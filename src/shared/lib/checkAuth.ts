@@ -8,7 +8,7 @@ function getToken(): string | null {
   return localStorage.getItem('token') ?? sessionStorage.getItem('token')
 }
 
-function decodeJwtExp(token: string): number | null {
+export function decodeJwtExp(token: string): number | null {
   try {
     // JWT = header.payload.signature — solo necesitamos el payload
     const payload = token.split('.')[1]

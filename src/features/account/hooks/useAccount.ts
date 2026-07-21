@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiRequest } from '@/src/shared/lib/apiClient'
-import { clearAuth } from '@/src/features/auth/hooks/useLogin'
+import { performLogout, clearAuth } from '@/src/features/auth/utils'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { isNombreLongitudValida, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
@@ -266,7 +266,7 @@ export function useAccount() {
   }
 
   // ── Auth ────────────────────────────────────────────────────────────────────
-  const handleLogout = () => { clearAuth(); navigate('/', { replace: true }) }
+  const handleLogout = async () => { await performLogout(); navigate('/', { replace: true }) }
 
   return {
     // servidor

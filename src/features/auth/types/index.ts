@@ -1,7 +1,8 @@
 export type LoginResponse = {
-  success:  boolean
-  message?: string
-  token:    string
+  success:      boolean
+  message?:     string
+  token:        string
+  refreshToken: string
   data: {
     id_usuario: number
     correo:     string
@@ -12,9 +13,10 @@ export type LoginResponse = {
 }
 
 export type AuthData = {
-  token:       string
-  rol:         string
-  id_usuario:  number
-  correo:      string
-  id_cliente?: number | null
+  token:        string
+  refreshToken: string
+  rol:          string
+  id_usuario:   number
+  correo:       string
+  id_cliente?:  number | null
 }

@@ -10,7 +10,8 @@ import { checkAuthValidity } from '@/src/shared/lib/checkAuth'
 import { Toaster } from 'sonner'
 import { AdminSidebar }     from '@/src/shared/components/AdminSidebar'
 import { LandingPage }      from '@/src/features/dashboard/components/LandingPage'
-import { clearAuth }        from '@/src/features/auth/hooks/useLogin'
+import { performLogout }    from '@/src/features/auth/utils'
+import { useSessionKeepAlive } from '@/src/features/auth/hooks/useSessionKeepAlive'
 import { LogOut, ChevronDown } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -47,8 +48,8 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!checkAuthValidity()) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   const rol = getRol()
   if (!rol) return <Navigate to="/login" replace />
-  if (rol !== 'Admin' && rol !== 'Empleado') return <Navigate to="/login" replace />
-  return <>{children}</>
+  if (rol !== 'Admin') return <Navigate to="/login" replace />
+  return <RequireSession>{children}</RequireSession>
 }
 
 function RequireCliente({ children }: { children: React.ReactNode }) {
@@ -57,6 +58,13 @@ function RequireCliente({ children }: { children: React.ReactNode }) {
   const rol = getRol()
   if (!rol) return <Navigate to="/login" replace />
   if (rol !== 'Cliente') return <Navigate to="/login" replace />
+  return <RequireSession>{children}</RequireSession>
+}
+
+// Sliding expiration compartida entre panel admin y portal cliente — un solo
+// código, montado una vez ya dentro de una ruta autenticada.
+function RequireSession({ children }: { children: React.ReactNode }) {
+  useSessionKeepAlive()
   return <>{children}</>
 }
 
@@ -66,8 +74,8 @@ function AdminLayout() {
   const correo   = localStorage.getItem('correo') ?? sessionStorage.getItem('correo') ?? ''
   const inicial  = correo.charAt(0).toUpperCase()
 
-  const handleLogout = () => {
-    clearAuth()
+  const handleLogout = async () => {
+    await performLogout()
     navigate('/login', { replace: true })
   }
 
