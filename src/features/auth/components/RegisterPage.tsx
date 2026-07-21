@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { LazyMotion, domAnimation, m } from 'framer-motion'
-import { toast } from 'sonner'
 import { useRegister } from '../hooks/useRegister'
 import { Button }   from '@/src/shared/components/ui/button'
 import { Input }    from '@/src/shared/components/ui/input'
@@ -42,7 +41,7 @@ const labelCls = 'block text-xs font-medium capitalize tracking-widest text-fore
 export function RegisterPage() {
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get('redirect') ?? undefined
-  const { onSubmit, isLoading, error } = useRegister(redirect)
+  const { onSubmit, isLoading, error, clearError } = useRegister(redirect)
 
   const [tipoDocumento,  setTipoDocumento]  = useState('')
   const [documento,      setDocumento]      = useState('')
@@ -75,17 +74,18 @@ export function RegisterPage() {
     tipoDocumento && documento && !documentoError && nombreValido && correoValido &&
     telefonoValido && clave && confirmarClave && passwordsMatch && passwordValid && acceptTerms
 
-  // El error de submit (ej. "correo ya registrado") no pertenece a ningún
-  // campo puntual — se muestra como toast, no como texto en el flujo, por la
-  // misma razón que los errores de campo son tooltips: nunca debe empujar el
-  // formulario ni generar scroll.
-  useEffect(() => {
-    if (error) toast.error(error)
-  }, [error])
+  // El botón queda siempre habilitado (mismo criterio de accesibilidad que
+  // LoginPage: un botón disabled no explica por qué al foco/lector de
+  // pantalla) — "submitted" solo dispara los avisos tras un intento de
+  // envío, y se recalculan en cada render contra los valores actuales.
+  const [submitted, setSubmitted] = useState(false)
+  const showAcceptTosError     = submitted && !acceptToS
+  const showAcceptPrivacyError = submitted && !acceptPrivacy
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!passwordsMatch || !passwordValid || !telefonoValido || !nombreValido || !correoValido || !acceptTerms || documentoError) return
+    setSubmitted(true)
+    if (!isFormValid) return
     await onSubmit({ tipoDocumento, documento, nombre, correo, telefono, clave, acceptTerms })
   }
 
@@ -178,7 +178,7 @@ export function RegisterPage() {
                 <FieldErrorTooltip error={documento.length > 0 ? documentoError : null}>
                   <Input
                     id="documento" type="text"
-                    value={documento} onChange={e => setDocumento(e.target.value)}
+                    value={documento} onChange={e => { setDocumento(e.target.value); clearError() }}
                     placeholder="Ej: 1023456789" required
                     className={fieldCls}
                   />
@@ -206,7 +206,7 @@ export function RegisterPage() {
                 <FieldErrorTooltip error={showCorreoError ? EMAIL_ERROR : null}>
                   <Input
                     id="correo" type="email"
-                    value={correo} onChange={e => setCorreo(e.target.value)}
+                    value={correo} onChange={e => { setCorreo(e.target.value); clearError() }}
                     placeholder="nombre@ejemplo.com" required
                     className={fieldCls}
                   />
@@ -277,42 +277,52 @@ export function RegisterPage() {
 
             {/* Términos — dos casillas, una por documento (ver aceptacion_legal) */}
             <div className="space-y-2 pt-1">
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="accept-tos"
-                  checked={acceptToS}
-                  onCheckedChange={v => setAcceptToS(v === true)}
-                  className="mt-0.5"
-                />
-                <label htmlFor="accept-tos" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                  He leído y acepto los{' '}
-                  <span
-                    className="text-foreground font-semibold underline underline-offset-2 cursor-pointer hover:text-primary"
-                    onClick={e => { e.preventDefault(); setLegalModal('terminos-servicio') }}
-                  >
-                    Términos de Servicio
-                  </span>
-                  .
-                </label>
-              </div>
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="accept-privacy"
-                  checked={acceptPrivacy}
-                  onCheckedChange={v => setAcceptPrivacy(v === true)}
-                  className="mt-0.5"
-                />
-                <label htmlFor="accept-privacy" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                  He leído y autorizo el tratamiento de mis datos personales conforme a la{' '}
-                  <span
-                    className="text-foreground font-semibold underline underline-offset-2 cursor-pointer hover:text-primary"
-                    onClick={e => { e.preventDefault(); setLegalModal('politica-privacidad') }}
-                  >
-                    Política de Privacidad
-                  </span>
-                  .
-                </label>
-              </div>
+              <FieldErrorTooltip
+                error={showAcceptTosError ? 'Debes aceptar los Términos de Servicio para continuar' : null}
+                side="right"
+              >
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="accept-tos"
+                    checked={acceptToS}
+                    onCheckedChange={v => setAcceptToS(v === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="accept-tos" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                    He leído y acepto los{' '}
+                    <span
+                      className="text-foreground font-semibold underline underline-offset-2 cursor-pointer hover:text-primary"
+                      onClick={e => { e.preventDefault(); setLegalModal('terminos-servicio') }}
+                    >
+                      Términos de Servicio
+                    </span>
+                    .
+                  </label>
+                </div>
+              </FieldErrorTooltip>
+              <FieldErrorTooltip
+                error={showAcceptPrivacyError ? 'Debes aceptar la Política de Privacidad para continuar' : null}
+                side="right"
+              >
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="accept-privacy"
+                    checked={acceptPrivacy}
+                    onCheckedChange={v => setAcceptPrivacy(v === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="accept-privacy" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                    He leído y autorizo el tratamiento de mis datos personales conforme a la{' '}
+                    <span
+                      className="text-foreground font-semibold underline underline-offset-2 cursor-pointer hover:text-primary"
+                      onClick={e => { e.preventDefault(); setLegalModal('politica-privacidad') }}
+                    >
+                      Política de Privacidad
+                    </span>
+                    .
+                  </label>
+                </div>
+              </FieldErrorTooltip>
             </div>
 
             <LegalDocumentModal
@@ -326,14 +336,20 @@ export function RegisterPage() {
             />
 
             {/* CTA */}
+            {/* El error de submit (ej. "correo ya registrado") no pertenece a ningún
+                campo puntual y ya llegó del backend después de enviar el formulario —
+                mismo patrón que LoginPage: tooltip flotante anclado acá, no un toast,
+                para no romper el estándar de "nunca empuja el layout" del resto del form. */}
             <div className="pt-1">
-              <Button
-                type="submit"
-                disabled={isLoading || !isFormValid}
-                className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-3.5 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98]"
-              >
-                {isLoading ? 'Creando cuenta...' : 'Registrarse'}
-              </Button>
+              <FieldErrorTooltip error={error} side="top">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-3.5 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98]"
+                >
+                  {isLoading ? 'Creando cuenta...' : 'Registrarse'}
+                </Button>
+              </FieldErrorTooltip>
             </div>
           </form>
 

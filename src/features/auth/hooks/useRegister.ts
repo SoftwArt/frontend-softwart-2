@@ -30,11 +30,17 @@ export function useRegister(loginRedirect?: string) {
       })
       navigate(loginRedirect ? `/login?redirect=${loginRedirect}` : '/login')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al registrar')
+      // fetch() lanza TypeError("Failed to fetch") cuando no hay red o el backend
+      // no responde — no es un mensaje pensado para el usuario final.
+      if (err instanceof TypeError) {
+        setError('No se pudo conectar con el servidor. Verifica tu conexión a internet.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Error al registrar')
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
-  return { onSubmit, isLoading, error }
+  return { onSubmit, isLoading, error, clearError: () => setError(null) }
 }

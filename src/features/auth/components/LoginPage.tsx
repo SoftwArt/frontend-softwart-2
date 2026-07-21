@@ -20,17 +20,29 @@ const fieldCls =
 export function LoginPage() {
   const [searchParams] = useSearchParams()
   const redirectCita   = searchParams.get('redirect') === 'cita'
-  const { login, error } = useLogin(redirectCita)
+  const { login, isLoading, error, clearError } = useLogin(redirectCita)
 
   const [correo,   setCorreo]   = useState(() => getSavedCredentials()?.correo   ?? '')
   const [password, setPassword] = useState(() => getSavedCredentials()?.password ?? '')
   const [remember, setRemember] = useState(() => getSavedCredentials() !== null)
   const [showPass, setShowPass] = useState(false)
+  // El botón queda siempre habilitado (accesibilidad: un botón disabled no
+  // explica por qué al foco/lector de pantalla) — si faltan campos, se
+  // muestra el mismo tooltip flotante indicándolo, en vez de bloquear el click.
+  // "submitted" solo dispara el aviso tras un intento; se recalcula en cada
+  // render contra los valores actuales, así desaparece solo al completarse.
+  const [submitted, setSubmitted] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitted(true)
+    if (!correo || !password) return
     await login(correo, password, remember)
   }
+
+  const submitError = error ?? (submitted && (!correo || !password)
+    ? 'Completa el correo y la contraseña para continuar'
+    : null)
 
   return (
     <LazyMotion features={domAnimation}>
@@ -116,7 +128,7 @@ export function LoginPage() {
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
                   <Input
                     id="correo" type="email" autoComplete="email"
-                    value={correo} onChange={e => setCorreo(e.target.value)}
+                    value={correo} onChange={e => { setCorreo(e.target.value); clearError() }}
                     placeholder="ejemplo@artecafe.com" required
                     className={`${fieldCls} pl-12`}
                   />
@@ -134,31 +146,26 @@ export function LoginPage() {
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
-                {/* Mensaje genérico a propósito (no se atribuye a correo o clave):
-                    evita que un atacante infiera cuál de los dos falló (anti-enumeración, OWASP A01).
-                    Tooltip flotante, no <p>, para no empujar el resto del formulario. */}
-                <FieldErrorTooltip error={error}>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
-                    <Input
-                      id="password"
-                      type={showPass ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      value={password} onChange={e => setPassword(e.target.value)}
-                      placeholder="••••••••" required
-                      className={`${fieldCls} pl-12 pr-12`}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                      onClick={() => setShowPass(v => !v)}
-                      title={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                      aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    >
-                      {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </FieldErrorTooltip>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
+                  <Input
+                    id="password"
+                    type={showPass ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={password} onChange={e => { setPassword(e.target.value); clearError() }}
+                    placeholder="••••••••" required
+                    className={`${fieldCls} pl-12 pr-12`}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    onClick={() => setShowPass(v => !v)}
+                    title={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               {/* Recordarme */}
@@ -174,13 +181,21 @@ export function LoginPage() {
               </div>
 
               {/* CTA */}
+              {/* Mensaje genérico a propósito (no se atribuye a correo o clave): evita que un
+                  atacante infiera cuál de los dos falló (anti-enumeración, OWASP A01). Se ancla
+                  acá, neutral entre ambos campos, en vez de en contraseña, para no insinuar
+                  visualmente cuál de los dos fue el que falló. Tooltip flotante, no <p>, para no
+                  empujar el resto del formulario. */}
               <div className="pt-2">
-                <Button
-                  type="submit"
-                  className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-6 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98]"
-                >
-                  Iniciar sesión
-                </Button>
+                <FieldErrorTooltip error={submitError} side="top">
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-6 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98]"
+                  >
+                    {isLoading ? 'Ingresando...' : 'Iniciar sesión'}
+                  </Button>
+                </FieldErrorTooltip>
               </div>
             </form>
 
