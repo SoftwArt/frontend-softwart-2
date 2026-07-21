@@ -177,11 +177,24 @@ export function PaymentsPage() {
             <TableBody>
               {paginated.map(p => {
                 const ventaLabel   = ventasOpts.find(o => o.value === String(p.id_venta))?.label ?? `#${p.id_venta}`
+                const clienteLabel = rawVentas.find(rv => rv.id_venta === p.id_venta)?.client?.nombre ?? null
                 const estadoNombre = getEstadoLabel(p.id_estado_pago)
+                // Mismo estándar visual que Ventas/Servicios (bg-emerald): un
+                // pago Validado ya completó su flujo — se reconoce de un
+                // vistazo, sin tener que leer el badge de estado.
+                const validado = estadoNombre.toLowerCase().includes('validado')
                 return (
-                  <TableRow key={p.id_pago} className="hover:bg-muted/40 transition-colors border-border">
+                  <TableRow
+                    key={p.id_pago}
+                    className={validado
+                      ? 'bg-emerald-50 dark:bg-emerald-950/30 border-border'
+                      : 'hover:bg-muted/40 transition-colors border-border'}
+                  >
      
-                    <TableCell className="text-foreground text-sm">{ventaLabel}</TableCell>
+                    <TableCell className="text-foreground text-sm">
+                      <div className="font-medium">{ventaLabel}</div>
+                      {clienteLabel && <div className="text-xs text-muted-foreground">{clienteLabel}</div>}
+                    </TableCell>
                     <TableCell className="text-foreground text-right font-medium tabular-nums">{formatCurrency(p.monto)}</TableCell>
                     <TableCell className="text-foreground">{formatDate(p.fecha)}</TableCell>
                     <TableCell>

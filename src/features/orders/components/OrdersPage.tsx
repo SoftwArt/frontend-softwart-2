@@ -73,7 +73,11 @@ export function OrdersPage() {
     const idx = estados.findIndex(e => e.id_estado === id)
     return badgeClassByName(estadoNombre(id), idx === -1 ? 0 : idx)
   }
-  const isCancelado = (id: number) => estadoNombre(id).toLowerCase().includes('cancelado')
+  const isCancelado  = (id: number) => estadoNombre(id).toLowerCase().includes('cancelado')
+  // Mismo estándar visual que la fila verde de Ventas (bg-emerald): un
+  // servicio Finalizado ya completó su flujo — se reconoce de un vistazo,
+  // sin tener que leer el badge de estado (procesamiento preatentivo).
+  const isFinalizado = (id: number) => estadoNombre(id).toLowerCase().includes('finaliz')
 
   // Confirmación antes de cancelar (estado terminal e irreversible)
   const [cancelTarget, setCancelTarget] = useState<{ id: number; id_estado: number; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
@@ -277,10 +281,15 @@ export function OrdersPage() {
                   : '—'
                 const clienteNombre = rawVentas.find(rv => rv.id_venta === p.id_venta)?.client?.nombre ?? '—'
                 return (
-                  <TableRow key={p.id_detalle} className="hover:bg-muted/40 transition-colors border-border">
+                  <TableRow
+                    key={p.id_detalle}
+                    className={isFinalizado(p.id_estado)
+                      ? 'bg-emerald-50 dark:bg-emerald-950/30 border-border'
+                      : 'hover:bg-muted/40 transition-colors border-border'}
+                  >
                     <TableCell className="text-foreground text-sm">
-                      <div className="font-medium">{clienteNombre}</div>
-                      <div className="text-xs text-muted-foreground">{ventaLabel}</div>
+                      <div className="font-medium">{ventaLabel}</div>
+                      <div className="text-xs text-muted-foreground">{clienteNombre}</div>
                     </TableCell>
                     <TableCell className="text-foreground">{servicioLabel}</TableCell>
                     <TableCell className="text-foreground">{marcoLabel}</TableCell>

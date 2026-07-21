@@ -7,6 +7,7 @@ import { useState, useMemo } from 'react'
 import type { Venta, VentaDetalle } from '../types'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { inputCls, labelCls, filterVentas } from '../utils'
+import { DOCUMENT_TYPES } from '@/src/features/clients/utils'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
@@ -36,7 +37,7 @@ export function SalesPage() {
 
   // ── Modal de abonos ───────────────────────────────────────────────────────
   const [abonoModalVenta, setAbonoModalVenta] = useState<{ id: number; label: string } | null>(null)
-  const { options: clientesOpts } = useClientsOptions()
+  const { options: clientesOpts, rawClientes } = useClientsOptions()
   const { options: citasOpts, rawCitas } = useAppointmentsOptions()
 
   // ── Búsqueda y filtros ─────────────────────────────────────────────────
@@ -193,10 +194,16 @@ export function SalesPage() {
                 const clienteLabel = clientesOpts.find(o => o.value === String(v.id_cliente))?.label ?? `#${v.id_cliente}`
                 const citaLabel = v.id_cita ? (citasOpts.find(o => o.value === String(v.id_cita))?.label ?? `#${v.id_cita}`) : '—'
                 const pagada = v.pagos_realizados >= v.num_abonos
+                const cliente = rawClientes.find(rc => rc.id_cliente === v.id_cliente)
+                // Siglas (CC/TI/CE/PP), mismo formato que la columna Documento del CRUD de Clientes.
+                const documentoLabel = cliente ? `${cliente.tipoDocumento} · ${cliente.documento}` : null
                 return (
                   <TableRow key={v.id_venta} className={pagada ? 'bg-emerald-50 dark:bg-emerald-950/30 border-border' : 'hover:bg-muted/40 transition-colors border-border'}>
 
-                    <TableCell className="text-foreground">{clienteLabel}</TableCell>
+                    <TableCell className="text-foreground">
+                      <div className="font-medium">{clienteLabel}</div>
+                      {documentoLabel && <div className="text-xs text-muted-foreground">{documentoLabel}</div>}
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{citaLabel}</TableCell>
                     <TableCell className="text-foreground">{formatDate(v.fecha)}</TableCell>
                     <TableCell className="text-right">
@@ -255,19 +262,24 @@ export function SalesPage() {
         </>
         )}
 
-      {viewingItem && (
+      {viewingItem && (() => {
+        const cliente = rawClientes.find(c => c.id_cliente === viewingItem.id_cliente)
+        return (
         <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Venta #${viewingItem.id_venta}`}
           fields={[
             { label: 'ID',     value: viewingItem.id_venta },
             { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },
             { label: 'Cliente', value: clientesOpts.find(o => o.value === String(viewingItem.id_cliente))?.label ?? `#${viewingItem.id_cliente}`, fullWidth: true },
+            { label: 'Tipo de documento', value: DOCUMENT_TYPES.find(t => t.value === cliente?.tipoDocumento)?.label ?? cliente?.tipoDocumento },
+            { label: 'Documento',         value: cliente?.documento },
             { label: 'Cita',   value: viewingItem.id_cita ? (citasOpts.find(o => o.value === String(viewingItem.id_cita))?.label ?? `#${viewingItem.id_cita}`) : '—' },
             { label: 'Fecha',  value: formatDate(viewingItem.fecha) },
             { label: 'Total',  value: formatCurrency(viewingItem.total) },
             { label: 'Observación', value: viewingItem.observacion ?? '—', fullWidth: true },
           ]} />
-      )}
+        )
+      })()}
 
       <Dialog open={isFormOpen} onOpenChange={v => { setIsFormOpen(v); if (!v) resetForm() }}>
         <DialogContent className="bg-card text-card-foreground border-border max-w-md">

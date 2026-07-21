@@ -1,13 +1,15 @@
 // src/features/services/components/ServicesPage.tsx
 import { useServices } from '../hooks/useServices'
 import { useState, useMemo } from 'react'
+import { toast } from 'sonner'
 import type { Servicio } from '../types'
 import { inputCls, labelCls, fmtDuracion, filterServicios } from '../utils'
-import { Plus, Pencil, Eye, CalendarDays } from 'lucide-react'
+import { Plus, Pencil, Eye, CalendarDays, Trash2 } from 'lucide-react'
 import { Button }   from '@/src/shared/components/ui/button'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { ToggleSwitch, ACTIVO_OPTIONS } from '@/src/shared/components/ToggleSwitch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
@@ -20,7 +22,7 @@ import { withToast }     from '@/src/shared/lib/withToast'
 
 
 export function ServicesPage() {
-  const { servicios, isLoading, onCreate, onEdit, onToggleStatus } = useServices()
+  const { servicios, isLoading, onCreate, onEdit, onDelete, onToggleStatus } = useServices()
 
   // ── Búsqueda y filtros ─────────────────────────────────────────────────────
   const [q,            setQ]            = useState('')
@@ -49,6 +51,12 @@ export function ServicesPage() {
     setErrors({}); setIsFormOpen(true)
   }
   const openView = (s: Servicio) => { setViewingItem(s); setIsViewOpen(true) }
+
+  const handleDelete = async (id: number) => {
+    const err = await onDelete(id)
+    if (err) toast.error(err)
+    else toast.success('Tipo de servicio eliminado')
+  }
 
   const validate = () => {
     const e: Record<string, string> = {}
@@ -150,6 +158,36 @@ export function ServicesPage() {
                           </TooltipTrigger>
                           <TooltipContent>Editar</TooltipContent>
                         </Tooltip>
+                        <AlertDialog>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" aria-label="Eliminar tipo de servicio">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>Eliminar</TooltipContent>
+                          </Tooltip>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar este tipo de servicio?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Se eliminará <strong>{s.nombre}</strong>. Si ya está siendo usado en algún
+                                pedido registrado, no podrá eliminarse. Esta acción no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDelete(s.id_servicio)}
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
