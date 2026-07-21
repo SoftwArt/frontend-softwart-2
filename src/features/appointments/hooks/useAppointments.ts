@@ -30,6 +30,10 @@ export function useAppointments() {
         id_estado_cita: item.appointmentStatus?.id_estado_cita ?? 1,
         clienteNombre:  item.client?.nombre ?? `Cliente #${item.client?.id_cliente ?? '?'}`,
         motivoCancelacion: item.motivo_cancelacion ?? null,
+        // Verde solo si la Venta sigue activa — una Venta anulada (ej. al
+        // cancelar la cita antes, o directo desde Ventas) no representa un
+        // flujo completado, así que no debería seguir mostrándose como tal.
+        tieneVenta:     item.sale != null && item.sale.estado === true,
       }))
 
       setCitas(normalized)

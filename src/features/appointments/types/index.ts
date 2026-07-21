@@ -6,9 +6,10 @@ export type Cita = {
   id_cliente:         number
   clienteNombre?:     string
   motivoCancelacion?: string | null
+  tieneVenta:         boolean
 }
 
-export type CreateCitaDto = Omit<Cita, 'id_cita'>
+export type CreateCitaDto = Omit<Cita, 'id_cita' | 'tieneVenta'>
 export type UpdateCitaDto = Partial<CreateCitaDto>
 
 export type EstadoCita = {
@@ -23,6 +24,7 @@ export type BackendCita = {
   client?:            { id_cliente: number; nombre?: string } | null
   appointmentStatus?: { id_estado_cita: number } | null
   motivo_cancelacion?: string | null
+  sale?:               { id_venta: number; estado: boolean } | null
 }
 
 export type VentaLinea = {

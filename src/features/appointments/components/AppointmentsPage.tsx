@@ -127,7 +127,8 @@ export function AppointmentsPage() {
   const openView   = (c: Cita) => { setViewingItem(c); setIsViewOpen(true) }
 
   const getEstadoLabel = (id: number) => estadosCita.find(e => e.id_estado_cita === id)?.nombre ?? `Estado ${id}`
-  const isCancelada = (id: number) => getEstadoLabel(id).toLowerCase().includes('cancelada')
+  const isCancelada  = (id: number) => getEstadoLabel(id).toLowerCase().includes('cancelada')
+  const isCompletada = (id: number) => getEstadoLabel(id).toLowerCase().includes('completada')
 
   // Protección de estado Cancelada — terminal e irreversible, igual que Anulado en Pagos
   const MSG_BASE = 'Cancelar una cita es definitivo: no podrá modificarse ni volver a cambiar de estado.'
@@ -267,10 +268,22 @@ export function AppointmentsPage() {
               <TableBody>
                 {paginated.map((c) => {
                   const clienteLabel = clientesOpts.find(o => o.value === String(c.id_cliente))?.label ?? `#${c.id_cliente}`
+                  const cliente = rawClientes.find(rc => rc.id_cliente === c.id_cliente)
+                  // Siglas (CC/TI/CE/PP), no el nombre completo — mismo formato que la
+                  // columna Documento del CRUD de Clientes.
+                  const documentoLabel = cliente ? `${cliente.tipoDocumento} · ${cliente.documento}` : null
                   return (
-                    <TableRow key={c.id_cita} className="hover:bg-muted/40 transition-colors border-border">
-                    
-                      <TableCell className="text-foreground">{clienteLabel}</TableCell>
+                    <TableRow
+                      key={c.id_cita}
+                      className={c.tieneVenta
+                        ? 'bg-emerald-50 dark:bg-emerald-950/30 border-border'
+                        : 'hover:bg-muted/40 transition-colors border-border'}
+                    >
+
+                      <TableCell className="text-foreground">
+                        <div className="font-medium">{clienteLabel}</div>
+                        {documentoLabel && <div className="text-xs text-muted-foreground">{documentoLabel}</div>}
+                      </TableCell>
                       <TableCell className="text-foreground">{formatDate(c.fecha)}</TableCell>
                       <TableCell className="text-foreground">{formatTime(c.hora)}</TableCell>
                       <TableCell>
@@ -292,16 +305,28 @@ export function AppointmentsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {c.id_estado_cita === 2 && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label="Crear venta desde cita" onClick={() => openVentaModal(c)}>
-                                  <ShoppingCart className="h-4 w-4 text-emerald-600" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Crear venta</TooltipContent>
-                            </Tooltip>
-                          )}
+                          {/* Botón siempre presente (no se esconde según contexto) — si la cita
+                              no está Completada queda aria-disabled con tooltip explicando por
+                              qué, en vez de desaparecer del DOM. Mismo criterio de accesibilidad
+                              que RegisterPage/LoginPage: informar el estado, no ocultarlo. */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost" size="icon"
+                                aria-label="Crear venta desde cita"
+                                aria-disabled={!isCompletada(c.id_estado_cita)}
+                                onClick={() => { if (isCompletada(c.id_estado_cita)) openVentaModal(c) }}
+                                className={!isCompletada(c.id_estado_cita) ? 'opacity-40 cursor-not-allowed' : ''}
+                              >
+                                <ShoppingCart className={`h-4 w-4 ${isCompletada(c.id_estado_cita) ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {isCompletada(c.id_estado_cita)
+                                ? 'Crear venta'
+                                : 'Solo se puede crear una venta cuando la cita está Completada'}
+                            </TooltipContent>
+                          </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" aria-label="Ver detalle de cita" onClick={() => openView(c)}>
@@ -312,11 +337,23 @@ export function AppointmentsPage() {
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" aria-label="Editar cita" onClick={() => openEdit(c)}>
+                              <Button
+                                variant="ghost" size="icon"
+                                aria-label="Editar cita"
+                                aria-disabled={isCancelada(c.id_estado_cita) || isCompletada(c.id_estado_cita)}
+                                onClick={() => { if (!isCancelada(c.id_estado_cita) && !isCompletada(c.id_estado_cita)) openEdit(c) }}
+                                className={(isCancelada(c.id_estado_cita) || isCompletada(c.id_estado_cita)) ? 'opacity-40 cursor-not-allowed' : ''}
+                              >
                                 <Pencil className="h-4 w-4 text-foreground" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Editar</TooltipContent>
+                            <TooltipContent>
+                              {isCancelada(c.id_estado_cita)
+                                ? 'No se puede editar una cita Cancelada'
+                                : isCompletada(c.id_estado_cita)
+                                  ? 'No se puede editar una cita Completada'
+                                  : 'Editar'}
+                            </TooltipContent>
                           </Tooltip>
                           <AlertDialog>
                             <Tooltip>
