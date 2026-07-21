@@ -118,6 +118,34 @@ export function useServicesOptions() {
   return { options, isLoading }
 }
 
+// ── Roles ─────────────────────────────────────────────────────
+type RolOption = { id_rol: number; nombre: string; estado: boolean }
+
+export function useRolesOptions() {
+  const [options,    setOptions]    = useState<ComboboxOption[]>([])
+  const [rawRoles,   setRawRoles]   = useState<RolOption[]>([])
+  const [isLoading,  setIsLoading]  = useState(true)
+
+  useEffect(() => {
+    apiRequest<ApiResponse<RolOption[]>>('/api/roles?limit=100')
+      .then((res) => {
+        const data = res.data ?? []
+        setRawRoles(data)
+        // Solo roles activos — no tendría sentido dejar crear un usuario
+        // con un rol que el propio módulo de Roles marcó como inactivo.
+        setOptions(
+          data
+            .filter((r) => r.estado)
+            .map((r) => ({ value: String(r.id_rol), label: r.nombre }))
+        )
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false))
+  }, [])
+
+  return { options, rawRoles, isLoading }
+}
+
 // ── Marcos ────────────────────────────────────────────────────
 type MarcoOption = { id_marco: number; codigo: string; precio_ensamblado: number }
 

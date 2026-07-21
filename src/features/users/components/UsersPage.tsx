@@ -1,15 +1,17 @@
 // src/features/users/components/UsersPage.tsx
 import { useUsers } from '../hooks/useUsers'
+import { useRolesOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo } from 'react'
 import type { Usuario, CreateUsuarioDto, UpdateUsuarioDto } from '../types'
 import { inputCls, labelCls, selectCls, ROL_LABELS, getRolBadgeClass, filterUsuarios } from '../utils'
-import { Plus, Pencil, Eye } from 'lucide-react'
+import { Plus, Pencil, Eye, Trash2 } from 'lucide-react'
 import { Button }   from '@/src/shared/components/ui/button'
 import { Badge }    from '@/src/shared/components/ui/badge'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { ToggleSwitch, ACTIVO_OPTIONS } from '@/src/shared/components/ToggleSwitch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
@@ -24,7 +26,8 @@ import { validatePassword } from '@/src/shared/lib/passwordValidation'
 
 
 export function UsersPage() {
-  const { usuarios, isLoading, onCreate, onEdit, onToggleStatus } = useUsers()
+  const { usuarios, isLoading, onCreate, onEdit, onDelete, onToggleStatus } = useUsers()
+  const { options: rolesOptsActivos, rawRoles } = useRolesOptions()
 
   // ── Búsqueda y filtros ─────────────────────────────────────────────────────
   const [q,           setQ]           = useState('')
@@ -46,10 +49,23 @@ export function UsersPage() {
   const [idRol,  setIdRol]  = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Roles activos + el rol actualmente asignado (si se está editando y ese
+  // rol pasó a inactivo después de asignado) — así no se pierde de vista
+  // qué rol tiene hoy, sin permitir elegir otros roles inactivos.
+  const rolesOptsForm = useMemo(() => {
+    if (editingId && !rolesOptsActivos.some(r => r.value === idRol)) {
+      const actual = rawRoles.find(r => String(r.id_rol) === idRol)
+      if (actual) return [...rolesOptsActivos, { value: String(actual.id_rol), label: `${actual.nombre} (inactivo)` }]
+    }
+    return rolesOptsActivos
+  }, [rolesOptsActivos, rawRoles, editingId, idRol])
+
   const resetForm  = () => { setCorreo(''); setClave(''); setIdRol(''); setErrors({}); setEditingId(null) }
   const openCreate = () => { resetForm(); setIsFormOpen(true) }
   const openEdit   = (u: Usuario) => { setEditingId(u.id_usuario); setCorreo(u.correo); setClave(''); setIdRol(String(u.id_rol)); setErrors({}); setIsFormOpen(true) }
   const openView   = (u: Usuario) => { setViewingItem(u); setIsViewOpen(true) }
+
+  const handleDelete = (id: number) => withToast(onDelete(id), 'Usuario eliminado')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -96,7 +112,7 @@ export function UsersPage() {
       <FilterBar
         filters={[
           { key: 'rol', label: 'Rol', type: 'select', value: filterRol, onChange: setFilterRol,
-            options: [{ value: '1', label: 'Admin' }, { value: '2', label: 'Empleado' }, { value: '3', label: 'Cliente' }] },
+            options: [{ value: '1', label: 'Admin' }, { value: '3', label: 'Cliente' }] },
           { key: 'estado', label: 'Estado', type: 'chips', value: filterEstado, onChange: setFilterEstado,
             options: [{ value: 'activo', label: 'Activo' }, { value: 'inactivo', label: 'Inactivo' }] },
         ]}
@@ -145,6 +161,59 @@ export function UsersPage() {
                         </TooltipTrigger>
                         <TooltipContent>Editar</TooltipContent>
                       </Tooltip>
+                      {u.es_admin_base ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost" size="icon"
+                              aria-label="Eliminar usuario"
+                              aria-disabled
+                              onClick={() => {}}
+                              className="opacity-40 cursor-not-allowed"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>El usuario administrador base no puede eliminarse</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <AlertDialog>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" aria-label="Eliminar usuario">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>Eliminar</TooltipContent>
+                          </Tooltip>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar este usuario?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Se eliminará el acceso de <strong>{u.correo}</strong>. Esta acción no se puede deshacer.
+                                {ROL_LABELS[u.id_rol] === 'Cliente' && (
+                                  <>
+                                    {' '}Como su rol es <strong>Cliente</strong>, perderá el acceso al portal y
+                                    deberá registrarse de nuevo para recuperarlo — su historial como cliente
+                                    (citas, ventas, pagos) no se ve afectado.
+                                  </>
+                                )}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDelete(u.id_usuario)}
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -196,9 +265,7 @@ export function UsersPage() {
               <Select value={idRol} onValueChange={(v) => { setIdRol(v); if (errors.idRol) setErrors({...errors, idRol:''}) }}>
                 <SelectTrigger id="usr-rol" className={selectCls}><SelectValue placeholder="Seleccionar rol" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Admin</SelectItem>
-                  <SelectItem value="2">Empleado</SelectItem>
-                  <SelectItem value="3">Cliente</SelectItem>
+                  {rolesOptsForm.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                 </SelectContent>
               </Select>
               {errors.idRol && <p className="mt-1 text-xs text-destructive">{errors.idRol}</p>}
