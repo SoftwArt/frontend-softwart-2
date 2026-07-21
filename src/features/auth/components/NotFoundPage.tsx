@@ -13,13 +13,13 @@ export function NotFoundPage() {
   const token = getToken()
   const rol   = getRol()
 
-  const homeRoute = token && (rol === 'Admin' || rol === 'Empleado')
+  const homeRoute = token && rol === 'Admin'
     ? '/admin/dashboard'
     : token && rol === 'Cliente'
       ? '/my-account'
       : '/'
 
-  const homeLabel = token && (rol === 'Admin' || rol === 'Empleado')
+  const homeLabel = token && rol === 'Admin'
     ? 'Ir al panel'
     : token && rol === 'Cliente'
       ? 'Ir a mi cuenta'

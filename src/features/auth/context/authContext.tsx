@@ -11,7 +11,7 @@ import { createContext, useState, ReactNode } from 'react'
 interface AuthUser {
   id_usuario: number
   correo: string
-  rol: string            // 'Admin' | 'Empleado' | 'Cliente'
+  rol: string            // 'Admin' | 'Cliente'
   id_cliente: number | null
   nombre: string | null
 }
@@ -22,7 +22,6 @@ interface AuthContextValue {
   login: (token: string, user: AuthUser) => void
   logout: () => void
   isAdmin: boolean
-  isEmpleado: boolean
   isCliente: boolean
 }
 
@@ -77,9 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         login,
         logout,
-        isAdmin:    user?.rol === 'Admin',
-        isEmpleado: user?.rol === 'Empleado',
-        isCliente:  user?.rol === 'Cliente',
+        isAdmin:   user?.rol === 'Admin',
+        isCliente: user?.rol === 'Cliente',
       }}
     >
       {children}
