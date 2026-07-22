@@ -38,13 +38,13 @@ export function useLogin(redirectCita = false) {
         id_cliente:   res.data.id_cliente,
       }, remember)
 
-      // Redirigir según rol
-      if (res.data.rol === 'Admin') {
-        navigate('/admin/dashboard', { replace: true })
-      } else if (redirectCita) {
-        navigate('/my-account?new-appointment=true', { replace: true })
+      // Redirigir según rol — el acceso real al panel lo valida RequireAuth
+      // por permiso (PANEL.ACCESO), acá solo se decide "portal cliente vs.
+      // intentar el panel admin" para no duplicar esa fuente de verdad.
+      if (res.data.rol === 'Cliente') {
+        navigate(redirectCita ? '/my-account?new-appointment=true' : '/my-account', { replace: true })
       } else {
-        navigate('/my-account', { replace: true })
+        navigate('/admin/dashboard', { replace: true })
       }
     } catch (e) {
       // fetch() lanza TypeError("Failed to fetch") cuando no hay red o el backend

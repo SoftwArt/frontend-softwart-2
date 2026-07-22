@@ -12,6 +12,7 @@ import { AdminSidebar }     from '@/src/shared/components/AdminSidebar'
 import { LandingPage }      from '@/src/features/dashboard/components/LandingPage'
 import { performLogout }    from '@/src/features/auth/utils'
 import { useSessionKeepAlive } from '@/src/features/auth/hooks/useSessionKeepAlive'
+import { useMyPermissions } from '@/src/shared/hooks/useMyPermissions'
 import { LogOut, ChevronDown } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -44,11 +45,16 @@ function getRol() { return localStorage.getItem('rol') ?? sessionStorage.getItem
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation()
-  // Verificar que el token no haya expirado antes de evaluar el rol
+  const { can, isLoading } = useMyPermissions()
+  // Verificar que el token no haya expirado antes de evaluar el permiso
   if (!checkAuthValidity()) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   const rol = getRol()
   if (!rol) return <Navigate to="/login" replace />
-  if (rol !== 'Admin') return <Navigate to="/login" replace />
+  // Mientras cargan los permisos no se puede decidir el acceso — useMyPermissions
+  // por defecto deja pasar todo (pensado para no ocultar de más el sidebar
+  // mientras carga), pero acá sí es un gate real: hay que esperar la respuesta.
+  if (isLoading) return <RouteFallback />
+  if (!can('PANEL.ACCESO')) return <Navigate to="/login" replace />
   return <RequireSession>{children}</RequireSession>
 }
 
