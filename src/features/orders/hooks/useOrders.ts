@@ -34,31 +34,17 @@ export function useOrders() {
 
   useEffect(() => { fetchAll() }, [])
 
-  const onCreate = async (data: CreatePedidoDto): Promise<string | null> => {
-    try {
-      await apiRequest('/api/sale-details', { method: 'POST', body: JSON.stringify(data) })
-      await fetchAll()
-      return null
-    } catch (e) { return e instanceof Error ? e.message : 'Error al crear' }
+  const onCreate = async (data: CreatePedidoDto) => {
+    await apiRequest('/api/sale-details', { method: 'POST', body: JSON.stringify(data) })
+    await fetchAll()
   }
 
-  const onEdit = async (id: number, data: UpdatePedidoDto): Promise<string | null> => {
-    try {
-      await apiRequest(`/api/sale-details/${id}`, { method: 'PUT', body: JSON.stringify(data) })
-      await fetchAll()
-      return null
-    } catch (e) { return e instanceof Error ? e.message : 'Error al editar' }
+  const onEdit = async (id: number, data: UpdatePedidoDto) => {
+    await apiRequest(`/api/sale-details/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+    await fetchAll()
   }
 
-  const onDelete = async (id: number): Promise<string | null> => {
-    try {
-      await apiRequest(`/api/sale-details/${id}`, { method: 'DELETE' })
-      await fetchAll()
-      return null
-    } catch (e) { return e instanceof Error ? e.message : 'Error al eliminar' }
-  }
-
-  const onChangeStatus = async (id: number, id_estado: number): Promise<string | null> => {
+  const onChangeStatus = async (id: number, id_estado: number) => {
     const anterior = pedidos.find(p => p.id_detalle === id)?.id_estado
     // Optimistic update
     setPedidos(prev => prev.map(p => p.id_detalle === id ? { ...p, id_estado } : p))
@@ -68,13 +54,12 @@ export function useOrders() {
         method: 'PATCH',
         body: JSON.stringify({ id_estado }),
       })
-      return null
     } catch (e) {
       // Rollback
       setPedidos(prev => prev.map(p => p.id_detalle === id ? { ...p, id_estado: anterior ?? id_estado } : p))
-      return e instanceof Error ? e.message : 'Error al cambiar estado'
+      throw e
     }
   }
 
-  return { pedidos, isLoading, error, onCreate, onEdit, onDelete, onChangeStatus }
+  return { pedidos, isLoading, error, onCreate, onEdit, onChangeStatus }
 }

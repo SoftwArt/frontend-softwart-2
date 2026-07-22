@@ -11,7 +11,7 @@ import { SearchInput } from '@/src/shared/components/SearchInput'
 import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
 import { FilterBar } from '@/src/shared/components/FilterBar'
-import { toast } from 'sonner'
+import { withToast } from '@/src/shared/lib/withToast'
 import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate } from '@/src/shared/lib/formatDate'
 import { Plus, Pencil, Eye } from 'lucide-react'
@@ -28,6 +28,7 @@ import { Combobox } from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { CascadePreview } from '@/src/shared/components/CascadePreview'
 import { DatePicker } from '@/src/shared/components/DatePicker'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 
 export function OrdersPage() {
@@ -55,7 +56,6 @@ export function OrdersPage() {
   const [editingId,    setEditingId]    = useState<number | null>(null)
   const [viewingItem,  setViewingItem]  = useState<Pedido | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [actionError,  setActionError]  = useState<string | null>(null)
 
   const [idVenta,      setIdVenta]      = useState('')
   const [idServicio,   setIdServicio]   = useState('')
@@ -78,6 +78,7 @@ export function OrdersPage() {
   // servicio Finalizado ya completó su flujo — se reconoce de un vistazo,
   // sin tener que leer el badge de estado (procesamiento preatentivo).
   const isFinalizado = (id: number) => estadoNombre(id).toLowerCase().includes('finaliz')
+  const estadoCanceladoObj = estados.find(e => e.nombre.toLowerCase().includes('cancelado'))
 
   // Confirmación antes de cancelar (estado terminal e irreversible)
   const [cancelTarget, setCancelTarget] = useState<{ id: number; id_estado: number; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
@@ -129,23 +130,38 @@ export function OrdersPage() {
         id_estado: idEstado ? Number(idEstado) : (estados[0]?.id_estado ?? 1), fecha,
         precio: Number(precio), observacion, estado: true,
       }
-      const err = editingId ? await onEdit(editingId, data) : await onCreate(data)
-      if (err) { setActionError(err); return }
-      toast.success(editingId ? 'Pedido actualizado' : 'Pedido registrado')
+      await withToast(
+        editingId ? onEdit(editingId, data) : onCreate(data),
+        editingId ? 'Pedido actualizado' : 'Pedido registrado'
+      )
       setIsFormOpen(false); resetForm()
-    } finally { setIsSubmitting(false) }
+    } catch { } finally { setIsSubmitting(false) }
   }
 
   const aplicarCambioEstado = async (id: number, id_estado: number) => {
-    const err = await onChangeStatus(id, id_estado)
-    if (err) { setActionError(err); toast.error(err) }
-    else toast.success('Estado actualizado')
+    try { await withToast(onChangeStatus(id, id_estado), 'Estado actualizado') } catch { }
   }
 
-  const handleCambiarEstado = async (id: number, id_estado: number) => {
+  const handleCambiarEstado = async (id: number, id_estadoSeleccionado: number, idEstadoActual?: number) => {
+    // Un servicio Finalizado ya se entregó — el único cambio de estado válido
+    // a partir de acá es cancelarlo, no "retroceder" a Sin empezar/En
+    // preparación. En vez de solo bloquear con un error, se redirige a la
+    // misma confirmación de cancelar (igual que Citas Completada / Pagos Validado).
+    const bloqueadoDesdeFinalizado = idEstadoActual !== undefined
+      && isFinalizado(idEstadoActual)
+      && !estadoNombre(id_estadoSeleccionado).toLowerCase().includes('cancelado')
+    const id_estado = bloqueadoDesdeFinalizado && estadoCanceladoObj
+      ? estadoCanceladoObj.id_estado
+      : id_estadoSeleccionado
+
     // Cancelar es terminal → pedir confirmación antes de aplicar
     if (estadoNombre(id_estado).toLowerCase().includes('cancelado')) {
-      setCancelTarget({ id, id_estado, loading: true, lines: [] })
+      setCancelTarget({
+        id, id_estado, loading: true, lines: [],
+        msg: bloqueadoDesdeFinalizado
+          ? `Este servicio ya está Finalizado — no puede cambiar a otro estado, solo cancelarse. ${MSG_CANCELAR_BASE}`
+          : undefined,
+      })
       apiRequest<{ success: boolean; data: PedidoDetalle }>(`/api/sale-details/${id}`)
         .then((res) => {
           const sale = res.data?.sale
@@ -211,10 +227,7 @@ export function OrdersPage() {
     undoableAction({
       message: 'Cancelando servicio...',
       successMsg: 'Servicio cancelado',
-      onCommit: async () => {
-        const err = await onChangeStatus(id, id_estado)
-        if (err) throw new Error(err)
-      },
+      onCommit: () => onChangeStatus(id, id_estado),
     })
   }
 
@@ -243,13 +256,6 @@ export function OrdersPage() {
         ]}
         onClear={() => { setFilterEstado(''); setFilterServicio('') }}
       />
-
-      {actionError && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive flex justify-between">
-          <span>{actionError}</span>
-          <button onClick={() => setActionError(null)}>✕</button>
-          </div>
-        )}
 
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={`sk-${i}`} className="h-12 w-full rounded-md" />)}</div>
@@ -298,7 +304,7 @@ export function OrdersPage() {
                     <TableCell>
                       <StatusSelect
                         value={String(p.id_estado)}
-                        onValueChange={(v) => handleCambiarEstado(p.id_detalle, Number(v))}
+                        onValueChange={(v) => handleCambiarEstado(p.id_detalle, Number(v), p.id_estado)}
                         disabled={isCancelado(p.id_estado)}
                         options={estados.map((e, i) => ({
                           value: String(e.id_estado),
@@ -319,11 +325,19 @@ export function OrdersPage() {
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" aria-label="Editar pedido" onClick={() => openEdit(p)}>
-                              <Pencil className="h-4 w-4 text-foreground" />
+                            <Button
+                              variant="ghost" size="icon"
+                              aria-label="Editar pedido"
+                              aria-disabled={isCancelado(p.id_estado)}
+                              onClick={() => { if (!isCancelado(p.id_estado)) openEdit(p) }}
+                              className={isCancelado(p.id_estado) ? 'opacity-40 cursor-not-allowed' : ''}
+                            >
+                              <Pencil className={`h-4 w-4 ${isCancelado(p.id_estado) ? 'text-muted-foreground' : 'text-foreground'}`} />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Editar</TooltipContent>
+                          <TooltipContent>
+                            {isCancelado(p.id_estado) ? 'No se puede editar un servicio Cancelado' : 'Editar'}
+                          </TooltipContent>
                         </Tooltip>
                    
                       </div>
@@ -385,44 +399,54 @@ export function OrdersPage() {
             <DialogTitle className="font-serif text-xl text-secondary">{editingId ? 'Editar Servicio' : 'Registrar Servicio'}</DialogTitle>
             <DialogDescription className="text-muted-foreground">Completa los datos del servicio.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
               <label className={labelCls} htmlFor="ped-venta">Venta <span className="text-destructive">*</span></label>
-              <Combobox id="ped-venta" options={ventasOpts} value={idVenta} onValueChange={handleVentaChange} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
-              {errors.idVenta && <p className="mt-1 text-xs text-destructive">{errors.idVenta}</p>}
+              <FieldErrorTooltip error={errors.idVenta}>
+                <div>
+                  <Combobox id="ped-venta" options={ventasOpts} value={idVenta} onValueChange={handleVentaChange} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
+                </div>
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="ped-servicio">Tipo de Servicio <span className="text-destructive">*</span></label>
-              <Combobox id="ped-servicio" options={serviciosOpts} value={idServicio} onValueChange={(v) => { setIdServicio(v); if (errors.idServicio) setErrors({...errors, idServicio: ''}) }} placeholder="Buscar servicio..." searchPlaceholder="Nombre del servicio..." />
-              {errors.idServicio && <p className="mt-1 text-xs text-destructive">{errors.idServicio}</p>}
+              <FieldErrorTooltip error={errors.idServicio}>
+                <div>
+                  <Combobox id="ped-servicio" options={serviciosOpts} value={idServicio} onValueChange={(v) => { setIdServicio(v); if (errors.idServicio) setErrors({...errors, idServicio: ''}) }} placeholder="Buscar servicio..." searchPlaceholder="Nombre del servicio..." />
+                </div>
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="ped-marco">Marco (opcional)</label>
               <Combobox id="ped-marco" options={marcosOpts} value={idMarco} onValueChange={setIdMarco} placeholder="Seleccionar marco..." searchPlaceholder="Código del marco..." clearable />
             </div>
-          
+
             <div>
               <label className={labelCls} htmlFor="ped-fecha">Fecha <span className="text-destructive">*</span></label>
-              <DatePicker
-                id="ped-fecha"
-                value={fecha}
-                onChange={(v) => { setFecha(v); if (errors.fecha) setErrors({...errors, fecha: ''}) }}
-                error={errors.fecha}
-              />
-              {errors.fecha && <p className="mt-1 text-xs text-destructive">{errors.fecha}</p>}
+              <FieldErrorTooltip error={errors.fecha}>
+                <div>
+                  <DatePicker
+                    id="ped-fecha"
+                    value={fecha}
+                    onChange={(v) => { setFecha(v); if (errors.fecha) setErrors({...errors, fecha: ''}) }}
+                    error={errors.fecha}
+                  />
+                </div>
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="ped-precio">Precio {!editingId && <span className="text-muted-foreground font-normal normal-case tracking-normal">(tomado de la venta)</span>}</label>
-              <input
-                id="ped-precio"
-                type="number" step="0.01"
-                value={precio}
-                readOnly={!editingId}
-                onChange={editingId ? (e) => { setPrecio(e.target.value); if (errors.precio) setErrors({...errors, precio: ''}) } : undefined}
-                className={inputCls + (!editingId ? ' opacity-60 cursor-not-allowed' : '')}
-                placeholder={!editingId ? 'Se completa al seleccionar la venta' : 'Ingrese el precio...'}
-              />
-              {errors.precio && <p className="mt-1 text-xs text-destructive">{errors.precio}</p>}
+              <FieldErrorTooltip error={errors.precio}>
+                <input
+                  id="ped-precio"
+                  type="number" step="0.01"
+                  value={precio}
+                  readOnly={!editingId}
+                  onChange={editingId ? (e) => { setPrecio(e.target.value); if (errors.precio) setErrors({...errors, precio: ''}) } : undefined}
+                  className={inputCls + (!editingId ? ' opacity-60 cursor-not-allowed' : '')}
+                  placeholder={!editingId ? 'Se completa al seleccionar la venta' : 'Ingrese el precio...'}
+                />
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="ped-observacion">Observación (opcional)</label>
@@ -444,7 +468,7 @@ export function OrdersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Cancelar este servicio?</AlertDialogTitle>
             <AlertDialogDescription>
-              {cancelTarget?.bloqueado ? cancelTarget.msg : MSG_CANCELAR_BASE}
+              {cancelTarget?.msg ?? MSG_CANCELAR_BASE}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <CascadePreview lines={cancelTarget?.lines ?? []} loading={cancelTarget?.loading} />
