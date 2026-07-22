@@ -6,6 +6,7 @@ import { apiRequest } from '@/src/shared/lib/apiClient'
 import { Button } from '@/src/shared/components/ui/button'
 import { Input }  from '@/src/shared/components/ui/input'
 import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { ArrowLeft, Eye, EyeOff, Lock, LockKeyhole, LogIn, ShieldCheck } from 'lucide-react'
 
@@ -204,13 +205,7 @@ export function ResetPasswordPage() {
                     Establece tu nueva clave de acceso.
                   </p>
 
-                  {error && (
-                    <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
-                      <p className="text-sm text-destructive">{error}</p>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleSubmit} className="space-y-8">
+                  <form onSubmit={handleSubmit} className="space-y-8" noValidate>
 
                     {/* Aviso si se llega sin token (link inválido/incompleto) */}
                     {!token && (
@@ -241,68 +236,74 @@ export function ResetPasswordPage() {
 
                           <div>
                             <label className={labelCls} htmlFor="nueva-clave">Nueva contraseña</label>
-                            <div className="relative group">
-                              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
-                              <Input
-                                id="nueva-clave"
-                                type={showNueva ? 'text' : 'password'}
-                                value={nuevaClave}
-                                onChange={e => { setNuevaClave(e.target.value); if (errorNueva) setErrorNueva('') }}
-                                placeholder="••••••••"
-                                className={`${fieldCls} pl-12 pr-12`}
-                              />
-                              <button
-                                type="button"
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                                onClick={() => setShowNueva(v => !v)}
-                                title={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                                aria-label={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                              >
-                                {showNueva ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </button>
-                            </div>
-                            {errorNueva && <p className="text-sm text-destructive mt-1">{errorNueva}</p>}
+                            <FieldErrorTooltip error={errorNueva}>
+                              <div className="relative group">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
+                                <Input
+                                  id="nueva-clave"
+                                  type={showNueva ? 'text' : 'password'}
+                                  value={nuevaClave}
+                                  onChange={e => { setNuevaClave(e.target.value); if (errorNueva) setErrorNueva('') }}
+                                  placeholder="••••••••"
+                                  className={`${fieldCls} pl-12 pr-12`}
+                                />
+                                <button
+                                  type="button"
+                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                                  onClick={() => setShowNueva(v => !v)}
+                                  title={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                  aria-label={showNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                >
+                                  {showNueva ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                              </div>
+                            </FieldErrorTooltip>
                             <PasswordChecklist password={nuevaClave} confirmPassword={confirmarClave} />
                           </div>
 
                           <div>
                             <label className={labelCls} htmlFor="confirmar-clave">Confirmar contraseña</label>
-                            <div className="relative group">
-                              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
-                              <Input
-                                id="confirmar-clave"
-                                type={showConfirmar ? 'text' : 'password'}
-                                value={confirmarClave}
-                                onChange={e => setConfirmarClave(e.target.value)}
-                                placeholder="••••••••"
-                                className={`${fieldCls} pl-12 pr-12`}
-                              />
-                              <button
-                                type="button"
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                                onClick={() => setShowConfirmar(v => !v)}
-                                title={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                                aria-label={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                              >
-                                {showConfirmar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </button>
-                            </div>
-                            {errorConfirmar && <p className="text-sm text-destructive mt-1">{errorConfirmar}</p>}
+                            <FieldErrorTooltip error={errorConfirmar}>
+                              <div className="relative group">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#002926] transition-colors" />
+                                <Input
+                                  id="confirmar-clave"
+                                  type={showConfirmar ? 'text' : 'password'}
+                                  value={confirmarClave}
+                                  onChange={e => setConfirmarClave(e.target.value)}
+                                  placeholder="••••••••"
+                                  className={`${fieldCls} pl-12 pr-12`}
+                                />
+                                <button
+                                  type="button"
+                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                                  onClick={() => setShowConfirmar(v => !v)}
+                                  title={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                  aria-label={showConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                >
+                                  {showConfirmar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                              </div>
+                            </FieldErrorTooltip>
                           </div>
 
                         </div>
 
-                        {/* Submit */}
+                        {/* Submit — el error de un submit que ya salió (token inválido/expirado
+                            reportado por el backend) va anclado acá, mismo patrón que
+                            RegisterPage/LoginPage: tooltip flotante, no un banner que empuje el layout. */}
                         <div className="pt-2">
-                          <Button
-                            type="submit" disabled={!canSubmit}
-                            className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-6 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98] gap-2"
-                          >
-                            {isLoading
-                              ? 'Guardando...'
-                              : <><LockKeyhole className="h-4 w-4" />Guardar nueva contraseña</>
-                            }
-                          </Button>
+                          <FieldErrorTooltip error={error} side="top">
+                            <Button
+                              type="submit" disabled={!canSubmit}
+                              className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-6 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98] gap-2"
+                            >
+                              {isLoading
+                                ? 'Guardando...'
+                                : <><LockKeyhole className="h-4 w-4" />Guardar nueva contraseña</>
+                              }
+                            </Button>
+                          </FieldErrorTooltip>
                         </div>
                       </>
                     )}
@@ -317,13 +318,15 @@ export function ResetPasswordPage() {
                           <p className="text-xs text-emerald-600 text-center">Enlace reenviado correctamente.</p>
                         ) : (
                           <div className="flex gap-2">
-                            <Input
-                              type="email"
-                              placeholder="Tu correo"
-                              value={correoReenvio}
-                              onChange={e => { setCorreoReenvio(e.target.value); if (resendError) setResendError('') }}
-                              className="bg-[#f5f3ef] border-0 border-b border-border focus-visible:ring-0 focus-visible:ring-offset-0 h-9 px-3 text-sm rounded-none flex-1"
-                            />
+                            <FieldErrorTooltip error={resendError}>
+                              <Input
+                                type="email"
+                                placeholder="Tu correo"
+                                value={correoReenvio}
+                                onChange={e => { setCorreoReenvio(e.target.value); if (resendError) setResendError('') }}
+                                className="bg-[#f5f3ef] border-0 border-b border-border focus-visible:ring-0 focus-visible:ring-offset-0 h-9 px-3 text-sm rounded-none flex-1"
+                              />
+                            </FieldErrorTooltip>
                             <Button
                               type="button"
                               disabled={isResending || !correoReenvio.trim()}
@@ -335,7 +338,6 @@ export function ResetPasswordPage() {
                             </Button>
                           </div>
                         )}
-                        {resendError && <p className="text-xs text-destructive">{resendError}</p>}
                       </div>
                     )}
 

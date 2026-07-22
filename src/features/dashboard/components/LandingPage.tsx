@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/components/ui/dialog'
 import { TimePicker } from '@/src/shared/components/TimePicker'
 import { DatePicker } from '@/src/shared/components/DatePicker'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { performLogout } from '@/src/features/auth/utils'
 import { stripDigits } from '@/src/shared/lib/validateNombre'
 import { onlyDigits } from '@/src/shared/lib/validateTelefono'
@@ -733,6 +734,7 @@ export function LandingPage() {
           <form
             onSubmit={async (e) => { e.preventDefault(); await loadAvailability(apptForm.fecha); setApptStep(2) }}
             className="flex flex-col gap-4 pt-1"
+            noValidate
           >
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
@@ -755,13 +757,14 @@ export function LandingPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="g-doc">Número de documento</Label>
-                <Input
-                  id="g-doc"
-                  value={clientForm.documento}
-                  onChange={e => setClientForm(f => ({ ...f, documento: e.target.value }))}
-                  required
-                />
-                {documentoError && <p className="text-xs text-destructive">{documentoError}</p>}
+                <FieldErrorTooltip error={documentoError}>
+                  <Input
+                    id="g-doc"
+                    value={clientForm.documento}
+                    onChange={e => setClientForm(f => ({ ...f, documento: e.target.value }))}
+                    required
+                  />
+                </FieldErrorTooltip>
               </div>
             </div>
 
@@ -778,14 +781,15 @@ export function LandingPage() {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="g-correo">Correo electrónico</Label>
-              <Input
-                id="g-correo"
-                type="email"
-                value={clientForm.correo}
-                onChange={e => setClientForm(f => ({ ...f, correo: e.target.value }))}
-                required
-              />
-              {correoError && <p className="text-xs text-destructive">{correoError}</p>}
+              <FieldErrorTooltip error={correoError}>
+                <Input
+                  id="g-correo"
+                  type="email"
+                  value={clientForm.correo}
+                  onChange={e => setClientForm(f => ({ ...f, correo: e.target.value }))}
+                  required
+                />
+              </FieldErrorTooltip>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -823,18 +827,21 @@ export function LandingPage() {
 
         {/* ── Paso 2: fecha y hora ── */}
         {!apptDone && apptStep === 2 && (
-          <form onSubmit={handleApptSubmit} className="flex flex-col gap-4 pt-1">
+          <form onSubmit={handleApptSubmit} className="flex flex-col gap-4 pt-1" noValidate>
             <div>
               <Label className="mb-1.5 block">
                 Fecha <span className="text-destructive">*</span>
               </Label>
-              <DatePicker
-                value={apptForm.fecha}
-                min={tomorrowStr()}
-                error={apptErrors.fecha}
-                onChange={handleDateChange}
-              />
-              {apptErrors.fecha && <p className="text-xs text-destructive mt-1">{apptErrors.fecha}</p>}
+              <FieldErrorTooltip error={apptErrors.fecha}>
+                <div>
+                  <DatePicker
+                    value={apptForm.fecha}
+                    min={tomorrowStr()}
+                    error={apptErrors.fecha}
+                    onChange={handleDateChange}
+                  />
+                </div>
+              </FieldErrorTooltip>
             </div>
 
             <TimePicker

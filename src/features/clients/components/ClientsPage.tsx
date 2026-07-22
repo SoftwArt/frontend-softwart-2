@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/src/shared/components/ui/alert-dialog'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { withToast } from '@/src/shared/lib/withToast'
 import { isTelefonoValid, onlyDigits, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
@@ -244,52 +245,53 @@ export function ClientsPage() {
               {editingId ? 'Puedes editar todos los campos excepto el correo.' : 'Completa los datos del nuevo cliente.'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
               <label className={labelCls} htmlFor="cli-tipo-doc">Tipo de documento <span className="text-destructive">*</span></label>
-              <Select value={tipoDocumento} onValueChange={(v) => { setTipoDocumento(v); if (errors.tipoDocumento) setErrors({...errors, tipoDocumento: ''}) }}>
-                <SelectTrigger id="cli-tipo-doc" className={selectCls}>
-                  <SelectValue placeholder="Seleccionar tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DOCUMENT_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {errors.tipoDocumento && <p className="mt-1 text-xs text-destructive">{errors.tipoDocumento}</p>}
+              <FieldErrorTooltip error={errors.tipoDocumento}>
+                <Select value={tipoDocumento} onValueChange={(v) => { setTipoDocumento(v); if (errors.tipoDocumento) setErrors({...errors, tipoDocumento: ''}) }}>
+                  <SelectTrigger id="cli-tipo-doc" className={selectCls}>
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCUMENT_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="cli-documento">Número de documento <span className="text-destructive">*</span></label>
-              <input id="cli-documento" value={documento} placeholder="Ej: 1234567890"
-                onChange={e => { setDocumento(e.target.value); if (errors.documento) setErrors({...errors, documento: ''}) }}
-                className={inputCls} />
-              {(errors.documento || documentoFormatoError) && (
-                <p className="mt-1 text-xs text-destructive">{errors.documento || documentoFormatoError}</p>
-              )}
+              <FieldErrorTooltip error={errors.documento || documentoFormatoError}>
+                <input id="cli-documento" value={documento} placeholder="Ej: 1234567890"
+                  onChange={e => { setDocumento(e.target.value); if (errors.documento) setErrors({...errors, documento: ''}) }}
+                  className={inputCls} />
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="cli-nombre">Nombre completo <span className="text-destructive">*</span></label>
-              <input id="cli-nombre" value={nombre} placeholder="Nombre completo del cliente"
-                onChange={e => { setNombre(stripDigits(e.target.value)); if (errors.nombre) setErrors({...errors, nombre: ''}) }}
-                className={inputCls} />
-              {errors.nombre && <p className="mt-1 text-xs text-destructive">{errors.nombre}</p>}
+              <FieldErrorTooltip error={errors.nombre}>
+                <input id="cli-nombre" value={nombre} placeholder="Nombre completo del cliente"
+                  onChange={e => { setNombre(stripDigits(e.target.value)); if (errors.nombre) setErrors({...errors, nombre: ''}) }}
+                  className={inputCls} />
+              </FieldErrorTooltip>
             </div>
             {!editingId && (
               <div>
                 <label className={labelCls} htmlFor="cli-correo">Correo electrónico <span className="text-destructive">*</span></label>
-                <input id="cli-correo" type="email" value={correo} placeholder="correo@ejemplo.com"
-                  onChange={e => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo: ''}) }}
-                  className={inputCls} />
-                {(errors.correo || correoFormatoError) && (
-                  <p className="mt-1 text-xs text-destructive">{errors.correo || correoFormatoError}</p>
-                )}
+                <FieldErrorTooltip error={errors.correo || correoFormatoError}>
+                  <input id="cli-correo" type="email" value={correo} placeholder="correo@ejemplo.com"
+                    onChange={e => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo: ''}) }}
+                    className={inputCls} />
+                </FieldErrorTooltip>
               </div>
             )}
             <div>
               <label className={labelCls} htmlFor="cli-telefono">Teléfono <span className="text-destructive">*</span></label>
-              <input id="cli-telefono" type="tel" value={telefono} placeholder="Ej: 3001234567"
-                onChange={e => { setTelefono(onlyDigits(e.target.value)); if (errors.telefono) setErrors({...errors, telefono: ''}) }}
-                className={inputCls} />
-              {errors.telefono && <p className="mt-1 text-xs text-destructive">{errors.telefono}</p>}
+              <FieldErrorTooltip error={errors.telefono}>
+                <input id="cli-telefono" type="tel" value={telefono} placeholder="Ej: 3001234567"
+                  onChange={e => { setTelefono(onlyDigits(e.target.value)); if (errors.telefono) setErrors({...errors, telefono: ''}) }}
+                  className={inputCls} />
+              </FieldErrorTooltip>
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button"

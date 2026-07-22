@@ -39,6 +39,7 @@ import {
 } from 'lucide-react'
 import { TimePicker } from '@/src/shared/components/TimePicker'
 import { DatePicker }  from '@/src/shared/components/DatePicker'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 
 export function MyAccountPage() {
   const [searchParams] = useSearchParams()
@@ -679,24 +680,27 @@ export function MyAccountPage() {
                       <Skeleton className="h-12 w-full" />
                     </div>
                   ) : (
-                    <form onSubmit={submitPerfil} className="space-y-5">
+                    <form onSubmit={submitPerfil} className="space-y-5" noValidate>
                       <div>
                         <label className={labelCls} htmlFor="perfil-nombre">Nombre completo</label>
-                        <input id="perfil-nombre" type="text" value={perfilNombre}
-                          onChange={e => setPerfilNombre(stripDigits(e.target.value))} required className={inputCls} />
-                        {perfilErrors.nombre && <p className="mt-1 text-xs text-destructive">{perfilErrors.nombre}</p>}
+                        <FieldErrorTooltip error={perfilErrors.nombre}>
+                          <input id="perfil-nombre" type="text" value={perfilNombre}
+                            onChange={e => setPerfilNombre(stripDigits(e.target.value))} required className={inputCls} />
+                        </FieldErrorTooltip>
                       </div>
                       <div>
                         <label className={labelCls} htmlFor="perfil-telefono">Teléfono <span className="text-destructive">*</span></label>
-                        <input id="perfil-telefono" type="tel" value={perfilTelefono}
-                          onChange={e => setPerfilTelefono(onlyDigits(e.target.value))} required className={inputCls} />
-                        {perfilErrors.telefono && <p className="mt-1 text-xs text-destructive">{perfilErrors.telefono}</p>}
+                        <FieldErrorTooltip error={perfilErrors.telefono}>
+                          <input id="perfil-telefono" type="tel" value={perfilTelefono}
+                            onChange={e => setPerfilTelefono(onlyDigits(e.target.value))} required className={inputCls} />
+                        </FieldErrorTooltip>
                       </div>
                       <div>
                         <label className={labelCls} htmlFor="perfil-correo">Correo electrónico</label>
-                        <input id="perfil-correo" type="email" value={perfilCorreo}
-                          onChange={e => setPerfilCorreo(e.target.value)} required className={inputCls} />
-                        {perfilErrors.correo && <p className="mt-1 text-xs text-destructive">{perfilErrors.correo}</p>}
+                        <FieldErrorTooltip error={perfilErrors.correo}>
+                          <input id="perfil-correo" type="email" value={perfilCorreo}
+                            onChange={e => setPerfilCorreo(e.target.value)} required className={inputCls} />
+                        </FieldErrorTooltip>
                       </div>
                       <div className="pt-1 flex items-center gap-4">
                         <button type="submit" disabled={isSavingPerfil}
@@ -826,11 +830,14 @@ export function MyAccountPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmitCita} className="flex flex-col gap-4">
+              <form onSubmit={handleSubmitCita} className="flex flex-col gap-4" noValidate>
                 <div>
                   <label className={labelCls} htmlFor="cita-fecha-mc">Fecha <span className="text-destructive">*</span></label>
-                  <DatePicker id="cita-fecha-mc" value={citaFecha} min={tomorrowString()} error={citaErrors.fecha} onChange={onCitaFechaChange} />
-                  {citaErrors.fecha && <p className="text-xs text-destructive mt-1">{citaErrors.fecha}</p>}
+                  <FieldErrorTooltip error={citaErrors.fecha}>
+                    <div>
+                      <DatePicker id="cita-fecha-mc" value={citaFecha} min={tomorrowString()} error={citaErrors.fecha} onChange={onCitaFechaChange} />
+                    </div>
+                  </FieldErrorTooltip>
                 </div>
 
                 <TimePicker value={citaHora} onChange={onCitaHoraChange} error={citaErrors.hora} bookedSlots={disponibilidad} />

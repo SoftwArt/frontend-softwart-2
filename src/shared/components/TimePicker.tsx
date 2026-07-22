@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { cn } from '@/src/shared/lib/utils'
 import { Clock, User, CheckCircle2, XCircle } from 'lucide-react'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 
 const SLOTS = ['13:00', '14:00', '15:00', '16:00', '17:00']
 
@@ -73,6 +74,7 @@ export function TimePicker({
       </div>
 
       {/* Grilla */}
+      <FieldErrorTooltip error={error}>
       <div className="grid grid-cols-5 gap-2">
         {SLOTS.map(slot => {
           const booking    = bookedMap.get(slot)
@@ -161,8 +163,7 @@ export function TimePicker({
           )
         })}
       </div>
-
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      </FieldErrorTooltip>
     </div>
   )
 }

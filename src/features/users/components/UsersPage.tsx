@@ -22,6 +22,7 @@ import { FilterBar }    from '@/src/shared/components/FilterBar'
 import { usePagination } from '@/src/shared/hooks/usePagination'
 import { Pagination } from '@/src/shared/components/Pagination'
 import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 
 
@@ -246,29 +247,32 @@ export function UsersPage() {
             <DialogTitle className="font-serif text-xl text-secondary">{editingId ? 'Editar Usuario' : 'Registrar Usuario'}</DialogTitle>
             <DialogDescription className="text-muted-foreground">{editingId ? 'Actualiza el correo o el rol.' : 'Completa los datos del nuevo usuario.'}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
               <label className={labelCls} htmlFor="usr-correo">Correo <span className="text-destructive">*</span></label>
-              <input id="usr-correo" type="email" value={correo} placeholder='Ingrese el correo...' onChange={(e) => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo:''}) }} className={inputCls} />
-              {errors.correo && <p className="mt-1 text-xs text-destructive">{errors.correo}</p>}
+              <FieldErrorTooltip error={errors.correo}>
+                <input id="usr-correo" type="email" value={correo} placeholder='Ingrese el correo...' onChange={(e) => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo:''}) }} className={inputCls} />
+              </FieldErrorTooltip>
             </div>
             {!editingId && (
               <div>
                 <label className={labelCls} htmlFor="usr-clave">Contraseña <span className="text-destructive">*</span></label>
-                <input id="usr-clave" type="password" value={clave} placeholder='Ingrese la contraseña...' onChange={(e) => { setClave(e.target.value); if (errors.clave) setErrors({...errors, clave:''}) }} className={inputCls} />
-                {errors.clave && <p className="mt-1 text-xs text-destructive">{errors.clave}</p>}
+                <FieldErrorTooltip error={errors.clave}>
+                  <input id="usr-clave" type="password" value={clave} placeholder='Ingrese la contraseña...' onChange={(e) => { setClave(e.target.value); if (errors.clave) setErrors({...errors, clave:''}) }} className={inputCls} />
+                </FieldErrorTooltip>
                 <PasswordChecklist password={clave} />
               </div>
             )}
             <div>
               <label className={labelCls} htmlFor="usr-rol">Rol <span className="text-destructive">*</span></label>
-              <Select value={idRol} onValueChange={(v) => { setIdRol(v); if (errors.idRol) setErrors({...errors, idRol:''}) }}>
-                <SelectTrigger id="usr-rol" className={selectCls}><SelectValue placeholder="Seleccionar rol" /></SelectTrigger>
-                <SelectContent>
-                  {rolesOptsForm.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {errors.idRol && <p className="mt-1 text-xs text-destructive">{errors.idRol}</p>}
+              <FieldErrorTooltip error={errors.idRol}>
+                <Select value={idRol} onValueChange={(v) => { setIdRol(v); if (errors.idRol) setErrors({...errors, idRol:''}) }}>
+                  <SelectTrigger id="usr-rol" className={selectCls}><SelectValue placeholder="Seleccionar rol" /></SelectTrigger>
+                  <SelectContent>
+                    {rolesOptsForm.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </FieldErrorTooltip>
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button" onClick={() => { setIsFormOpen(false); resetForm() }} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">Cancelar</button>

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/src/shared/components/ui/alert-dialog'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { EmptyState }    from '@/src/shared/components/EmptyState'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { FilterBar }     from '@/src/shared/components/FilterBar'
@@ -208,12 +209,13 @@ export function RolesPage() {
             <DialogTitle className="font-serif text-xl text-secondary">{editingId ? 'Editar Rol' : 'Registrar Rol'}</DialogTitle>
             <DialogDescription className="text-muted-foreground">Completa los datos del rol.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
               <label className={labelCls} htmlFor="rol-nombre">Nombre <span className="text-destructive">*</span></label>
-              <input id="rol-nombre" value={nombre} placeholder="Ej: Administrador" onChange={e => { setNombre(e.target.value); if (errors.nombre) setErrors({}) }}
-                className={inputCls} />
-              {errors.nombre && <p className="mt-1 text-xs text-destructive">{errors.nombre}</p>}
+              <FieldErrorTooltip error={errors.nombre}>
+                <input id="rol-nombre" value={nombre} placeholder="Ej: Administrador" onChange={e => { setNombre(e.target.value); if (errors.nombre) setErrors({}) }}
+                  className={inputCls} />
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="rol-descripcion">Descripción (opcional)</label>

@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { EmptyState }    from '@/src/shared/components/EmptyState'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { FilterBar }     from '@/src/shared/components/FilterBar'
@@ -77,8 +78,7 @@ export function ServicesPage() {
         editingId ? 'Servicio actualizado' : 'Servicio registrado'
       )
       setIsFormOpen(false); resetForm()
-    } catch { setErrors({ _global: 'Ocurrió un error. Intenta de nuevo.' }) }
-    finally { setIsSubmitting(false) }
+    } catch { } finally { setIsSubmitting(false) }
   }
 
 
@@ -222,27 +222,28 @@ export function ServicesPage() {
               La duración estimada ayuda a planificar la entrega del pedido.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2">
-            {errors._global && <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{errors._global}</p>}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
               <label className={labelCls} htmlFor="srv-nombre">Nombre <span className="text-destructive">*</span></label>
-              <input id="srv-nombre" value={nombre} placeholder="Ej: Enmarcado simple"
-                onChange={e => { setNombre(e.target.value); if (errors.nombre) setErrors(p => ({...p, nombre:''})) }}
-                className={inputCls} />
-              {errors.nombre && <p className="mt-1 text-xs text-destructive">{errors.nombre}</p>}
+              <FieldErrorTooltip error={errors.nombre}>
+                <input id="srv-nombre" value={nombre} placeholder="Ej: Enmarcado simple"
+                  onChange={e => { setNombre(e.target.value); if (errors.nombre) setErrors(p => ({...p, nombre:''})) }}
+                  className={inputCls} />
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="srv-duracion">
                 Duración estimada (días) <span className="text-destructive">*</span>
               </label>
-              <input id="srv-duracion" type="number" min="1" step="1" value={duracionStr}
-                onChange={e => { setDuracionStr(e.target.value); if (errors.duracion) setErrors(p => ({...p, duracion:''})) }}
-                className={inputCls}
-                placeholder="Ej: 7 (= 1 semana)" />
+              <FieldErrorTooltip error={errors.duracion}>
+                <input id="srv-duracion" type="number" min="1" step="1" value={duracionStr}
+                  onChange={e => { setDuracionStr(e.target.value); if (errors.duracion) setErrors(p => ({...p, duracion:''})) }}
+                  className={inputCls}
+                  placeholder="Ej: 7 (= 1 semana)" />
+              </FieldErrorTooltip>
               {duracionStr && Number(duracionStr) > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">{fmtDuracion(Number(duracionStr))}</p>
               )}
-              {errors.duracion && <p className="mt-1 text-xs text-destructive">{errors.duracion}</p>}
             </div>
             <div>
               <label className={labelCls} htmlFor="srv-descripcion">Descripción (opcional)</label>

@@ -5,6 +5,7 @@ import { useRecovery } from '../hooks/useRecovery'
 import { Button } from '@/src/shared/components/ui/button'
 import { Input }  from '@/src/shared/components/ui/input'
 import { ArrowLeft, ArrowRight, LockKeyhole, Loader2, LogIn, MailCheck } from 'lucide-react'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
@@ -129,28 +130,27 @@ export function RecoveryPage() {
                     Ingresa tu correo para enviarte un enlace de recuperación
                   </p>
 
-                  <form onSubmit={handleSubmit} className="space-y-8">
-
-                    {(hookError || localError) && (
-                      <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
-                        <p className="text-sm text-destructive">{hookError || localError}</p>
-                      </div>
-                    )}
+                  <form onSubmit={handleSubmit} className="space-y-8" noValidate>
 
                     {/* Campo correo con subrayado animado */}
                     <div className="relative group">
                       <label className={labelCls} htmlFor="correo">Correo electrónico</label>
-                      <Input
-                        id="correo" type="email"
-                        value={correo}
-                        onChange={e => { setCorreo(e.target.value); if (localError) setLocalError('') }}
-                        placeholder="ejemplo@artecafe.com" required
-                        className={fieldCls}
-                      />
+                      <FieldErrorTooltip error={localError}>
+                        <Input
+                          id="correo" type="email"
+                          value={correo}
+                          onChange={e => { setCorreo(e.target.value); if (localError) setLocalError('') }}
+                          placeholder="ejemplo@artecafe.com" required
+                          className={fieldCls}
+                        />
+                      </FieldErrorTooltip>
                       {/* Barra animada de focus */}
                       <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#002926] transition-all duration-500 group-focus-within:w-full" />
                     </div>
 
+                    {/* Error de submit (ya salió, ej. rate-limit) anclado al botón —
+                        mismo patrón que RegisterPage/LoginPage/ResetPasswordPage. */}
+                    <FieldErrorTooltip error={hookError} side="top">
                     <Button
                       type="submit" disabled={isLoading}
                       className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-6 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98] gap-2"
@@ -160,6 +160,7 @@ export function RecoveryPage() {
                         : <>Enviar enlace <ArrowRight className="h-4 w-4" /></>
                       }
                     </Button>
+                    </FieldErrorTooltip>
                   </form>
 
                   <div className="mt-12 text-center">

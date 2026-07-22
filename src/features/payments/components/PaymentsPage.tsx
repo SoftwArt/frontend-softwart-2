@@ -13,6 +13,7 @@ import { Badge }    from '@/src/shared/components/ui/badge'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
 import { StatusSelect } from '@/src/shared/components/StatusSelect'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
@@ -296,49 +297,58 @@ export function PaymentsPage() {
             <DialogTitle className="font-serif text-xl text-secondary">Registrar Pago</DialogTitle>
             <DialogDescription className="text-muted-foreground">Completa los datos del pago.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
               <label className={labelCls} htmlFor="pago-venta">Venta <span className="text-destructive">*</span></label>
-              <Combobox id="pago-venta" options={ventasOpts} value={idVenta} onValueChange={v => { setIdVenta(v); if (errors.idVenta) setErrors(p => ({...p, idVenta:''})) }} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
-              {errors.idVenta && <p className="mt-1 text-xs text-destructive">{errors.idVenta}</p>}
+              <FieldErrorTooltip error={errors.idVenta}>
+                <div>
+                  <Combobox id="pago-venta" options={ventasOpts} value={idVenta} onValueChange={v => { setIdVenta(v); if (errors.idVenta) setErrors(p => ({...p, idVenta:''})) }} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
+                </div>
+              </FieldErrorTooltip>
               {ventaPagada && (
                 <p className="mt-1 text-xs text-destructive font-medium">Esta venta ya tiene todos sus abonos registrados y no admite más pagos.</p>
               )}
             </div>
             <div>
               <label className={labelCls} htmlFor="pago-monto">Monto <span className="text-destructive">*</span></label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                <input id="pago-monto" type="number" step="1" min="0" value={monto} onChange={e => { setMonto(e.target.value); if (errors.monto) setErrors(p => ({...p, monto:''})) }} className={inputCls + ' pl-8'} placeholder="0" />
-              </div>
+              <FieldErrorTooltip error={errors.monto}>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <input id="pago-monto" type="number" step="1" min="0" value={monto} onChange={e => { setMonto(e.target.value); if (errors.monto) setErrors(p => ({...p, monto:''})) }} className={inputCls + ' pl-8'} placeholder="0" />
+                </div>
+              </FieldErrorTooltip>
               {monto && <p className="text-xs text-muted-foreground">{formatCurrency(Number(monto))}</p>}
-              {errors.monto && <p className="mt-1 text-xs text-destructive">{errors.monto}</p>}
             </div>
             <div>
               <label className={labelCls} htmlFor="pago-fecha">Fecha <span className="text-destructive">*</span></label>
-              <DatePicker
-                id="pago-fecha"
-                value={fecha}
-                onChange={v => { setFecha(v); if (errors.fecha) setErrors(p => ({...p, fecha:''})) }}
-                error={errors.fecha}
-              />
-              {errors.fecha && <p className="mt-1 text-xs text-destructive">{errors.fecha}</p>}
+              <FieldErrorTooltip error={errors.fecha}>
+                <div>
+                  <DatePicker
+                    id="pago-fecha"
+                    value={fecha}
+                    onChange={v => { setFecha(v); if (errors.fecha) setErrors(p => ({...p, fecha:''})) }}
+                    error={errors.fecha}
+                  />
+                </div>
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="pago-metodo">Método de pago <span className="text-destructive">*</span></label>
-              <Select value={idMetodo} onValueChange={v => { setIdMetodo(v); if (errors.idMetodo) setErrors(p => ({...p, idMetodo:''})) }}>
-                <SelectTrigger id="pago-metodo" className={selectCls}><SelectValue placeholder="Seleccionar método" /></SelectTrigger>
-                <SelectContent>{metodosPago.map(m => <SelectItem key={m.id_metodo_pago} value={String(m.id_metodo_pago)}>{m.nombre}</SelectItem>)}</SelectContent>
-              </Select>
-              {errors.idMetodo && <p className="mt-1 text-xs text-destructive">{errors.idMetodo}</p>}
+              <FieldErrorTooltip error={errors.idMetodo}>
+                <Select value={idMetodo} onValueChange={v => { setIdMetodo(v); if (errors.idMetodo) setErrors(p => ({...p, idMetodo:''})) }}>
+                  <SelectTrigger id="pago-metodo" className={selectCls}><SelectValue placeholder="Seleccionar método" /></SelectTrigger>
+                  <SelectContent>{metodosPago.map(m => <SelectItem key={m.id_metodo_pago} value={String(m.id_metodo_pago)}>{m.nombre}</SelectItem>)}</SelectContent>
+                </Select>
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="pago-estado">Estado <span className="text-destructive">*</span></label>
-              <Select value={idEstado} onValueChange={v => { setIdEstado(v); if (errors.idEstado) setErrors(p => ({...p, idEstado:''})) }}>
-                <SelectTrigger id="pago-estado" className={selectCls}><SelectValue placeholder="Seleccionar estado" /></SelectTrigger>
-                <SelectContent>{estadosPago.map(e => <SelectItem key={e.id_estado_pago} value={String(e.id_estado_pago)}>{e.nombre}</SelectItem>)}</SelectContent>
-              </Select>
-              {errors.idEstado && <p className="mt-1 text-xs text-destructive">{errors.idEstado}</p>}
+              <FieldErrorTooltip error={errors.idEstado}>
+                <Select value={idEstado} onValueChange={v => { setIdEstado(v); if (errors.idEstado) setErrors(p => ({...p, idEstado:''})) }}>
+                  <SelectTrigger id="pago-estado" className={selectCls}><SelectValue placeholder="Seleccionar estado" /></SelectTrigger>
+                  <SelectContent>{estadosPago.map(e => <SelectItem key={e.id_estado_pago} value={String(e.id_estado_pago)}>{e.nombre}</SelectItem>)}</SelectContent>
+                </Select>
+              </FieldErrorTooltip>
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button" onClick={() => { setIsFormOpen(false); resetForm() }} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">Cancelar</button>
