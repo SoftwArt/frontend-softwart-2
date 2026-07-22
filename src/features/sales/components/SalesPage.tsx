@@ -16,23 +16,24 @@ import { FilterBar } from '@/src/shared/components/FilterBar'
 import { withToast } from '@/src/shared/lib/withToast'
 import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate } from '@/src/shared/lib/formatDate'
-import { Plus, Pencil, Eye, CreditCard, CheckCircle2, CircleDashed } from 'lucide-react'
+import { Plus, Pencil, Eye, CreditCard, CheckCircle2, CircleDashed, Trash2 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { ToggleSwitch, ACTIVO_OPTIONS } from '@/src/shared/components/ToggleSwitch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/src/shared/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/src/shared/components/ui/alert-dialog'
 import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { Combobox } from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { DatePicker } from '@/src/shared/components/DatePicker'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { CascadePreview } from '@/src/shared/components/CascadePreview'
 
 
 export function SalesPage() {
-  const { ventas, isLoading, onCreate, onEdit, onToggleStatus, refetch } = useSales()
+  const { ventas, isLoading, onCreate, onEdit, onToggleStatus, onDelete, refetch } = useSales()
   const [searchParams] = useSearchParams()
 
   // ── Modal de abonos ───────────────────────────────────────────────────────
@@ -57,6 +58,45 @@ export function SalesPage() {
   const [anularTarget, setAnularTarget] = useState<{ id: number; label: string; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
 
   const MSG_ANULAR_BASE = 'Esta acción es definitiva y no se puede reactivar.'
+
+  // Confirmación de eliminar (hard-delete: cascadea SaleDetail + Payment no
+  // validados) — mismo patrón que openAnular: previsualizar qué se borra
+  // antes de confirmar, en vez de un texto genérico fijo.
+  const [eliminarTarget, setEliminarTarget] = useState<{ id: number; label: string; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
+
+  const openEliminar = (id: number, label: string) => {
+    setEliminarTarget({ id, label, loading: true, lines: [] })
+    apiRequest<{ success: boolean; data: VentaDetalle }>(`/api/sales/${id}`)
+      .then((res) => {
+        const sale = res.data
+        const pagosValidados = (sale.payments ?? []).some(
+          p => p.paymentStatus?.nombre?.toLowerCase().includes('validado')
+        )
+        if (pagosValidados) {
+          setEliminarTarget(prev => prev && prev.id === id
+            ? { ...prev, loading: false, bloqueado: true, msg: 'Tiene abonos validados. No se puede eliminar, solo anular.', lines: [] }
+            : prev)
+          return
+        }
+        const lines = [
+          ...(sale.saleDetails ?? []).map(d => `Servicio #${d.id_detalle} se eliminará`),
+          ...(sale.payments ?? []).map(p => `Abono #${p.id_pago} (${formatCurrency(p.monto)}) se eliminará`),
+        ]
+        setEliminarTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines } : prev)
+      })
+      .catch(() => setEliminarTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines: [] } : prev))
+  }
+
+  const confirmEliminar = () => {
+    if (!eliminarTarget || eliminarTarget.loading || eliminarTarget.bloqueado) return
+    const { id, label } = eliminarTarget
+    setEliminarTarget(null)
+    undoableAction({
+      message: `Eliminando ${label}...`,
+      successMsg: 'Venta eliminada',
+      onCommit: () => onDelete(id),
+    })
+  }
 
   const openAnular = (id: number, label: string) => {
     setAnularTarget({ id, label, loading: true, lines: [] })
@@ -234,17 +274,52 @@ export function SalesPage() {
                             <Button
                               variant="ghost" size="icon"
                               aria-label="Gestionar abonos"
-                              onClick={() => setAbonoModalVenta({
-                                id:    v.id_venta,
-                                label: `Venta #${v.id_venta} · ${clienteLabel}`,
-                              })}
+                              aria-disabled={!v.estado}
+                              onClick={() => {
+                                if (!v.estado) return
+                                setAbonoModalVenta({
+                                  id:    v.id_venta,
+                                  label: `Venta #${v.id_venta} · ${clienteLabel}`,
+                                })
+                              }}
+                              className={!v.estado ? 'opacity-40 cursor-not-allowed' : ''}
                             >
-                              <CreditCard className="h-4 w-4 text-primary" />
+                              <CreditCard className={`h-4 w-4 ${v.estado ? 'text-primary' : 'text-muted-foreground'}`} />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Gestionar abonos</TooltipContent>
+                          <TooltipContent>
+                            {v.estado ? 'Gestionar abonos' : 'No se pueden gestionar abonos: la venta está anulada'}
+                          </TooltipContent>
                         </Tooltip>
-                        
+
+                        {v.tiene_abono_validado ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost" size="icon"
+                                aria-label="Eliminar venta"
+                                aria-disabled
+                                onClick={() => {}}
+                                className="opacity-40 cursor-not-allowed"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>No se puede eliminar: tiene abonos validados</TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost" size="icon" aria-label="Eliminar venta"
+                                onClick={() => openEliminar(v.id_venta, `Venta #${v.id_venta} · ${clienteLabel}`)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Eliminar</TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -287,13 +362,16 @@ export function SalesPage() {
             <DialogTitle className="font-serif text-xl text-secondary">{editingId ? 'Editar Venta' : 'Registrar Venta'}</DialogTitle>
             <DialogDescription className="text-muted-foreground">Completa los datos de la venta.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
               <label className={labelCls} htmlFor="vta-cliente">Cliente <span className="text-destructive">*</span></label>
-              <Combobox id="vta-cliente" options={clientesOpts} value={idCliente}
-                onValueChange={v => { setIdCliente(v); setIdCita(''); if (errors.idCliente) setErrors(p => ({...p, idCliente:''})) }}
-                placeholder="Buscar cliente..." searchPlaceholder="Nombre o documento..." />
-              {errors.idCliente && <p className="mt-1 text-xs text-destructive">{errors.idCliente}</p>}
+              <FieldErrorTooltip error={errors.idCliente}>
+                <div>
+                  <Combobox id="vta-cliente" options={clientesOpts} value={idCliente}
+                    onValueChange={v => { setIdCliente(v); setIdCita(''); if (errors.idCliente) setErrors(p => ({...p, idCliente:''})) }}
+                    placeholder="Buscar cliente..." searchPlaceholder="Nombre o documento..." />
+                </div>
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="vta-cita">Cita (opcional)</label>
@@ -308,24 +386,28 @@ export function SalesPage() {
             </div>
             <div>
               <label className={labelCls} htmlFor="vta-fecha">Fecha <span className="text-destructive">*</span></label>
-              <DatePicker
-                id="vta-fecha"
-                value={fecha}
-                onChange={v => { setFecha(v); if (errors.fecha) setErrors(p => ({...p, fecha:''})) }}
-                error={errors.fecha}
-              />
-              {errors.fecha && <p className="mt-1 text-xs text-destructive">{errors.fecha}</p>}
+              <FieldErrorTooltip error={errors.fecha}>
+                <div>
+                  <DatePicker
+                    id="vta-fecha"
+                    value={fecha}
+                    onChange={v => { setFecha(v); if (errors.fecha) setErrors(p => ({...p, fecha:''})) }}
+                    error={errors.fecha}
+                  />
+                </div>
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="vta-total">Total <span className="text-destructive">*</span></label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                <input id="vta-total" type="number" step="1" min="0" value={total}
-                  onChange={e => { setTotal(e.target.value); if (errors.total) setErrors(p => ({...p, total:''})) }}
-                  className={inputCls + ' pl-8'} placeholder="0" />
-              </div>
+              <FieldErrorTooltip error={errors.total}>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <input id="vta-total" type="number" step="1" min="0" value={total}
+                    onChange={e => { setTotal(e.target.value); if (errors.total) setErrors(p => ({...p, total:''})) }}
+                    className={inputCls + ' pl-8'} placeholder="0" />
+                </div>
+              </FieldErrorTooltip>
               {total && <p className="text-xs text-muted-foreground">{formatCurrency(Number(total))}</p>}
-              {errors.total && <p className="mt-1 text-xs text-destructive">{errors.total}</p>}
             </div>
             <div>
               <label className={labelCls} htmlFor="vta-observacion">Observación (opcional)</label>
@@ -362,6 +444,29 @@ export function SalesPage() {
               onClick={confirmAnular}
             >
               {anularTarget?.bloqueado ? 'No se puede anular' : 'Sí, anular venta'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmación de eliminar venta (hard-delete, cascadea servicios/abonos) */}
+      <AlertDialog open={eliminarTarget !== null} onOpenChange={(o) => { if (!o) setEliminarTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta venta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {eliminarTarget?.label}. {eliminarTarget?.bloqueado ? eliminarTarget.msg : 'Esta acción no se puede deshacer.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <CascadePreview lines={eliminarTarget?.lines ?? []} loading={eliminarTarget?.loading} />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={eliminarTarget?.loading || eliminarTarget?.bloqueado}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmEliminar}
+            >
+              {eliminarTarget?.bloqueado ? 'No se puede eliminar' : 'Sí, eliminar venta'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

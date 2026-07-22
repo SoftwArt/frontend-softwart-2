@@ -21,6 +21,7 @@ export function useSales() {
         id_cita: item.appointment?.id_cita ?? null,
         num_abonos: item.num_abonos ?? 2,
         pagos_realizados: (item.payments ?? []).filter(p => !p.paymentStatus?.nombre?.toLowerCase().includes('anulado')).length,
+        tiene_abono_validado: (item.payments ?? []).some(p => p.paymentStatus?.nombre?.toLowerCase().includes('validado')),
       })))
     } catch (e) { setError(e instanceof Error ? e.message : 'Error') }
     finally { setIsLoading(false) }
@@ -44,6 +45,10 @@ export function useSales() {
       throw e
     }
   }
+  const onDelete = async (id: number) => {
+    await apiRequest(`/api/sales/${id}`, { method: 'DELETE' })
+    await fetchAll()
+  }
 
-  return { ventas, isLoading, error, onCreate, onEdit, onToggleStatus, refetch: fetchAll }
+  return { ventas, isLoading, error, onCreate, onEdit, onToggleStatus, onDelete, refetch: fetchAll }
 }

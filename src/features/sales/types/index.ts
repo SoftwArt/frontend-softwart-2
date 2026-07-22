@@ -8,9 +8,10 @@ export type Venta = {
   id_cita:          number | null
   num_abonos:       number
   pagos_realizados: number
+  tiene_abono_validado: boolean
 }
 
-export type CreateVentaDto = Omit<Venta, 'id_venta' | 'num_abonos' | 'pagos_realizados'>
+export type CreateVentaDto = Omit<Venta, 'id_venta' | 'num_abonos' | 'pagos_realizados' | 'tiene_abono_validado'>
 export type UpdateVentaDto = Partial<CreateVentaDto>
 
 export type BackendPayment = { paymentStatus?: { nombre?: string } | null }
