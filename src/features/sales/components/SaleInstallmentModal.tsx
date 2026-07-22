@@ -11,6 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CheckCircle2, CreditCard, Settings2, ChevronRight } from 'lucide-react'
 import { formatDate } from '@/src/shared/lib/formatDate'
 import { DatePicker } from '@/src/shared/components/DatePicker'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
+
+// Mismo margen que el default de `tolerancia` en registerInstallment
+// (SaleInstallmentsController.ts) — $1 de holgura por redondeos. Si el
+// backend cambia su default, hay que actualizar acá también (no hay un
+// endpoint que lo exponga todavía).
+const TOLERANCIA_ABONO = 1
 
 export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuccess }: SaleInstallmentModalProps) {
   const [estado,            setEstado]            = useState<EstadoPagos | null>(null)
@@ -99,6 +106,27 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
       setConfigMsg({ tipo: 'err', texto: e instanceof Error ? e.message : 'Error al configurar' })
     } finally { setIsConfigurando(false) }
   }
+
+  // Reactivo: mismo criterio de aceptación que registerInstallment
+  // (SaleInstallmentsController.ts) — último abono exige monto exacto
+  // (± tolerancia), los intermedios solo exigen un mínimo (se puede pagar de
+  // más, no de menos). Feedback inmediato en vez de esperar el 400 del submit.
+  const siguienteAbono = estado?.siguiente_abono
+  const montoError = (() => {
+    if (!siguienteAbono || !monto.trim()) return undefined
+    const montoNum = Number(monto)
+    if (isNaN(montoNum)) return 'Monto inválido'
+    const esperado    = siguienteAbono.expectedAmount
+    const diferencia  = Math.abs(montoNum - esperado)
+    if (siguienteAbono.isLast) {
+      if (diferencia > TOLERANCIA_ABONO) {
+        return `El último abono debe ser de ${formatCurrency(esperado)} (saldo exacto). Ingresaste ${formatCurrency(montoNum)}`
+      }
+    } else if (montoNum < esperado - TOLERANCIA_ABONO) {
+      return `El abono ${siguienteAbono.number} debe ser de al menos ${formatCurrency(esperado)}`
+    }
+    return undefined
+  })()
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
@@ -194,12 +222,14 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className={labelCls} htmlFor="abono-monto">Monto ($) <span className="text-destructive">*</span></label>
-                        <input
-                          id="abono-monto"
-                          type="number" min="0" value={monto} placeholder="0"
-                          onChange={e => setMonto(e.target.value)}
-                          className={inputCls}
-                        />
+                        <FieldErrorTooltip error={montoError}>
+                          <input
+                            id="abono-monto"
+                            type="number" min="0" value={monto} placeholder="0"
+                            onChange={e => setMonto(e.target.value)}
+                            className={inputCls}
+                          />
+                        </FieldErrorTooltip>
                         {monto && <p className="text-xs text-muted-foreground mt-1">{formatCurrency(Number(monto))}</p>}
                       </div>
                       <div>
@@ -243,7 +273,7 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
                       <button
                         type="button"
                         onClick={handlePagar}
-                        disabled={isPagando || !monto || !idMetodo}
+                        disabled={isPagando || !monto || !idMetodo || !!montoError}
                         className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50"
                       >
                         <ChevronRight className="h-4 w-4" />
