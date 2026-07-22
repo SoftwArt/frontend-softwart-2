@@ -35,8 +35,6 @@ export type VentaLinea = {
   observacion:  string
 }
 
-export type VentaMsg = { tipo: 'ok' | 'err'; texto: string }
-
 export type SaleDetailPreview = { id_detalle: number; serviceStatus?: { nombre: string } | null }
 export type PaymentPreview    = { id_pago: number; monto: number; paymentStatus?: { nombre: string } | null }
 export type SalePreview       = { id_venta: number; saleDetails?: SaleDetailPreview[]; payments?: PaymentPreview[] }

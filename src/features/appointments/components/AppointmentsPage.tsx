@@ -4,7 +4,7 @@ import { useServicesOptions, useFrameOptions } from '@/src/shared/hooks/useOptio
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { useClientsOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo, useCallback } from 'react'
-import type { Cita, VentaLinea, VentaMsg, CitaDetalle } from '../types'
+import type { Cita, VentaLinea, CitaDetalle } from '../types'
 import { inputCls, labelCls, selectCls, badgeClassByName, filterCitas, todayStr, validateFecha, fmtCOP } from '../utils'
 import { DOCUMENT_TYPES } from '@/src/features/clients/utils'
 import { useSearchParams } from 'react-router-dom'
@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusSelect } from '@/src/shared/components/StatusSelect'
 import { TimePicker, BookedSlot } from '@/src/shared/components/TimePicker'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
 import { ViewDialog } from '@/src/shared/components/ViewDialog'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
@@ -32,6 +32,7 @@ import { Combobox } from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { CascadePreview } from '@/src/shared/components/CascadePreview'
 import { DatePicker } from '@/src/shared/components/DatePicker'
+import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 
 
 export function AppointmentsPage() {
@@ -66,7 +67,6 @@ export function AppointmentsPage() {
   const [ventaObs,       setVentaObs]       = useState('')
   const [ventaErrors,    setVentaErrors]    = useState<Record<string, string>>({})
   const [isCreandoVenta, setIsCreandoVenta] = useState(false)
-  const [ventaMsg,       setVentaMsg]       = useState<VentaMsg | null>(null)
 
   const lineaVacia = useCallback((id: number): VentaLinea =>
     ({ id, id_servicio: '', id_marco: '', precio: '', observacion: '' }), [])
@@ -76,7 +76,6 @@ export function AppointmentsPage() {
     setVentaLineas([lineaVacia(Date.now())])
     setVentaObs('')
     setVentaErrors({})
-    setVentaMsg(null)
   }
 
   const addLinea    = () => setVentaLineas(p => [...p, lineaVacia(Date.now())])
@@ -96,26 +95,26 @@ export function AppointmentsPage() {
     if (Object.keys(errs).length) { setVentaErrors(errs); return }
     if (!ventaModalCita) return
 
-    setIsCreandoVenta(true); setVentaMsg(null)
+    setIsCreandoVenta(true)
     try {
-      await apiRequest(`/api/appointments/${ventaModalCita.id_cita}/create-sale`, {
-        method: 'POST',
-        body: JSON.stringify({
-          observacion: ventaObs || undefined,
-          servicios: ventaLineas.map(l => ({
-            id_servicio: Number(l.id_servicio),
-            id_marco:    l.id_marco ? Number(l.id_marco) : null,
-            precio:      Number(l.precio),
-            observacion: l.observacion || undefined,
-          })),
+      await withToast(
+        apiRequest(`/api/appointments/${ventaModalCita.id_cita}/create-sale`, {
+          method: 'POST',
+          body: JSON.stringify({
+            observacion: ventaObs || undefined,
+            servicios: ventaLineas.map(l => ({
+              id_servicio: Number(l.id_servicio),
+              id_marco:    l.id_marco ? Number(l.id_marco) : null,
+              precio:      Number(l.precio),
+              observacion: l.observacion || undefined,
+            })),
+          }),
         }),
-      })
-      setVentaMsg({ tipo: 'ok', texto: `Venta creada por ${fmtCOP(totalVenta)}. La cita pasó a Completada.` })
+        `Venta creada por ${fmtCOP(totalVenta)}. La cita pasó a Completada.`
+      )
       await refresh()
-      setTimeout(() => setVentaModalCita(null), 1800)
-    } catch (e) {
-      setVentaMsg({ tipo: 'err', texto: e instanceof Error ? e.message : 'Error al crear la venta' })
-    } finally {
+      setVentaModalCita(null)
+    } catch { } finally {
       setIsCreandoVenta(false)
     }
   }
@@ -129,12 +128,68 @@ export function AppointmentsPage() {
   const getEstadoLabel = (id: number) => estadosCita.find(e => e.id_estado_cita === id)?.nombre ?? `Estado ${id}`
   const isCancelada  = (id: number) => getEstadoLabel(id).toLowerCase().includes('cancelada')
   const isCompletada = (id: number) => getEstadoLabel(id).toLowerCase().includes('completada')
+  const estadoCancelada = estadosCita.find(e => e.nombre.toLowerCase().includes('cancelada'))
+
+  // Confirmación de eliminar cita — si tiene Venta asociada, el backend la
+  // cascadea igual que deleteSale (bloquea solo si hay abonos Validados).
+  // Previsualizar qué se borra en vez del texto genérico fijo de antes.
+  const [eliminarCitaTarget, setEliminarCitaTarget] = useState<{ id: number; label: string; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
+
+  const openEliminarCita = (cita: Cita) => {
+    const label = clientesOpts.find(o => o.value === String(cita.id_cliente))?.label ?? `Cita #${cita.id_cita}`
+    setEliminarCitaTarget({ id: cita.id_cita, label, loading: true, lines: [] })
+    apiRequest<{ success: boolean; data: CitaDetalle }>(`/api/appointments/${cita.id_cita}`)
+      .then((res) => {
+        const sale = res.data?.sale
+        if (!sale) {
+          setEliminarCitaTarget(prev => prev && prev.id === cita.id_cita ? { ...prev, loading: false, lines: [] } : prev)
+          return
+        }
+        const pagosValidados = (sale.payments ?? []).some(
+          p => p.paymentStatus?.nombre?.toLowerCase().includes('validado')
+        )
+        if (pagosValidados) {
+          setEliminarCitaTarget(prev => prev && prev.id === cita.id_cita
+            ? { ...prev, loading: false, bloqueado: true, msg: `Tiene la Venta #${sale.id_venta} con abonos validados. No se puede eliminar, solo anular.`, lines: [] }
+            : prev)
+          return
+        }
+        const lines = [
+          `Venta #${sale.id_venta} se eliminará`,
+          ...(sale.saleDetails ?? []).map(d => `Servicio #${d.id_detalle} se eliminará`),
+          ...(sale.payments ?? []).map(p => `Abono #${p.id_pago} se eliminará`),
+        ]
+        setEliminarCitaTarget(prev => prev && prev.id === cita.id_cita ? { ...prev, loading: false, lines } : prev)
+      })
+      .catch(() => setEliminarCitaTarget(prev => prev && prev.id === cita.id_cita ? { ...prev, loading: false, lines: [] } : prev))
+  }
+
+  const confirmEliminarCita = () => {
+    if (!eliminarCitaTarget || eliminarCitaTarget.loading || eliminarCitaTarget.bloqueado) return
+    const { id, label } = eliminarCitaTarget
+    setEliminarCitaTarget(null)
+    undoableAction({
+      message: `Eliminando cita de ${label}...`,
+      successMsg: 'Cita eliminada',
+      onCommit: () => onDelete(id),
+    })
+  }
 
   // Protección de estado Cancelada — terminal e irreversible, igual que Anulado en Pagos
   const MSG_BASE = 'Cancelar una cita es definitivo: no podrá modificarse ni volver a cambiar de estado.'
   const [alertEstado, setAlertEstado] = useState<{ open: boolean; msg: string; lines: string[]; citaId?: number; nuevoEstado?: number; loading?: boolean; bloqueado?: boolean }>({ open: false, msg: '', lines: [] })
 
-  const handleChangeStatus = (cita: Cita, nuevoIdEstado: number) => {
+  const handleChangeStatus = (cita: Cita, nuevoIdEstadoSeleccionado: number) => {
+    // Una cita Completada ya ocurrió — el único cambio de estado válido a
+    // partir de acá es anularla (Cancelada), no "retroceder" a otro estado.
+    // En vez de solo bloquear con un error, se redirige a la misma
+    // confirmación de anular (igual que un pago Validado en Pagos).
+    const bloqueadoDesdeCompletada = isCompletada(cita.id_estado_cita)
+      && !getEstadoLabel(nuevoIdEstadoSeleccionado).toLowerCase().includes('cancelada')
+    const nuevoIdEstado = bloqueadoDesdeCompletada && estadoCancelada
+      ? estadoCancelada.id_estado_cita
+      : nuevoIdEstadoSeleccionado
+
     if (!getEstadoLabel(nuevoIdEstado).toLowerCase().includes('cancelada')) {
       withToast(onChangeStatus(cita.id_cita, nuevoIdEstado), 'Estado actualizado')
       return
@@ -143,7 +198,9 @@ export function AppointmentsPage() {
     setAlertEstado({
       open: true,
       loading: true,
-      msg: MSG_BASE,
+      msg: bloqueadoDesdeCompletada
+        ? `Esta cita ya está Completada — no puede cambiar a otro estado, solo anularse. ${MSG_BASE}`
+        : MSG_BASE,
       lines: [],
       citaId: cita.id_cita,
       nuevoEstado: nuevoIdEstado,
@@ -355,36 +412,14 @@ export function AppointmentsPage() {
                                   : 'Editar'}
                             </TooltipContent>
                           </Tooltip>
-                          <AlertDialog>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" aria-label="Eliminar cita">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                              </TooltipTrigger>
-                              <TooltipContent>Eliminar</TooltipContent>
-                            </Tooltip>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar esta cita?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Se eliminará la cita de <strong>{clienteLabel}</strong>. Si ya tiene una venta
-                                  asociada, no podrá eliminarse. Esta acción no se puede deshacer.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={() => withToast(onDelete(c.id_cita), 'Cita eliminada')}
-                                >
-                                  Eliminar
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label="Eliminar cita" onClick={() => openEliminarCita(c)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Eliminar</TooltipContent>
+                          </Tooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -432,27 +467,33 @@ export function AppointmentsPage() {
             <DialogTitle className="font-serif text-xl text-secondary">{editingId ? 'Editar Cita' : 'Registrar Cita'}</DialogTitle>
             <DialogDescription className="text-muted-foreground">Completa los datos de la cita.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
               <label className={labelCls} htmlFor="cita-cliente">Cliente <span className="text-destructive">*</span></label>
-              <Combobox
-                id="cita-cliente"
-                options={clientesOpts} value={idCliente}
-                onValueChange={(v) => { setIdCliente(v); if (errors.idCliente) setErrors({...errors, idCliente: ''}) }}
-                placeholder="Buscar cliente..." searchPlaceholder="Nombre o documento..."
-              />
-              {errors.idCliente && <p className="mt-1 text-xs text-destructive">{errors.idCliente}</p>}
+              <FieldErrorTooltip error={errors.idCliente}>
+                <div>
+                  <Combobox
+                    id="cita-cliente"
+                    options={clientesOpts} value={idCliente}
+                    onValueChange={(v) => { setIdCliente(v); if (errors.idCliente) setErrors({...errors, idCliente: ''}) }}
+                    placeholder="Buscar cliente..." searchPlaceholder="Nombre o documento..."
+                  />
+                </div>
+              </FieldErrorTooltip>
             </div>
             <div>
               <label className={labelCls} htmlFor="cita-fecha">Fecha <span className="text-destructive">*</span></label>
-              <DatePicker
-                id="cita-fecha"
-                value={fecha}
-                min={new Date().toISOString().slice(0, 10)}
-                onChange={(v) => { setFecha(v); if (errors.fecha) setErrors({...errors, fecha: ''}) }}
-                error={errors.fecha}
-              />
-              {errors.fecha && <p className="mt-1 text-xs text-destructive">{errors.fecha}</p>}
+              <FieldErrorTooltip error={errors.fecha}>
+                <div>
+                  <DatePicker
+                    id="cita-fecha"
+                    value={fecha}
+                    min={new Date().toISOString().slice(0, 10)}
+                    onChange={(v) => { setFecha(v); if (errors.fecha) setErrors({...errors, fecha: ''}) }}
+                    error={errors.fecha}
+                  />
+                </div>
+              </FieldErrorTooltip>
             </div>
             <TimePicker
               value={hora}
@@ -468,15 +509,16 @@ export function AppointmentsPage() {
             />
             <div>
               <label className={labelCls} htmlFor="cita-estado">Estado <span className="text-destructive">*</span></label>
-              <Select value={idEstado} onValueChange={(v) => { setIdEstado(v); if (errors.idEstado) setErrors({...errors, idEstado: ''}) }}>
-                <SelectTrigger id="cita-estado" className={selectCls}>
-                  <SelectValue placeholder="Seleccionar estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {estadosCita.map(e => <SelectItem key={e.id_estado_cita} value={String(e.id_estado_cita)}>{e.nombre}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {errors.idEstado && <p className="mt-1 text-xs text-destructive">{errors.idEstado}</p>}
+              <FieldErrorTooltip error={errors.idEstado}>
+                <Select value={idEstado} onValueChange={(v) => { setIdEstado(v); if (errors.idEstado) setErrors({...errors, idEstado: ''}) }}>
+                  <SelectTrigger id="cita-estado" className={selectCls}>
+                    <SelectValue placeholder="Seleccionar estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {estadosCita.map(e => <SelectItem key={e.id_estado_cita} value={String(e.id_estado_cita)}>{e.nombre}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </FieldErrorTooltip>
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button" onClick={() => { setIsFormOpen(false); resetForm() }} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">
@@ -506,17 +548,6 @@ export function AppointmentsPage() {
           </DialogHeader>
 
           <div className="flex flex-col gap-5 mt-2">
-            {/* Mensaje resultado */}
-            {ventaMsg !== null && (
-              <div className={`rounded-lg border px-4 py-3 text-sm ${
-                ventaMsg.tipo === 'ok'
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                  : 'border-destructive/40 bg-destructive/10 text-destructive'
-              }`}>
-                {ventaMsg.texto}
-              </div>
-            )}
-
             {/* Líneas de servicio */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -530,16 +561,17 @@ export function AppointmentsPage() {
                 <div key={linea.id} className="grid grid-cols-12 gap-2 items-start p-3 rounded-lg border border-border bg-background">
                   <div className="col-span-4 flex flex-col gap-1">
                     <label className="block text-xs text-muted-foreground mb-0.5" htmlFor={`srv-svc-${i}`}>Tipo de Servicio <span className="text-destructive">*</span></label>
-                    <select
-                      id={`srv-svc-${i}`}
-                      value={linea.id_servicio}
-                      onChange={e => updateLinea(linea.id, 'id_servicio', e.target.value)}
-                      className="flex h-8 w-full rounded-md border border-border bg-card px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                      <option value="">Seleccionar...</option>
-                      {serviciosOpts.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
-                    {ventaErrors[`servicio_${i}`] && <p className="text-[10px] text-destructive">{ventaErrors[`servicio_${i}`]}</p>}
+                    <FieldErrorTooltip error={ventaErrors[`servicio_${i}`]}>
+                      <select
+                        id={`srv-svc-${i}`}
+                        value={linea.id_servicio}
+                        onChange={e => updateLinea(linea.id, 'id_servicio', e.target.value)}
+                        className="flex h-8 w-full rounded-md border border-border bg-card px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <option value="">Seleccionar...</option>
+                        {serviciosOpts.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                    </FieldErrorTooltip>
                   </div>
                   <div className="col-span-3 flex flex-col gap-1">
                     <label className="block text-xs text-muted-foreground mb-0.5" htmlFor={`srv-marco-${i}`}>Marco (opcional)</label>
@@ -555,14 +587,15 @@ export function AppointmentsPage() {
                   </div>
                   <div className="col-span-3 flex flex-col gap-1">
                     <label className="block text-xs text-muted-foreground mb-0.5" htmlFor={`srv-precio-${i}`}>Precio (COP) <span className="text-destructive">*</span></label>
-                    <Input
-                      id={`srv-precio-${i}`}
-                      type="number" min="0" placeholder="0"
-                      value={linea.precio}
-                      onChange={e => updateLinea(linea.id, 'precio', e.target.value)}
-                      className="h-8 text-xs bg-card border-border"
-                    />
-                    {ventaErrors[`precio_${i}`] && <p className="text-[10px] text-destructive">{ventaErrors[`precio_${i}`]}</p>}
+                    <FieldErrorTooltip error={ventaErrors[`precio_${i}`]}>
+                      <Input
+                        id={`srv-precio-${i}`}
+                        type="number" min="0" placeholder="0"
+                        value={linea.precio}
+                        onChange={e => updateLinea(linea.id, 'precio', e.target.value)}
+                        className="h-8 text-xs bg-card border-border"
+                      />
+                    </FieldErrorTooltip>
                   </div>
                   <div className="col-span-2 flex items-end pb-0.5">
                     <Button
@@ -613,7 +646,7 @@ export function AppointmentsPage() {
                 <button
                   type="button"
                   onClick={handleCrearVenta}
-                  disabled={isCreandoVenta || ventaMsg?.tipo === 'ok'}
+                  disabled={isCreandoVenta}
                   className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-all disabled:opacity-50"
                 >
                   <ShoppingCart className="h-4 w-4" />
@@ -651,6 +684,29 @@ export function AppointmentsPage() {
               }}
             >
               {alertEstado.bloqueado ? 'No se puede cancelar' : 'Cancelar cita'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmación de eliminar cita (cascadea Venta/Servicios/Abonos si tiene) */}
+      <AlertDialog open={eliminarCitaTarget !== null} onOpenChange={(o) => { if (!o) setEliminarCitaTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta cita?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {eliminarCitaTarget?.label}. {eliminarCitaTarget?.bloqueado ? eliminarCitaTarget.msg : 'Esta acción no se puede deshacer.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <CascadePreview lines={eliminarCitaTarget?.lines ?? []} loading={eliminarCitaTarget?.loading} />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={eliminarCitaTarget?.loading || eliminarCitaTarget?.bloqueado}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmEliminarCita}
+            >
+              {eliminarCitaTarget?.bloqueado ? 'No se puede eliminar' : 'Sí, eliminar cita'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
