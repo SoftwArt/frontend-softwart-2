@@ -66,6 +66,10 @@ export function UsersPage() {
   const openEdit   = (u: Usuario) => { setEditingId(u.id_usuario); setCorreo(u.correo); setClave(''); setIdRol(String(u.id_rol)); setErrors({}); setIsFormOpen(true) }
   const openView   = (u: Usuario) => { setViewingItem(u); setIsViewOpen(true) }
 
+  // El admin base no puede cambiar de correo ni de rol (updateUser lo rechaza
+  // con 403) — el form se lo deshabilita en vez de dejar que falle al guardar.
+  const editingIsAdminBase = editingId !== null && usuarios.find(u => u.id_usuario === editingId)?.es_admin_base === true
+
   const handleDelete = (id: number) => withToast(onDelete(id), 'Usuario eliminado')
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -251,8 +255,9 @@ export function UsersPage() {
             <div>
               <label className={labelCls} htmlFor="usr-correo">Correo <span className="text-destructive">*</span></label>
               <FieldErrorTooltip error={errors.correo}>
-                <input id="usr-correo" type="email" value={correo} placeholder='Ingrese el correo...' onChange={(e) => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo:''}) }} className={inputCls} />
+                <input id="usr-correo" type="email" value={correo} placeholder='Ingrese el correo...' disabled={editingIsAdminBase} onChange={(e) => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo:''}) }} className={inputCls} />
               </FieldErrorTooltip>
+              {editingIsAdminBase && <p className="text-xs text-muted-foreground mt-1">El correo del administrador base no puede cambiarse.</p>}
             </div>
             {!editingId && (
               <div>
@@ -266,13 +271,14 @@ export function UsersPage() {
             <div>
               <label className={labelCls} htmlFor="usr-rol">Rol <span className="text-destructive">*</span></label>
               <FieldErrorTooltip error={errors.idRol}>
-                <Select value={idRol} onValueChange={(v) => { setIdRol(v); if (errors.idRol) setErrors({...errors, idRol:''}) }}>
+                <Select value={idRol} disabled={editingIsAdminBase} onValueChange={(v) => { setIdRol(v); if (errors.idRol) setErrors({...errors, idRol:''}) }}>
                   <SelectTrigger id="usr-rol" className={selectCls}><SelectValue placeholder="Seleccionar rol" /></SelectTrigger>
                   <SelectContent>
                     {rolesOptsForm.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </FieldErrorTooltip>
+              {editingIsAdminBase && <p className="text-xs text-muted-foreground mt-1">El rol del administrador base no puede cambiarse.</p>}
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button" onClick={() => { setIsFormOpen(false); resetForm() }} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">Cancelar</button>
