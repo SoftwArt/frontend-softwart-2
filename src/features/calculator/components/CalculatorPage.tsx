@@ -53,8 +53,18 @@ export function CalculatorPage() {
   const openView   = (m: Marco) => { setViewingItem(m); setIsViewOpen(true) }
   const openCalc   = (m: Marco) => { setCalcMarco(m); setLargo(''); setAncho(''); setIsCalcOpen(true) }
 
+  // Reactivo (sin submit) — "0" es truthy como string, así que el chequeo de
+  // vacío por sí solo dejaba pasar un largo/ancho de 0 (o negativo, tecleado
+  // a mano pese al min="0" del input) y calculaba un costo sin sentido.
+  const calcErrors = useMemo(() => {
+    const errs: Record<string, string> = {}
+    if (largo && Number(largo) <= 0) errs.largo = 'Debe ser mayor a 0'
+    if (ancho && Number(ancho) <= 0) errs.ancho = 'Debe ser mayor a 0'
+    return errs
+  }, [largo, ancho])
+
   const calcValues = useMemo(() => {
-    if (!calcMarco || !largo || !ancho) return { costo: 0, venta: 0 }
+    if (!calcMarco || !largo || !ancho || Number(largo) <= 0 || Number(ancho) <= 0) return { costo: 0, venta: 0 }
     const costo = ((Number(largo) + Number(ancho)) * 2 + Number(calcMarco.colilla)) * Number(calcMarco.precio_ensamblado)
     return { costo, venta: costo * 2 }
   }, [calcMarco, largo, ancho])
@@ -136,9 +146,13 @@ export function CalculatorPage() {
                     <div className="flex items-center justify-end gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Calcular precio del marco" onClick={() => openCalc(m)}><Calculator className="h-4 w-4 text-muted-foreground" /></Button>
+                          {m.estado ? (
+                            <Button variant="ghost" size="icon" aria-label="Calcular precio del marco" onClick={() => openCalc(m)}><Calculator className="h-4 w-4 text-muted-foreground" /></Button>
+                          ) : (
+                            <Button variant="ghost" size="icon" aria-label="Calcular precio del marco" aria-disabled onClick={() => {}} className="opacity-40 cursor-not-allowed"><Calculator className="h-4 w-4 text-muted-foreground" /></Button>
+                          )}
                         </TooltipTrigger>
-                        <TooltipContent>Calcular precio</TooltipContent>
+                        <TooltipContent>{m.estado ? 'Calcular precio' : 'Marco inactivo — actívalo para calcular su precio'}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -207,11 +221,15 @@ export function CalculatorPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls} htmlFor="calc-largo">Largo (cm) <span className="text-destructive">*</span></label>
-                  <input id="calc-largo" type="number" min="0" value={largo} onChange={(e) => setLargo(e.target.value)} placeholder="Ej: 30" className={inputCls} />
+                  <FieldErrorTooltip error={calcErrors.largo}>
+                    <input id="calc-largo" type="number" min="0" value={largo} onChange={(e) => setLargo(e.target.value)} placeholder="Ej: 30" className={inputCls} />
+                  </FieldErrorTooltip>
                 </div>
                 <div>
                   <label className={labelCls} htmlFor="calc-ancho">Ancho (cm) <span className="text-destructive">*</span></label>
-                  <input id="calc-ancho" type="number" min="0" value={ancho} onChange={(e) => setAncho(e.target.value)} placeholder="Ej: 20" className={inputCls} />
+                  <FieldErrorTooltip error={calcErrors.ancho}>
+                    <input id="calc-ancho" type="number" min="0" value={ancho} onChange={(e) => setAncho(e.target.value)} placeholder="Ej: 20" className={inputCls} />
+                  </FieldErrorTooltip>
                 </div>
               </div>
               <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
