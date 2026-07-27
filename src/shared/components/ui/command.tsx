@@ -82,6 +82,7 @@ function CommandInput({
 
 function CommandList({
   className,
+  onWheel,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.List>) {
   return (
@@ -91,6 +92,16 @@ function CommandList({
         'max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto',
         className,
       )}
+      // Cuando este Command vive dentro de un Dialog (ej. Combobox en un
+      // formulario modal), el scroll-lock del Dialog (react-remove-scroll)
+      // no reconoce el contenido del Popover — portal separado, sibling en
+      // el DOM — como parte del área permitida, y bloquea el wheel nativo
+      // sobre esta lista. Se hace el scroll a mano en vez de depender del
+      // comportamiento nativo del navegador, que queda bloqueado.
+      onWheel={(e) => {
+        e.currentTarget.scrollTop += e.deltaY
+        onWheel?.(e)
+      }}
       {...props}
     />
   )

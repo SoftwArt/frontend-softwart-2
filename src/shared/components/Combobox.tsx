@@ -71,7 +71,7 @@ export function Combobox({
           aria-controls={listId}
           disabled={disabled}
           className={cn(
-            'w-full bg-muted border-0 border-b-2 rounded-t-lg px-4 py-3 text-sm text-left flex items-center justify-between gap-2 focus:outline-none transition-all',
+            'w-full bg-muted border-0 border-b-2 rounded-t-lg px-4 py-3 text-sm text-left flex items-center justify-between gap-2 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] transition-all',
             open ? 'border-secondary' : 'border-transparent',
             selected ? 'text-foreground' : 'text-muted-foreground/60',
             disabled && 'opacity-50 cursor-not-allowed',
