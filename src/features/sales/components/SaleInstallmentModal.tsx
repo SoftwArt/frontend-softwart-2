@@ -1,5 +1,6 @@
 // src/features/sales/components/SaleInstallmentModal.tsx
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import type { AbonoEsperado, EstadoPago, EstadoPagos, MetodoPago, SaleInstallmentModalProps } from '../types'
@@ -30,20 +31,18 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
   const [monto,        setMonto]        = useState('')
   const [idMetodo,     setIdMetodo]     = useState('')
   const [fechaPago,    setFechaPago]    = useState(() => new Date().toISOString().slice(0, 10))
-  const [pagoMsg,      setPagoMsg]      = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null)
   const [isPagando,    setIsPagando]    = useState(false)
 
   // Form configurar
   const [numAbonos,    setNumAbonos]    = useState('')
   const [pctPrimero,   setPctPrimero]   = useState('')
-  const [configMsg,    setConfigMsg]    = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null)
   const [isConfigurando, setIsConfigurando] = useState(false)
 
   // Cargar estado de pagos y métodos
   useEffect(() => {
     if (!open || !idVenta) return
     setIsLoading(true)
-    setPagoMsg(null); setConfigMsg(null); setTab('pagar')
+    setTab('pagar')
 
     Promise.all([
       apiRequest<{ success: boolean; data: EstadoPagos }>(`/api/sales/${idVenta}/payment-plan`),
@@ -67,8 +66,8 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
   }, [open, idVenta])
 
   const handlePagar = async () => {
-    if (!idMetodo) { setPagoMsg({ tipo: 'err', texto: 'Selecciona el método de pago' }); return }
-    setIsPagando(true); setPagoMsg(null)
+    if (!idMetodo) { toast.error('Selecciona el método de pago'); return }
+    setIsPagando(true)
     try {
       const body: Record<string, unknown> = { monto: Number(monto), id_metodo_pago: Number(idMetodo), fecha: fechaPago }
       if (idEstadoValidado != null) body.id_estado_pago = idEstadoValidado
@@ -76,7 +75,7 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
         `/api/sales/${idVenta}/installment`,
         { method: 'POST', body: JSON.stringify(body) }
       )
-      setPagoMsg({ tipo: 'ok', texto: res.message })
+      toast.success(res.message)
       onSuccess()
       // Recargar estado
       const estadoRes = await apiRequest<{ success: boolean; data: EstadoPagos }>(`/api/sales/${idVenta}/payment-plan`)
@@ -84,12 +83,12 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
       if (estadoRes.data.siguiente_abono) setMonto(String(estadoRes.data.siguiente_abono.expectedAmount))
       else setMonto('')
     } catch (e) {
-      setPagoMsg({ tipo: 'err', texto: e instanceof Error ? e.message : 'Error al registrar abono' })
+      toast.error(e instanceof Error ? e.message : 'Error al registrar abono')
     } finally { setIsPagando(false) }
   }
 
   const handleConfigurar = async () => {
-    setIsConfigurando(true); setConfigMsg(null)
+    setIsConfigurando(true)
     try {
       const res = await apiRequest<{ success: boolean; message: string; data: any }>(
         `/api/sales/${idVenta}/configure-installments`,
@@ -98,12 +97,12 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
             porcentaje_primer_abono: Number(pctPrimero),
         })}
       )
-      setConfigMsg({ tipo: 'ok', texto: res.message })
+      toast.success(res.message)
       const estadoRes = await apiRequest<{ success: boolean; data: EstadoPagos }>(`/api/sales/${idVenta}/payment-plan`)
       setEstado(estadoRes.data)
       if (estadoRes.data.siguiente_abono) setMonto(String(estadoRes.data.siguiente_abono.expectedAmount))
     } catch (e) {
-      setConfigMsg({ tipo: 'err', texto: e instanceof Error ? e.message : 'Error al configurar' })
+      toast.error(e instanceof Error ? e.message : 'Error al configurar')
     } finally { setIsConfigurando(false) }
   }
 
@@ -345,12 +344,6 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
                       </div>
                     )}
 
-                    {configMsg && (
-                      <div className={`rounded-lg border px-3 py-2 text-sm ${configMsg.tipo === 'ok' ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-destructive/40 bg-destructive/10 text-destructive'}`}>
-                        {configMsg.texto}
-                      </div>
-                    )}
-
                     <Button
                       onClick={handleConfigurar}
                       disabled={isConfigurando || estado.pagos_realizados > 0}
@@ -363,13 +356,6 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
                   </div>
                 )}
               </>
-            )}
-
-            {/* Feedback del último pago — fuera del bloque siguiente_abono para que persista aunque se complete */}
-            {pagoMsg && tab === 'pagar' && (
-              <div className={`rounded-lg border px-3 py-2 text-sm ${pagoMsg.tipo === 'ok' ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-destructive/40 bg-destructive/10 text-destructive'}`}>
-                {pagoMsg.texto}
-              </div>
             )}
 
             {/* Completado */}

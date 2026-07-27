@@ -1,5 +1,6 @@
 // src/features/account/hooks/useAccount.ts
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { performLogout, clearAuth } from '@/src/features/auth/utils'
@@ -8,7 +9,7 @@ import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefo
 import { isNombreLongitudValida, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
 import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
 import { usePolling } from '@/src/shared/hooks/usePolling'
-import { tomorrowString } from '../utils'
+import { bogotaTomorrowStr } from '@/src/shared/lib/bogotaTime'
 import { BookedSlot } from '@/src/shared/components/TimePicker'
 import type { PerfilCliente, Cita, Servicio } from '../types'
 
@@ -108,8 +109,6 @@ export function useAccount() {
   const [perfilNombre,   setPerfilNombre]   = useState('')
   const [perfilTelefono, setPerfilTelefono] = useState('')
   const [perfilCorreo,   setPerfilCorreo]   = useState('')
-  const [perfilMsg,      setPerfilMsg]      = useState<string | null>(null)
-  const [perfilMsgType,  setPerfilMsgType]  = useState<'ok' | 'err'>('ok')
   const [perfilErrors,   setPerfilErrors]   = useState<{ nombre?: string; telefono?: string; correo?: string }>({})
   const [isSavingPerfil, setIsSavingPerfil] = useState(false)
 
@@ -122,7 +121,6 @@ export function useAccount() {
 
   const submitPerfil = async (e: React.FormEvent) => {
     e.preventDefault()
-    setPerfilMsg(null)
     const fieldErrors: { nombre?: string; telefono?: string; correo?: string } = {}
     if (!isNombreLongitudValida(perfilNombre)) fieldErrors.nombre = NOMBRE_MIN_ERROR
     if (!perfilTelefono.trim())                fieldErrors.telefono = 'El teléfono es obligatorio.'
@@ -138,11 +136,9 @@ export function useAccount() {
         body: JSON.stringify({ nombre: perfilNombre, telefono: perfilTelefono || null, correo: perfilCorreo }),
       })
       setPerfil(res.data)
-      setPerfilMsg('Datos actualizados correctamente')
-      setPerfilMsgType('ok')
+      toast.success('Datos actualizados correctamente')
     } catch (e2) {
-      setPerfilMsg(e2 instanceof Error ? e2.message : 'Error al actualizar')
-      setPerfilMsgType('err')
+      toast.error(e2 instanceof Error ? e2.message : 'Error al actualizar')
     } finally { setIsSavingPerfil(false) }
   }
 
@@ -150,40 +146,33 @@ export function useAccount() {
   const [claveActual,   setClaveActual]   = useState('')
   const [claveNueva,    setClaveNueva]    = useState('')
   const [claveConfirm,  setClaveConfirm]  = useState('')
-  const [claveMsg,      setClaveMsg]      = useState<string | null>(null)
-  const [claveMsgType,  setClaveMsgType]  = useState<'ok' | 'err'>('ok')
   const [isSavingClave, setIsSavingClave] = useState(false)
 
   const submitClave = async (e: React.FormEvent) => {
     e.preventDefault()
-    setClaveMsg(null)
-    if (!claveActual.trim()) { setClaveMsg('Ingresa tu contraseña actual'); setClaveMsgType('err'); return }
+    if (!claveActual.trim()) { toast.error('Ingresa tu contraseña actual'); return }
     const pwCheck = validatePassword(claveNueva)
-    if (!pwCheck.valid) { setClaveMsg(pwCheck.firstError!); setClaveMsgType('err'); return }
-    if (claveNueva !== claveConfirm) { setClaveMsg('Las contraseñas no coinciden'); setClaveMsgType('err'); return }
+    if (!pwCheck.valid) { toast.error(pwCheck.firstError!); return }
+    if (claveNueva !== claveConfirm) { toast.error('Las contraseñas no coinciden'); return }
     setIsSavingClave(true)
     try {
       await apiRequest('/api/account/perfil', {
         method: 'PUT',
         body: JSON.stringify({ clave_actual: claveActual, clave: claveNueva }),
       })
-      setClaveMsg('Contraseña actualizada correctamente')
-      setClaveMsgType('ok')
+      toast.success('Contraseña actualizada correctamente')
       setClaveActual(''); setClaveNueva(''); setClaveConfirm('')
     } catch (e2) {
-      setClaveMsg(e2 instanceof Error ? e2.message : 'Error al cambiar contraseña')
-      setClaveMsgType('err')
+      toast.error(e2 instanceof Error ? e2.message : 'Error al cambiar contraseña')
     } finally { setIsSavingClave(false) }
   }
 
   // ── Form nueva cita ─────────────────────────────────────────────────────────
-  const [citaFecha,      setCitaFecha]      = useState(tomorrowString)
+  const [citaFecha,      setCitaFecha]      = useState(bogotaTomorrowStr)
   const [citaHora,       setCitaHora]       = useState('')
   const [citaObs,        setCitaObs]        = useState('')
   const [disponibilidad, setDisponibilidad] = useState<BookedSlot[]>([])
   const [citaErrors,     setCitaErrors]     = useState<Record<string, string>>({})
-  const [citaMsg,        setCitaMsg]        = useState<string | null>(null)
-  const [citaMsgType,    setCitaMsgType]    = useState<'ok' | 'err'>('ok')
   const [isAgendando,    setIsAgendando]    = useState(false)
 
   const onCitaFechaChange = async (fecha: string) => {
@@ -211,29 +200,27 @@ export function useAccount() {
     const errs: Record<string, string> = {}
     if (!citaFecha) errs.fecha = 'Selecciona una fecha'
     if (!citaHora)  errs.hora  = 'Selecciona una hora'
-    if (citaFecha < tomorrowString()) errs.fecha = 'Solo puedes agendar desde mañana'
+    if (citaFecha < bogotaTomorrowStr()) errs.fecha = 'Solo puedes agendar desde mañana'
     if (Object.keys(errs).length) { setCitaErrors(errs); return false }
-    setIsAgendando(true); setCitaMsg(null); setCitaErrors({})
+    setIsAgendando(true); setCitaErrors({})
     isMutatingRef.current = true
     try {
       await apiRequest('/api/account/citas', {
         method: 'POST',
         body: JSON.stringify({ fecha: citaFecha, hora: citaHora, observacion: citaObs || undefined }),
       })
-      setCitaMsg('¡Cita agendada! Te contactaremos para confirmarla.')
-      setCitaMsgType('ok')
-      setCitaFecha(tomorrowString()); setCitaHora(''); setCitaObs('')
+      toast.success('¡Cita agendada! Te contactaremos para confirmarla.')
+      setCitaFecha(bogotaTomorrowStr()); setCitaHora(''); setCitaObs('')
       await fetchMyAppointments()
       return true
     } catch (e2) {
-      setCitaMsg(e2 instanceof Error ? e2.message : 'Error al agendar la cita')
-      setCitaMsgType('err')
+      toast.error(e2 instanceof Error ? e2.message : 'Error al agendar la cita')
       return false
     } finally { setIsAgendando(false); isMutatingRef.current = false }
   }
 
   const resetCitaForm = () => {
-    setCitaErrors({}); setCitaMsg(null)
+    setCitaErrors({})
   }
 
   // ── Cancelar cita ───────────────────────────────────────────────────────────
@@ -253,12 +240,16 @@ export function useAccount() {
   // ── Eliminar cuenta ─────────────────────────────────────────────────────────
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const onDeleteAccount = async () => {
+  // Devuelve el message real del backend — distingue "desactivada" (con
+  // historial) de "eliminada permanentemente" (sin historial), así el toast
+  // no asume cuál de los dos pasó.
+  const onDeleteAccount = async (): Promise<string> => {
     setIsDeleting(true)
     try {
-      await apiRequest('/api/account', { method: 'DELETE' })
+      const res = await apiRequest<{ success: boolean; message: string }>('/api/account', { method: 'DELETE' })
       clearAuth()
       navigate('/', { replace: true })
+      return res.message
     } catch (e2) {
       setIsDeleting(false)
       throw e2
@@ -277,15 +268,15 @@ export function useAccount() {
     perfilNombre,   setPerfilNombre,
     perfilTelefono, setPerfilTelefono,
     perfilCorreo,   setPerfilCorreo,
-    perfilMsg, perfilMsgType, perfilErrors, isSavingPerfil, submitPerfil,
+    perfilErrors, isSavingPerfil, submitPerfil,
     // form clave
     claveActual,  setClaveActual,
     claveNueva,   setClaveNueva,
     claveConfirm, setClaveConfirm,
-    claveMsg, claveMsgType, isSavingClave, submitClave,
+    isSavingClave, submitClave,
     // form cita
     citaFecha, citaHora, citaObs, setCitaObs,
-    citaErrors, citaMsg, citaMsgType,
+    citaErrors,
     isAgendando, disponibilidad,
     onCitaFechaChange, onCitaHoraChange,
     submitCita, resetCitaForm,

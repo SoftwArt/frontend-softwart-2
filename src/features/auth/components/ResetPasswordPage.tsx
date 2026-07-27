@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Link, useSearchParams } from 'react-router-dom'
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 import { useResetPassword } from '../hooks/useResetPassword'
@@ -40,7 +41,6 @@ export function ResetPasswordPage() {
   // Reenviar enlace
   const [correoReenvio, setCorreoReenvio] = useState('')
   const [isResending,   setIsResending]   = useState(false)
-  const [resendOk,      setResendOk]      = useState(false)
   const [resendError,   setResendError]   = useState('')
 
   // Uno u otro, nunca ambos: con token válido solo tiene sentido pedir la
@@ -102,13 +102,12 @@ export function ResetPasswordPage() {
     if (!correoReenvio.trim()) return
     setIsResending(true)
     setResendError('')
-    setResendOk(false)
     try {
       await apiRequest('/api/auth/reenviar-codigo', {
         method: 'POST',
         body: JSON.stringify({ correo: correoReenvio }),
       })
-      setResendOk(true)
+      toast.success('Enlace reenviado correctamente')
     } catch (err) {
       setResendError(err instanceof Error ? err.message : 'Error al reenviar el enlace')
     } finally {
@@ -314,30 +313,26 @@ export function ResetPasswordPage() {
                     {showResend && (
                       <div className="space-y-3">
                         <p className="text-xs text-muted-foreground text-center">¿No recibiste el enlace?</p>
-                        {resendOk ? (
-                          <p className="text-xs text-emerald-600 text-center">Enlace reenviado correctamente.</p>
-                        ) : (
-                          <div className="flex gap-2">
-                            <FieldErrorTooltip error={resendError}>
-                              <Input
-                                type="email"
-                                placeholder="Tu correo"
-                                value={correoReenvio}
-                                onChange={e => { setCorreoReenvio(e.target.value); if (resendError) setResendError('') }}
-                                className="bg-[#f5f3ef] border-0 border-b border-border focus-visible:ring-0 focus-visible:ring-offset-0 h-9 px-3 text-sm rounded-none flex-1"
-                              />
-                            </FieldErrorTooltip>
-                            <Button
-                              type="button"
-                              disabled={isResending || !correoReenvio.trim()}
-                              onClick={handleReenviar}
-                              variant="outline"
-                              className="text-xs px-3 h-9 border-[#805533] text-[#805533] hover:bg-[#805533] hover:text-white shrink-0"
-                            >
-                              {isResending ? 'Enviando...' : 'Reenviar'}
-                            </Button>
-                          </div>
-                        )}
+                        <div className="flex gap-2">
+                          <FieldErrorTooltip error={resendError}>
+                            <Input
+                              type="email"
+                              placeholder="Tu correo"
+                              value={correoReenvio}
+                              onChange={e => { setCorreoReenvio(e.target.value); if (resendError) setResendError('') }}
+                              className="bg-[#f5f3ef] border-0 border-b border-border focus-visible:ring-0 focus-visible:ring-offset-0 h-9 px-3 text-sm rounded-none flex-1"
+                            />
+                          </FieldErrorTooltip>
+                          <Button
+                            type="button"
+                            disabled={isResending || !correoReenvio.trim()}
+                            onClick={handleReenviar}
+                            variant="outline"
+                            className="text-xs px-3 h-9 border-[#805533] text-[#805533] hover:bg-[#805533] hover:text-white shrink-0"
+                          >
+                            {isResending ? 'Enviando...' : 'Reenviar'}
+                          </Button>
+                        </div>
                       </div>
                     )}
 

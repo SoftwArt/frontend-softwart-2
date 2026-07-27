@@ -1,17 +1,20 @@
 // src/features/account/components/MyAccountPage.tsx
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { useAccount } from '../hooks/useAccount'
 import {
-  inputCls, labelCls, parseFechaBloque, tomorrowString,
+  inputCls, labelCls, parseFechaBloque,
   estadoBadgeClasses, estadoServicioBadgeClasses,
   filterCitasCuenta, filterServiciosCuenta,
   modalBackdropVariants, modalPanelVariants,
   canCancelCita,
 } from '../utils'
+import { bogotaTomorrowStr } from '@/src/shared/lib/bogotaTime'
 import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
 import { apiRequest } from '@/src/shared/lib/apiClient'
+import { withToast } from '@/src/shared/lib/withToast'
 import { usePolling } from '@/src/shared/hooks/usePolling'
 import { stripDigits } from '@/src/shared/lib/validateNombre'
 import { onlyDigits } from '@/src/shared/lib/validateTelefono'
@@ -93,11 +96,11 @@ export function MyAccountPage() {
     perfil, citas, servicios, isLoading, error,
     primerNombre, proximaCita, serviciosActivos, serviciosRecientes,
     perfilNombre, setPerfilNombre, perfilTelefono, setPerfilTelefono,
-    perfilCorreo, setPerfilCorreo, perfilMsg, perfilMsgType, perfilErrors, isSavingPerfil, submitPerfil,
+    perfilCorreo, setPerfilCorreo, perfilErrors, isSavingPerfil, submitPerfil,
     claveActual, setClaveActual, claveNueva, setClaveNueva, claveConfirm, setClaveConfirm,
-    claveMsg, claveMsgType, isSavingClave, submitClave,
+    isSavingClave, submitClave,
     citaFecha, citaHora, citaObs, setCitaObs,
-    citaErrors, citaMsg, citaMsgType, isAgendando, disponibilidad,
+    citaErrors, isAgendando, disponibilidad,
     onCitaFechaChange, onCitaHoraChange, submitCita, resetCitaForm,
     onCancelAppointment, isDeleting, onDeleteAccount, handleLogout,
   } = useAccount()
@@ -420,12 +423,6 @@ export function MyAccountPage() {
                   </button>
                 </div>
 
-                {citaMsg && (
-                  <div className={`rounded-lg px-4 py-3 text-sm border ${citaMsgType === 'ok' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-destructive/10 text-destructive border-destructive/30'}`}>
-                    {citaMsg}
-                  </div>
-                )}
-
                 {isLoading ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
@@ -506,8 +503,7 @@ export function MyAccountPage() {
                                         onClick={async () => {
                                           const motivo = cancelMotivo
                                           setCancelingId(c.id_cita)
-                                          try { await onCancelAppointment(c.id_cita, motivo) }
-                                          catch (e2) { alert(e2 instanceof Error ? e2.message : 'Error al cancelar') }
+                                          try { await withToast(onCancelAppointment(c.id_cita, motivo), 'Cita cancelada') }
                                           finally { setCancelingId(null); setCancelMotivo('') }
                                         }}>
                                         Sí, cancelar cita
@@ -707,11 +703,6 @@ export function MyAccountPage() {
                           className="bg-secondary text-secondary-foreground py-2.5 px-6 rounded-lg font-medium hover:bg-secondary/90 transition-colors active:scale-95 disabled:opacity-60">
                           {isSavingPerfil ? 'Guardando...' : 'Guardar cambios'}
                         </button>
-                        {perfilMsg && (
-                          <span className={`text-sm ${perfilMsgType === 'ok' ? 'text-emerald-700' : 'text-destructive'}`}>
-                            {perfilMsg}
-                          </span>
-                        )}
                       </div>
                     </form>
                   )}
@@ -745,11 +736,6 @@ export function MyAccountPage() {
                         {isSavingClave ? 'Actualizando...' : 'Actualizar contraseña'}
                       </button>
                     </div>
-                    {claveMsg && (
-                      <p className={`text-sm ${claveMsgType === 'ok' ? 'text-emerald-700' : 'text-destructive'}`}>
-                        {claveMsg}
-                      </p>
-                    )}
                   </form>
                 </section>
 
@@ -783,7 +769,15 @@ export function MyAccountPage() {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel className="border-border text-foreground">Cancelar</AlertDialogCancel>
-                        <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={onDeleteAccount}>
+                        <AlertDialogAction className="bg-destructive text-destructive-foreground"
+                          onClick={async () => {
+                            try {
+                              const message = await onDeleteAccount()
+                              toast.success(message)
+                            } catch (e) {
+                              toast.error(e instanceof Error ? e.message : 'Error al eliminar la cuenta')
+                            }
+                          }}>
                           Sí, eliminar cuenta
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -824,18 +818,12 @@ export function MyAccountPage() {
                 </button>
               </div>
 
-              {citaMsg && (
-                <div className={`rounded-lg px-3 py-2 text-sm border ${citaMsgType === 'ok' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-destructive/10 text-destructive border-destructive/30'}`}>
-                  {citaMsg}
-                </div>
-              )}
-
               <form onSubmit={handleSubmitCita} className="flex flex-col gap-4" noValidate>
                 <div>
                   <label className={labelCls} htmlFor="cita-fecha-mc">Fecha <span className="text-destructive">*</span></label>
                   <FieldErrorTooltip error={citaErrors.fecha}>
                     <div>
-                      <DatePicker id="cita-fecha-mc" value={citaFecha} min={tomorrowString()} error={citaErrors.fecha} onChange={onCitaFechaChange} />
+                      <DatePicker id="cita-fecha-mc" value={citaFecha} min={bogotaTomorrowStr()} error={citaErrors.fecha} onChange={onCitaFechaChange} />
                     </div>
                   </FieldErrorTooltip>
                 </div>
