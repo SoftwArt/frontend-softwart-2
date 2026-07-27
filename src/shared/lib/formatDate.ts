@@ -8,7 +8,12 @@ export function formatDate(
   style: 'short' | 'long' = 'short'
 ): string {
   if (!fecha) return '—'
-  const d = typeof fecha === 'string' ? new Date(fecha + 'T00:00:00') : fecha
+  // Parseo manual de las partes en vez de `new Date(fecha + 'T00:00:00')`
+  // (TZ del navegador, no forzado) — mismo criterio que ya usa correctamente
+  // DatePicker.tsx ("Parseo local para evitar desfases UTC").
+  const d = typeof fecha === 'string'
+    ? (() => { const [y, m, dd] = fecha.split('-').map(Number); return new Date(y, m - 1, dd) })()
+    : fecha
   if (isNaN(d.getTime())) return String(fecha)
 
   if (style === 'long') {

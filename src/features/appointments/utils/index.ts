@@ -1,4 +1,5 @@
 import type { Cita } from '../types'
+import { bogotaTodayStr } from '@/src/shared/lib/bogotaTime'
 
 export const inputCls  = 'w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all text-sm'
 export const labelCls  = 'block text-xs font-bold capitalize tracking-widest text-muted-foreground mb-2'
@@ -52,12 +53,10 @@ export function filterCitas(
   })
 }
 
-export const todayStr = () => new Date().toISOString().slice(0, 10)
+export const todayStr = bogotaTodayStr
 
 export function validateFecha(f: string): boolean {
-  const t = new Date()
-  t.setHours(0, 0, 0, 0)
-  return new Date(f) >= t
+  return f >= bogotaTodayStr()
 }
 
 export const fmtCOP = (v: number) => v.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })

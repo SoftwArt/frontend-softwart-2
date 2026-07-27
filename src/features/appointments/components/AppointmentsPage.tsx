@@ -15,6 +15,8 @@ import { FilterBar } from '@/src/shared/components/FilterBar'
 import { withToast } from '@/src/shared/lib/withToast'
 import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate, formatTime } from '@/src/shared/lib/formatDate'
+import { bogotaTodayStr } from '@/src/shared/lib/bogotaTime'
+import { isWithinBusinessHours } from '@/src/shared/lib/businessHours'
 import { Plus, Pencil, Eye, ShoppingCart, PlusCircle, Trash, Trash2 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
 import { Input } from '@/src/shared/components/ui/input'
@@ -259,9 +261,8 @@ export function AppointmentsPage() {
     else if (!validateFecha(fecha)) newErrors.fecha = 'La fecha no puede ser en el pasado'
     if (!hora.trim()) {
       newErrors.hora = 'Campo requerido'
-    } else {
-      const h = Number(hora.split(':')[0])
-      if (h < 13 || h >= 18) newErrors.hora = 'La hora debe estar entre 13:00 y 18:00'
+    } else if (!isWithinBusinessHours(hora)) {
+      newErrors.hora = 'La hora debe estar entre 13:00 y 18:00'
     }
     if (!idEstado) newErrors.idEstado = 'Campo requerido'
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
@@ -488,7 +489,7 @@ export function AppointmentsPage() {
                   <DatePicker
                     id="cita-fecha"
                     value={fecha}
-                    min={new Date().toISOString().slice(0, 10)}
+                    min={bogotaTodayStr()}
                     onChange={(v) => { setFecha(v); if (errors.fecha) setErrors({...errors, fecha: ''}) }}
                     error={errors.fecha}
                   />

@@ -5,8 +5,9 @@ import { useState } from 'react'
 import { cn } from '@/src/shared/lib/utils'
 import { Clock, User, CheckCircle2, XCircle } from 'lucide-react'
 import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
+import { BUSINESS_HOUR_SLOTS } from '@/src/shared/lib/businessHours'
 
-const SLOTS = ['13:00', '14:00', '15:00', '16:00', '17:00']
+const SLOTS = BUSINESS_HOUR_SLOTS
 
 function to12h(time: string) {
   const [h, m] = time.split(':').map(Number)

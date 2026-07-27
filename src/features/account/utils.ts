@@ -1,5 +1,6 @@
 // src/features/account/utils.ts
 import type { Cita, Servicio } from './types'
+import { bogotaNowMs, bogotaCitaMs } from '@/src/shared/lib/bogotaTime'
 
 export const inputCls = 'w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all'
 export const labelCls = 'block text-xs font-bold capitalize tracking-widest text-muted-foreground mb-2'
@@ -39,20 +40,15 @@ export function filterServiciosCuenta(servicios: Servicio[], q: string): Servici
   )
 }
 
-export function tomorrowString(): string {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  return d.toISOString().slice(0, 10)
-}
-
 // Espeja la ventana mínima de 6h antes de la cita que valida el backend
 // (ClientAccountController.cancelMyAppointment) — evita ofrecer un botón que
-// siempre fallaría al confirmar.
+// siempre fallaría al confirmar. fecha/hora son naive-Bogotá, igual que en el
+// backend, así que ambos lados del guard usan la misma aritmética
+// (bogotaCitaMs/bogotaNowMs en shared/lib/bogotaTime.ts).
 export function canCancelCita(fecha: string, hora: string): boolean {
   const horaNormalizada = hora.length === 5 ? `${hora}:00` : hora
-  const citaDateTime = new Date(`${fecha}T${horaNormalizada}`)
   const SEIS_HORAS_MS = 6 * 60 * 60 * 1000
-  return citaDateTime.getTime() - Date.now() >= SEIS_HORAS_MS
+  return bogotaCitaMs(fecha, horaNormalizada) - bogotaNowMs() >= SEIS_HORAS_MS
 }
 
 export function parseFechaBloque(fecha: string): { mes: string; dia: string } {
