@@ -11,14 +11,18 @@ import { Input } from '@/src/shared/components/ui/input'
 import { Label } from '@/src/shared/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/components/ui/dialog'
+import { Checkbox } from '@/src/shared/components/ui/checkbox'
 import { TimePicker } from '@/src/shared/components/TimePicker'
 import { DatePicker } from '@/src/shared/components/DatePicker'
 import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
+import { LegalDocumentModal } from '@/src/shared/components/LegalDocumentModal'
+import type { LegalDocTipo } from '@/src/shared/types/legal'
 import { performLogout } from '@/src/features/auth/utils'
 import { stripDigits } from '@/src/shared/lib/validateNombre'
 import { onlyDigits } from '@/src/shared/lib/validateTelefono'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
+import { bogotaTomorrowStr } from '@/src/shared/lib/bogotaTime'
 import { toast } from 'sonner'
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
@@ -198,20 +202,28 @@ export function LandingPage() {
     ? validarDocumentoPorTipo(clientForm.tipoDocumento, clientForm.documento)
     : null
   const correoError = clientForm.correo.length > 0 && !isEmailValid(clientForm.correo) ? EMAIL_ERROR : null
-  const tomorrowStr = () => {
-    const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10)
-  }
-
-  const [apptForm, setApptForm] = useState({ fecha: tomorrowStr(), hora: '', observacion: '' })
+  const [apptForm, setApptForm] = useState({ fecha: bogotaTomorrowStr(), hora: '', observacion: '' })
   const [apptErrors, setApptErrors] = useState<Record<string, string>>({})
+
+  // Habeas data — agendar sin cuenta también crea un Cliente con datos
+  // personales, así que necesita la misma constancia de aceptación que
+  // register (ver ADR-007 §6 y guestAppointment en AuthController.ts).
+  const [acceptToS,       setAcceptToS]       = useState(false)
+  const [acceptPrivacy,   setAcceptPrivacy]   = useState(false)
+  const [apptLegalModal,  setApptLegalModal]  = useState<LegalDocTipo | null>(null)
+  const [apptSubmitted,   setApptSubmitted]   = useState(false)
+  const acceptTermsAppt = acceptToS && acceptPrivacy
+  const showAcceptTosError     = apptSubmitted && !acceptToS
+  const showAcceptPrivacyError = apptSubmitted && !acceptPrivacy
 
   const openAppt = () => {
     setApptStep(1)
     setApptDone(false)
     setClientForm({ tipoDocumento: '', documento: '', nombre: '', correo: '', telefono: '' })
-    setApptForm({ fecha: tomorrowStr(), hora: '', observacion: '' })
+    setApptForm({ fecha: bogotaTomorrowStr(), hora: '', observacion: '' })
     setApptErrors({})
     setBookedSlots([])
+    setAcceptToS(false); setAcceptPrivacy(false); setApptSubmitted(false)
     setApptOpen(true)
   }
 
@@ -236,14 +248,14 @@ export function LandingPage() {
     const errs: Record<string, string> = {}
     if (!apptForm.fecha) errs.fecha = 'Selecciona una fecha'
     if (!apptForm.hora)  errs.hora  = 'Selecciona una hora'
-    if (apptForm.fecha < tomorrowStr()) errs.fecha = 'Solo puedes agendar desde mañana'
+    if (apptForm.fecha < bogotaTomorrowStr()) errs.fecha = 'Solo puedes agendar desde mañana'
     if (Object.keys(errs).length) { setApptErrors(errs); return }
     setApptBusy(true)
     try {
       const res  = await fetch(`${BASE}/api/auth/guest-appointment`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ ...clientForm, ...apptForm }),
+        body:    JSON.stringify({ ...clientForm, ...apptForm, acceptTerms: acceptTermsAppt }),
       })
       const body = await res.json()
       if (!res.ok) {
@@ -815,9 +827,70 @@ export function LandingPage() {
               </Link>
             </p>
 
+            {/* Habeas data — dos casillas, una por documento (ver aceptacion_legal) */}
+            <div className="space-y-2">
+              <FieldErrorTooltip
+                error={showAcceptTosError ? 'Debes aceptar los Términos de Servicio para continuar' : null}
+                side="right"
+              >
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="g-accept-tos"
+                    checked={acceptToS}
+                    onCheckedChange={v => setAcceptToS(v === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="g-accept-tos" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                    He leído y acepto los{' '}
+                    <span
+                      className="text-foreground font-semibold underline underline-offset-2 cursor-pointer hover:text-primary"
+                      onClick={e => { e.preventDefault(); setApptLegalModal('terminos-servicio') }}
+                    >
+                      Términos de Servicio
+                    </span>
+                    .
+                  </label>
+                </div>
+              </FieldErrorTooltip>
+              <FieldErrorTooltip
+                error={showAcceptPrivacyError ? 'Debes aceptar la Política de Privacidad para continuar' : null}
+                side="right"
+              >
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="g-accept-privacy"
+                    checked={acceptPrivacy}
+                    onCheckedChange={v => setAcceptPrivacy(v === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="g-accept-privacy" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                    He leído y autorizo el tratamiento de mis datos personales conforme a la{' '}
+                    <span
+                      className="text-foreground font-semibold underline underline-offset-2 cursor-pointer hover:text-primary"
+                      onClick={e => { e.preventDefault(); setApptLegalModal('politica-privacidad') }}
+                    >
+                      Política de Privacidad
+                    </span>
+                    .
+                  </label>
+                </div>
+              </FieldErrorTooltip>
+            </div>
+
+            <LegalDocumentModal
+              tipo={apptLegalModal}
+              open={apptLegalModal !== null}
+              onOpenChange={v => { if (!v) setApptLegalModal(null) }}
+              onAccept={() => {
+                if (apptLegalModal === 'terminos-servicio') setAcceptToS(true)
+                if (apptLegalModal === 'politica-privacidad') setAcceptPrivacy(true)
+              }}
+            />
+
             <Button
               type="submit"
-              disabled={!clientForm.tipoDocumento || !clientForm.documento || !!documentoError || !clientForm.correo || !!correoError}
+              onClick={() => setApptSubmitted(true)}
+              disabled={!clientForm.tipoDocumento || !clientForm.documento || !!documentoError || !clientForm.correo || !!correoError || !acceptTermsAppt}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Siguiente →
@@ -836,7 +909,7 @@ export function LandingPage() {
                 <div>
                   <DatePicker
                     value={apptForm.fecha}
-                    min={tomorrowStr()}
+                    min={bogotaTomorrowStr()}
                     error={apptErrors.fecha}
                     onChange={handleDateChange}
                   />
