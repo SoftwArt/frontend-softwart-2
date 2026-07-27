@@ -4,10 +4,9 @@ import { useSalesOptions } from '@/src/shared/hooks/useOptions'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { useState, useMemo, useEffect } from 'react'
 import type { Pago } from '../types'
-import { inputCls, labelCls, selectCls, ESTADO_BADGE, filterPagos } from '../utils'
+import { inputCls, labelCls, selectCls, ESTADO_BADGE, METODO_BADGE, filterPagos } from '../utils'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, Eye, Banknote, Landmark } from 'lucide-react'
-import { ToggleSwitch } from '@/src/shared/components/ToggleSwitch'
+import { Plus, Eye } from 'lucide-react'
 import { Button }   from '@/src/shared/components/ui/button'
 import { Badge }    from '@/src/shared/components/ui/badge'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
@@ -199,13 +198,13 @@ export function PaymentsPage() {
                     <TableCell className="text-foreground text-right font-medium tabular-nums">{formatCurrency(p.monto)}</TableCell>
                     <TableCell className="text-foreground">{formatDate(p.fecha)}</TableCell>
                     <TableCell>
-                      <ToggleSwitch
-                        value={p.id_metodo_pago}
-                        onChange={v => onChangeMethod(p.id_pago, v)}
+                      <StatusSelect
+                        value={String(p.id_metodo_pago)}
+                        onValueChange={v => withToast(onChangeMethod(p.id_pago, Number(v)), 'Método actualizado')}
                         options={metodosPago.map(m => ({
-                          value: m.id_metodo_pago,
-                          label: m.nombre,
-                          icon:  m.nombre.toLowerCase().includes('efectivo') ? Banknote : Landmark,
+                          value:    String(m.id_metodo_pago),
+                          label:    m.nombre,
+                          badgeCls: METODO_BADGE[m.nombre] ?? 'border-slate-300 bg-slate-100 text-slate-600',
                         }))}
                       />
                     </TableCell>

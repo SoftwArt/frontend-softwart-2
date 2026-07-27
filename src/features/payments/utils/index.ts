@@ -12,6 +12,14 @@ export const ESTADO_BADGE: Record<string, string> = {
   Anulado:     'border-red-300 bg-red-100 text-red-800',
 }
 
+// Método de pago no tiene semántica de "estado" (no es progresión ni
+// terminal) — solo colores distintivos para escanear la tabla más rápido.
+export const METODO_BADGE: Record<string, string> = {
+  Efectivo:      'border-emerald-300 bg-emerald-100 text-emerald-800',
+  Transferencia: 'border-blue-300 bg-blue-100 text-blue-800',
+  Tarjeta:       'border-violet-300 bg-violet-100 text-violet-800',
+}
+
 export function filterPagos(
   pagos:        Pago[],
   ventasOpts:   { value: string; label: string }[],
