@@ -406,7 +406,7 @@ export function MyAccountPage() {
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-xl text-secondary">Mis citas</h3>
-                <button type="button" onClick={() => setShowCitasModal(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button type="button" onClick={() => setShowCitasModal(false)} title="Cerrar" aria-label="Cerrar" className="text-muted-foreground hover:text-foreground transition-colors">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -553,7 +553,7 @@ export function MyAccountPage() {
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-xl text-secondary">Mis servicios</h3>
-                <button type="button" onClick={() => setShowServiciosModal(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button type="button" onClick={() => setShowServiciosModal(false)} title="Cerrar" aria-label="Cerrar" className="text-muted-foreground hover:text-foreground transition-colors">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -656,7 +656,7 @@ export function MyAccountPage() {
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-xl text-secondary">Mi perfil</h3>
-                <button type="button" onClick={() => setShowPerfilModal(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button type="button" onClick={() => setShowPerfilModal(false)} title="Cerrar" aria-label="Cerrar" className="text-muted-foreground hover:text-foreground transition-colors">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -813,7 +813,7 @@ export function MyAccountPage() {
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-xl text-secondary">Agendar nueva cita</h3>
-                <button type="button" onClick={closeCitaForm} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button type="button" onClick={closeCitaForm} title="Cerrar" aria-label="Cerrar" className="text-muted-foreground hover:text-foreground transition-colors">
                   <X className="h-5 w-5" />
                 </button>
               </div>

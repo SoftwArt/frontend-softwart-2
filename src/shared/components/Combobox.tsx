@@ -85,6 +85,7 @@ export function Combobox({
             {clearable && selected && (
               <span
                 role="button"
+                title="Quitar selección"
                 aria-label="Quitar selección"
                 onClick={(e) => { e.stopPropagation(); onValueChange('') }}
                 className="rounded-sm p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"

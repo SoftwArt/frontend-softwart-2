@@ -42,6 +42,7 @@ export function FilterBar({ filters, onClear, className }: FilterBarProps) {
             <select
               value={f.value}
               onChange={e => f.onChange(e.target.value)}
+              aria-label={f.label}
               className={cn(
                 'h-7 rounded-md border px-2 text-xs text-foreground bg-card',
                 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',

@@ -35,6 +35,8 @@ export function SearchInput({ value, onChange, placeholder = 'Buscar...', classN
         <button
           type="button"
           onClick={() => { onChange(''); inputRef.current?.focus() }}
+          title="Limpiar búsqueda"
+          aria-label="Limpiar búsqueda"
           className="absolute right-2.5 text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="h-3.5 w-3.5" />
