@@ -3,7 +3,7 @@ import { useUsers } from '../hooks/useUsers'
 import { useRolesOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo } from 'react'
 import type { Usuario, CreateUsuarioDto, UpdateUsuarioDto } from '../types'
-import { inputCls, labelCls, selectCls, ROL_LABELS, getRolBadgeClass, filterUsuarios } from '../utils'
+import { inputCls, labelCls, selectCls, getRolLabel, getRolBadgeClass, filterUsuarios } from '../utils'
 import { Plus, Pencil, Eye, Trash2 } from 'lucide-react'
 import { Button }   from '@/src/shared/components/ui/button'
 import { Badge }    from '@/src/shared/components/ui/badge'
@@ -35,7 +35,7 @@ export function UsersPage() {
   const [filterRol,   setFilterRol]   = useState('')
   const [filterEstado, setFilterEstado] = useState('')
 
-  const filtered = useMemo(() => filterUsuarios(usuarios, q, filterRol, filterEstado), [usuarios, q, filterRol, filterEstado])
+  const filtered = useMemo(() => filterUsuarios(usuarios, rawRoles, q, filterRol, filterEstado), [usuarios, rawRoles, q, filterRol, filterEstado])
 
   const { paginated, page, setPage, totalPages, total, pageSize, setPageSize } = usePagination(filtered)
 
@@ -147,8 +147,8 @@ export function UsersPage() {
             
                   <TableCell className="text-foreground">{u.correo}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={getRolBadgeClass(u.id_rol)}>
-                      {ROL_LABELS[u.id_rol] ?? `Rol ${u.id_rol}`}
+                    <Badge variant="outline" className={getRolBadgeClass(rawRoles, u.id_rol)}>
+                      {getRolLabel(rawRoles, u.id_rol)}
                     </Badge>
                   </TableCell>
                   <TableCell><ToggleSwitch value={u.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(u.id_usuario), 'Estado actualizado')} options={ACTIVO_OPTIONS} disabled={u.es_admin_base} /></TableCell>
@@ -198,7 +198,7 @@ export function UsersPage() {
                               <AlertDialogTitle>¿Eliminar este usuario?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 Se eliminará el acceso de <strong>{u.correo}</strong>. Esta acción no se puede deshacer.
-                                {ROL_LABELS[u.id_rol] === 'Cliente' && (
+                                {getRolLabel(rawRoles, u.id_rol) === 'Cliente' && (
                                   <>
                                     {' '}Como su rol es <strong>Cliente</strong>, perderá el acceso al portal y
                                     deberá registrarse de nuevo para recuperarlo — su historial como cliente
@@ -241,7 +241,7 @@ export function UsersPage() {
             { label: 'ID',     value: viewingItem.id_usuario },
             { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },
             { label: 'Correo', value: viewingItem.correo, fullWidth: true },
-            { label: 'Rol',    value: <Badge variant="outline" className={getRolBadgeClass(viewingItem.id_rol)}>{ROL_LABELS[viewingItem.id_rol] ?? `Rol ${viewingItem.id_rol}`}</Badge> },
+            { label: 'Rol',    value: <Badge variant="outline" className={getRolBadgeClass(rawRoles, viewingItem.id_rol)}>{getRolLabel(rawRoles, viewingItem.id_rol)}</Badge> },
           ]} />
       )}
 

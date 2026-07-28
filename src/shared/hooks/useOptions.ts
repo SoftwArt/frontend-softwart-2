@@ -119,7 +119,7 @@ export function useServicesOptions() {
 }
 
 // ── Roles ─────────────────────────────────────────────────────
-type RolOption = { id_rol: number; nombre: string; estado: boolean }
+export type RolOption = { id_rol: number; nombre: string; estado: boolean }
 
 export function useRolesOptions() {
   const [options,    setOptions]    = useState<ComboboxOption[]>([])
