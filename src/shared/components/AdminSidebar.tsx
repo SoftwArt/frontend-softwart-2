@@ -143,7 +143,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                   onClick={() => toggleGroup(group.label)}
                   className={cn(
                     'w-full flex items-center justify-between px-2 py-1 rounded-md',
-                    'text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40',
+                    'text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/60',
                     'hover:text-sidebar-foreground/70 transition-colors mt-3'
                   )}
                 >
@@ -198,7 +198,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       {/* Footer */}
       {!collapsed && (
         <div className="shrink-0 border-t border-sidebar-border p-2">
-          <p className="text-[11px] text-sidebar-foreground/40 text-center truncate px-2">
+          <p className="text-[11px] text-sidebar-foreground/60 text-center truncate px-2">
             SoftwArt Admin v1.0
           </p>
         </div>

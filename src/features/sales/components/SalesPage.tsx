@@ -250,7 +250,7 @@ export function SalesPage() {
                       <div className="flex flex-col items-end gap-0.5">
                         <span className="font-medium tabular-nums text-foreground">{formatCurrency(v.total)}</span>
                         {pagada
-                          ? <span className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium"><CheckCircle2 className="h-3 w-3" />Pagada</span>
+                          ? <span className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium"><CheckCircle2 className="h-3 w-3" />Pagada</span>
                           : <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><CircleDashed className="h-3 w-3" />{v.pagos_realizados}/{v.num_abonos} abonos</span>
                         }
                       </div>
