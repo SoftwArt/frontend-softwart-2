@@ -61,5 +61,10 @@ export function useOrders() {
     }
   }
 
-  return { pedidos, isLoading, error, onCreate, onEdit, onChangeStatus }
+  const onDelete = async (id: number) => {
+    await apiRequest(`/api/sale-details/${id}`, { method: 'DELETE' })
+    await fetchAll()
+  }
+
+  return { pedidos, isLoading, error, onCreate, onEdit, onChangeStatus, onDelete }
 }

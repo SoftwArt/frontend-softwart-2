@@ -14,7 +14,7 @@ import { FilterBar } from '@/src/shared/components/FilterBar'
 import { withToast } from '@/src/shared/lib/withToast'
 import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate } from '@/src/shared/lib/formatDate'
-import { Plus, Pencil, Eye } from 'lucide-react'
+import { Plus, Pencil, Eye, Trash2 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
 import { Badge } from '@/src/shared/components/ui/badge'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
@@ -32,7 +32,7 @@ import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 
 export function OrdersPage() {
-  const { pedidos, isLoading, onCreate, onEdit, onChangeStatus } = useOrders()
+  const { pedidos, isLoading, onCreate, onEdit, onChangeStatus, onDelete } = useOrders()
   const { options: ventasOpts, rawVentas } = useSalesOptions()
   const { options: serviciosOpts } = useServicesOptions()
   const { options: marcosOpts }    = useFrameOptions()
@@ -83,6 +83,21 @@ export function OrdersPage() {
   // Confirmación antes de cancelar (estado terminal e irreversible)
   const [cancelTarget, setCancelTarget] = useState<{ id: number; id_estado: number; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
   const MSG_CANCELAR_BASE = 'Esta acción es definitiva: un servicio cancelado no podrá modificarse ni volver a cambiar de estado.'
+
+  // Confirmación antes de eliminar (hard-delete: solo para corregir un error
+  // de captura antes de que el servicio avance — bloqueado si ya está
+  // Cancelado/Finalizado, ahí el camino es anular, no borrar).
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; label: string } | null>(null)
+  const confirmEliminarServicio = () => {
+    if (!deleteTarget) return
+    const { id, label } = deleteTarget
+    setDeleteTarget(null)
+    undoableAction({
+      message: `Eliminando ${label}...`,
+      successMsg: 'Servicio eliminado',
+      onCommit: () => onDelete(id),
+    })
+  }
 
   const resetForm = () => {
     setIdVenta(''); setIdServicio(''); setIdMarco(''); setIdEstado('')
@@ -339,7 +354,29 @@ export function OrdersPage() {
                             {isCancelado(p.id_estado) ? 'No se puede editar un servicio Cancelado' : 'Editar'}
                           </TooltipContent>
                         </Tooltip>
-                   
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost" size="icon"
+                              aria-label="Eliminar servicio"
+                              aria-disabled={isCancelado(p.id_estado) || isFinalizado(p.id_estado)}
+                              onClick={() => {
+                                if (isCancelado(p.id_estado) || isFinalizado(p.id_estado)) return
+                                setDeleteTarget({ id: p.id_detalle, label: `Servicio #${p.id_detalle} · ${servicioLabel}` })
+                              }}
+                              className={(isCancelado(p.id_estado) || isFinalizado(p.id_estado)) ? 'opacity-40 cursor-not-allowed' : ''}
+                            >
+                              <Trash2 className={`h-4 w-4 ${(isCancelado(p.id_estado) || isFinalizado(p.id_estado)) ? 'text-muted-foreground' : 'text-destructive'}`} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {isCancelado(p.id_estado)
+                              ? 'No se puede eliminar: ya está Cancelado'
+                              : isFinalizado(p.id_estado)
+                                ? 'No se puede eliminar: ya está Finalizado — solo se puede cancelar'
+                                : 'Eliminar'}
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -480,6 +517,29 @@ export function OrdersPage() {
               onClick={confirmCancelarServicio}
             >
               {cancelTarget?.bloqueado ? 'No se puede cancelar' : 'Sí, cancelar servicio'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmación de eliminar (hard-delete, solo Sin empezar/En preparación) */}
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este servicio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará <strong>{deleteTarget?.label}</strong> por completo — pensado para corregir un
+              error de captura, no para el flujo normal (ahí corresponde cancelar). Esta acción no se
+              puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmEliminarServicio}
+            >
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
