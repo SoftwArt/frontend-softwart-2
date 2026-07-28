@@ -161,7 +161,7 @@ export function RegisterPage() {
             {/* Tipo + Número de documento */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className={labelCls} htmlFor="reg-tipo-doc">Tipo de documento</label>
+                <label className={labelCls} htmlFor="reg-tipo-doc">Tipo de documento <span className="text-destructive">*</span></label>
                 <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
                   <SelectTrigger id="reg-tipo-doc" className={fieldCls}>
                     <SelectValue placeholder="Seleccione..." />
@@ -174,7 +174,7 @@ export function RegisterPage() {
                 </Select>
               </div>
               <div>
-                <label className={labelCls} htmlFor="documento">Número de documento</label>
+                <label className={labelCls} htmlFor="documento">Número de documento <span className="text-destructive">*</span></label>
                 <FieldErrorTooltip error={documento.length > 0 ? documentoError : null}>
                   <Input
                     id="documento" type="text"
@@ -188,7 +188,7 @@ export function RegisterPage() {
 
             {/* Nombre */}
             <div>
-              <label className={labelCls} htmlFor="nombre">Nombre completo</label>
+              <label className={labelCls} htmlFor="nombre">Nombre completo <span className="text-destructive">*</span></label>
               <FieldErrorTooltip error={showNombreError ? NOMBRE_MIN_ERROR : null}>
                 <Input
                   id="nombre" type="text"
@@ -202,7 +202,7 @@ export function RegisterPage() {
             {/* Correo + Teléfono */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className={labelCls} htmlFor="correo">Correo electrónico</label>
+                <label className={labelCls} htmlFor="correo">Correo electrónico <span className="text-destructive">*</span></label>
                 <FieldErrorTooltip error={showCorreoError ? EMAIL_ERROR : null}>
                   <Input
                     id="correo" type="email"
@@ -228,7 +228,7 @@ export function RegisterPage() {
             {/* Contraseña + Confirmar */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className={labelCls} htmlFor="clave">Contraseña</label>
+                <label className={labelCls} htmlFor="clave">Contraseña <span className="text-destructive">*</span></label>
                 <div className="relative">
                   <Input
                     id="clave"
@@ -249,7 +249,7 @@ export function RegisterPage() {
                 </div>
               </div>
               <div>
-                <label className={labelCls} htmlFor="confirmarClave">Confirmar contraseña</label>
+                <label className={labelCls} htmlFor="confirmarClave">Confirmar contraseña <span className="text-destructive">*</span></label>
                 <FieldErrorTooltip error={showMismatchError ? 'Las contraseñas no coinciden' : null}>
                   <div className="relative">
                     <Input

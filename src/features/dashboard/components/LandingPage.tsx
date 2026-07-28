@@ -750,13 +750,13 @@ export function LandingPage() {
           >
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="g-tipo">Tipo de documento</Label>
+                <Label htmlFor="g-tipo">Tipo de documento <span className="text-destructive">*</span></Label>
                 <Select
                   value={clientForm.tipoDocumento}
                   onValueChange={v => setClientForm(f => ({ ...f, tipoDocumento: v }))}
                   required
                 >
-                  <SelectTrigger id="g-tipo">
+                  <SelectTrigger id="g-tipo" className="w-full">
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -768,7 +768,7 @@ export function LandingPage() {
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="g-doc">Número de documento</Label>
+                <Label htmlFor="g-doc">Número de documento <span className="text-destructive">*</span></Label>
                 <FieldErrorTooltip error={documentoError}>
                   <Input
                     id="g-doc"
@@ -781,7 +781,7 @@ export function LandingPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="g-nombre">Nombre completo</Label>
+              <Label htmlFor="g-nombre">Nombre completo <span className="text-destructive">*</span></Label>
               <Input
                 id="g-nombre"
                 value={clientForm.nombre}
@@ -792,7 +792,7 @@ export function LandingPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="g-correo">Correo electrónico</Label>
+              <Label htmlFor="g-correo">Correo electrónico <span className="text-destructive">*</span></Label>
               <FieldErrorTooltip error={correoError}>
                 <Input
                   id="g-correo"
@@ -805,9 +805,7 @@ export function LandingPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="g-tel">
-                Teléfono <span className="text-muted-foreground text-xs">(opcional)</span>
-              </Label>
+              <Label htmlFor="g-tel">Teléfono</Label>
               <Input
                 id="g-tel"
                 type="tel"
