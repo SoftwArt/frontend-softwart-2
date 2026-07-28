@@ -52,7 +52,8 @@ export function DatePicker({
           className={
             triggerClassName ??
             `w-full bg-muted border-0 border-b-2 transition-all px-4 py-3 rounded-t-lg
-             text-left flex items-center justify-between gap-2 focus:outline-none
+             text-left flex items-center justify-between gap-2 outline-none
+             focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]
              ${open ? 'border-secondary' : error ? 'border-destructive' : 'border-transparent'}`
           }
         >
