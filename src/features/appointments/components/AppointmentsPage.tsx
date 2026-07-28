@@ -372,17 +372,19 @@ export function AppointmentsPage() {
                               <Button
                                 variant="ghost" size="icon"
                                 aria-label="Crear venta desde cita"
-                                aria-disabled={!isCompletada(c.id_estado_cita)}
-                                onClick={() => { if (isCompletada(c.id_estado_cita)) openVentaModal(c) }}
-                                className={!isCompletada(c.id_estado_cita) ? 'opacity-40 cursor-not-allowed' : ''}
+                                aria-disabled={!isCompletada(c.id_estado_cita) || c.tieneVenta}
+                                onClick={() => { if (isCompletada(c.id_estado_cita) && !c.tieneVenta) openVentaModal(c) }}
+                                className={(!isCompletada(c.id_estado_cita) || c.tieneVenta) ? 'opacity-40 cursor-not-allowed' : ''}
                               >
-                                <ShoppingCart className={`h-4 w-4 ${isCompletada(c.id_estado_cita) ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+                                <ShoppingCart className={`h-4 w-4 ${isCompletada(c.id_estado_cita) && !c.tieneVenta ? 'text-emerald-600' : 'text-muted-foreground'}`} />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              {isCompletada(c.id_estado_cita)
-                                ? 'Crear venta'
-                                : 'Solo se puede crear una venta cuando la cita está Completada'}
+                              {!isCompletada(c.id_estado_cita)
+                                ? 'Solo se puede crear una venta cuando la cita está Completada'
+                                : c.tieneVenta
+                                  ? 'Esta cita ya tiene una venta — si necesitas registrar otra (ej. un producto sin servicio asociado), créala manual desde Ventas sin vincular la cita'
+                                  : 'Crear venta'}
                             </TooltipContent>
                           </Tooltip>
                           <Tooltip>
