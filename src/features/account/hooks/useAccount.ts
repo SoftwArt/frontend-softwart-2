@@ -231,7 +231,10 @@ export function useAccount() {
         method: 'PATCH',
         body: JSON.stringify({ motivo: motivo?.trim() || undefined }),
       })
-      setCitas(prev => prev.filter(c => c.id_cita !== id_cita))
+      // Refetch en vez de quitarla del estado local — la cita sigue
+      // existiendo (ahora en estado Cancelada), no debe desaparecer de la
+      // lista hasta el próximo poll de 15s.
+      await fetchMyAppointments()
     } finally {
       isMutatingRef.current = false
     }

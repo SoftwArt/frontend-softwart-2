@@ -446,8 +446,9 @@ export function MyAccountPage() {
                     <div className="space-y-3">
                       {citasPag.paginated.map(c => {
                         const { mes, dia } = parseFechaBloque(c.fecha)
-                        const esPendiente   = c.appointmentStatus?.nombre?.toLowerCase().includes('pend') ?? false
-                        const puedeCancelar = esPendiente && canCancelCita(c.fecha, c.hora)
+                        const estadoLower   = c.appointmentStatus?.nombre?.toLowerCase() ?? ''
+                        const esCancelable  = estadoLower.includes('pend') || estadoLower.includes('confirmada')
+                        const puedeCancelar = esCancelable && canCancelCita(c.fecha, c.hora)
                         return (
                           <div key={c.id_cita}
                             className="bg-card rounded-xl border border-border p-5 flex flex-col sm:flex-row sm:items-center gap-4 hover:border-primary/20 transition-colors">
@@ -468,7 +469,7 @@ export function MyAccountPage() {
                               <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${estadoBadgeClasses(c.appointmentStatus?.nombre)}`}>
                                 {c.appointmentStatus?.nombre ?? 'Sin estado'}
                               </span>
-                              {esPendiente && !puedeCancelar && (
+                              {esCancelable && !puedeCancelar && (
                                 <span className="text-muted-foreground text-xs italic" title="Solo se puede cancelar hasta 6 horas antes de la cita">
                                   No cancelable (faltan &lt;6h)
                                 </span>
