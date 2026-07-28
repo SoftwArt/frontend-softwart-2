@@ -757,7 +757,7 @@ export function LandingPage() {
                   required
                 >
                   <SelectTrigger id="g-tipo" className="w-full">
-                    <SelectValue placeholder="Seleccionar" />
+                    <SelectValue placeholder="Seleccione..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CC">Cédula de Ciudadanía</SelectItem>
@@ -774,6 +774,7 @@ export function LandingPage() {
                     id="g-doc"
                     value={clientForm.documento}
                     onChange={e => setClientForm(f => ({ ...f, documento: e.target.value }))}
+                    placeholder="Ej: 1023456789"
                     required
                   />
                 </FieldErrorTooltip>
@@ -786,6 +787,7 @@ export function LandingPage() {
                 id="g-nombre"
                 value={clientForm.nombre}
                 onChange={e => setClientForm(f => ({ ...f, nombre: stripDigits(e.target.value) }))}
+                placeholder="Su nombre como aparece en el documento"
                 minLength={2}
                 required
               />
@@ -799,18 +801,21 @@ export function LandingPage() {
                   type="email"
                   value={clientForm.correo}
                   onChange={e => setClientForm(f => ({ ...f, correo: e.target.value }))}
+                  placeholder="nombre@ejemplo.com"
                   required
                 />
               </FieldErrorTooltip>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="g-tel">Teléfono</Label>
+              <Label htmlFor="g-tel">Teléfono <span className="text-destructive">*</span></Label>
               <Input
                 id="g-tel"
                 type="tel"
                 value={clientForm.telefono}
                 onChange={e => setClientForm(f => ({ ...f, telefono: onlyDigits(e.target.value) }))}
+                placeholder="300 000 0000"
+                required
               />
             </div>
 
