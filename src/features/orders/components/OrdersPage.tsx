@@ -84,6 +84,13 @@ export function OrdersPage() {
   const [cancelTarget, setCancelTarget] = useState<{ id: number; id_estado: number; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
   const MSG_CANCELAR_BASE = 'Esta acción es definitiva: un servicio cancelado no podrá modificarse ni volver a cambiar de estado.'
 
+  // Confirmación al avanzar el estado (a cualquiera que no sea "Sin
+  // empezar" ni el flujo de cancelar, que ya tiene su propia confirmación)
+  // si la Venta todavía no tiene ningún abono Validado — evita que el
+  // servicio arranque en el taller antes de que el cliente haya pagado el
+  // primer abono.
+  const [advanceTarget, setAdvanceTarget] = useState<{ id: number; id_estado: number } | null>(null)
+
   // Confirmación antes de eliminar (hard-delete: solo para corregir un error
   // de captura antes de que el servicio avance — bloqueado si ya está
   // Cancelado/Finalizado, ahí el camino es anular, no borrar).
@@ -232,6 +239,34 @@ export function OrdersPage() {
         .catch(() => setCancelTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines: [] } : prev))
       return
     }
+
+    // "Sin empezar" es el estado inicial — no hace falta advertir nada al
+    // volver ahí. Para cualquier otro avance, se verifica si la Venta ya
+    // tiene su primer abono Validado antes de aplicar directo.
+    if (estadoNombre(id_estado).toLowerCase().includes('sin empezar')) {
+      await aplicarCambioEstado(id, id_estado)
+      return
+    }
+
+    try {
+      const res = await apiRequest<{ success: boolean; data: PedidoDetalle }>(`/api/sale-details/${id}`)
+      const pagos = res.data?.sale?.payments ?? []
+      const tieneAbonoValidado = pagos.some(p => p.paymentStatus?.nombre?.toLowerCase().includes('validado'))
+      if (tieneAbonoValidado) {
+        await aplicarCambioEstado(id, id_estado)
+        return
+      }
+      setAdvanceTarget({ id, id_estado })
+    } catch {
+      // Si no se pudo verificar, no bloquear el cambio — solo se pierde la advertencia.
+      await aplicarCambioEstado(id, id_estado)
+    }
+  }
+
+  const confirmAvanzarEstado = async () => {
+    if (!advanceTarget) return
+    const { id, id_estado } = advanceTarget
+    setAdvanceTarget(null)
     await aplicarCambioEstado(id, id_estado)
   }
 
@@ -517,6 +552,25 @@ export function OrdersPage() {
               onClick={confirmCancelarServicio}
             >
               {cancelTarget?.bloqueado ? 'No se puede cancelar' : 'Sí, cancelar servicio'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmación al avanzar el estado sin abono validado todavía */}
+      <AlertDialog open={advanceTarget !== null} onOpenChange={(o) => { if (!o) setAdvanceTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cambiar el estado sin el primer abono?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta venta todavía no tiene ningún abono <strong>Validado</strong> registrado. ¿Quieres
+              continuar de todas formas?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAvanzarEstado}>
+              Sí, continuar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
