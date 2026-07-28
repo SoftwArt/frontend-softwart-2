@@ -59,4 +59,4 @@ export function validateFecha(f: string): boolean {
   return f >= bogotaTodayStr()
 }
 
-export const fmtCOP = (v: number) => v.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })
+export { fmtCOP } from '@/src/shared/lib/formatCurrency'

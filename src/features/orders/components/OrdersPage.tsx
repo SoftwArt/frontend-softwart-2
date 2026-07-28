@@ -29,7 +29,7 @@ import { EmptyState } from '@/src/shared/components/EmptyState'
 import { CascadePreview } from '@/src/shared/components/CascadePreview'
 import { DatePicker } from '@/src/shared/components/DatePicker'
 import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
-import { formatCurrency } from '@/src/shared/lib/formatCurrency'
+import { formatCurrency, fmtCOP } from '@/src/shared/lib/formatCurrency'
 
 export function OrdersPage() {
   const { pedidos, isLoading, onCreate, onEdit, onChangeStatus, onDelete } = useOrders()
@@ -511,16 +511,17 @@ export function OrdersPage() {
               </FieldErrorTooltip>
             </div>
             <div>
-              <label className={labelCls} htmlFor="ped-precio">Precio {!editingId && <span className="text-muted-foreground font-normal normal-case tracking-normal">(tomado de la venta)</span>}</label>
+              <label className={labelCls} htmlFor="ped-precio">
+                Precio <span className="text-muted-foreground font-normal normal-case tracking-normal">(tomado de la venta, no editable)</span>
+              </label>
               <FieldErrorTooltip error={errors.precio}>
                 <input
                   id="ped-precio"
-                  type="number" step="0.01"
-                  value={precio}
-                  readOnly={!editingId}
-                  onChange={editingId ? (e) => { setPrecio(e.target.value); if (errors.precio) setErrors({...errors, precio: ''}) } : undefined}
-                  className={inputCls + (!editingId ? ' opacity-60 cursor-not-allowed' : '')}
-                  placeholder={!editingId ? 'Se completa al seleccionar la venta' : 'Ingrese el precio...'}
+                  type="text"
+                  value={precio ? fmtCOP(Number(precio)) : ''}
+                  readOnly
+                  className={inputCls + ' opacity-60 cursor-not-allowed'}
+                  placeholder="Se completa al seleccionar la venta"
                 />
               </FieldErrorTooltip>
             </div>
