@@ -378,15 +378,19 @@ export function OrdersPage() {
                             <Button
                               variant="ghost" size="icon"
                               aria-label="Editar pedido"
-                              aria-disabled={isCancelado(p.id_estado)}
-                              onClick={() => { if (!isCancelado(p.id_estado)) openEdit(p) }}
-                              className={isCancelado(p.id_estado) ? 'opacity-40 cursor-not-allowed' : ''}
+                              aria-disabled={isCancelado(p.id_estado) || isFinalizado(p.id_estado)}
+                              onClick={() => { if (!isCancelado(p.id_estado) && !isFinalizado(p.id_estado)) openEdit(p) }}
+                              className={(isCancelado(p.id_estado) || isFinalizado(p.id_estado)) ? 'opacity-40 cursor-not-allowed' : ''}
                             >
-                              <Pencil className={`h-4 w-4 ${isCancelado(p.id_estado) ? 'text-muted-foreground' : 'text-foreground'}`} />
+                              <Pencil className={`h-4 w-4 ${(isCancelado(p.id_estado) || isFinalizado(p.id_estado)) ? 'text-muted-foreground' : 'text-foreground'}`} />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            {isCancelado(p.id_estado) ? 'No se puede editar un servicio Cancelado' : 'Editar'}
+                            {isCancelado(p.id_estado)
+                              ? 'No se puede editar un servicio Cancelado'
+                              : isFinalizado(p.id_estado)
+                                ? 'No se puede editar un servicio Finalizado'
+                                : 'Editar'}
                           </TooltipContent>
                         </Tooltip>
                         <Tooltip>
