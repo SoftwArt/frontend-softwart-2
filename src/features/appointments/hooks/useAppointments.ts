@@ -7,6 +7,13 @@ import type { Cita, CreateCitaDto, UpdateCitaDto, EstadoCita, BackendCita } from
 
 type ApiResponse<T> = { success: boolean; message?: string; data: T; meta?: unknown }
 
+// Orden de exhibición en selects/filtros — no es el orden de id_estado_cita
+// (Confirmada se agregó después, id 5, pero conceptualmente va 2ª en el
+// flujo). El backend no garantiza un ORDER BY particular.
+const ORDEN_ESTADOS = ['Pendiente', 'Confirmada', 'Completada', 'No Asistió', 'Cancelada']
+const ordenarEstados = (estados: EstadoCita[]): EstadoCita[] =>
+  [...estados].sort((a, b) => ORDEN_ESTADOS.indexOf(a.nombre) - ORDEN_ESTADOS.indexOf(b.nombre))
+
 export function useAppointments() {
   const [citas, setCitas] = useState<Cita[]>([])
   const [estadosCita, setEstadosCita] = useState<EstadoCita[]>([])
@@ -37,7 +44,7 @@ export function useAppointments() {
       }))
 
       setCitas(normalized)
-      setEstadosCita(estadosRes.data ?? [])
+      setEstadosCita(ordenarEstados(estadosRes.data ?? []))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar citas')
     } finally {
