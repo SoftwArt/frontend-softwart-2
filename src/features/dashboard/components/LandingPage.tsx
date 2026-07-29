@@ -7,23 +7,7 @@ import {
   Clock, MapPin, MessageCircle, X,
 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
-import { Input } from '@/src/shared/components/ui/input'
-import { Label } from '@/src/shared/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/components/ui/dialog'
-import { Checkbox } from '@/src/shared/components/ui/checkbox'
-import { TimePicker } from '@/src/shared/components/TimePicker'
-import { DatePicker } from '@/src/shared/components/DatePicker'
-import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
-import { LegalDocumentModal } from '@/src/shared/components/LegalDocumentModal'
-import type { LegalDocTipo } from '@/src/shared/types/legal'
 import { performLogout } from '@/src/features/auth/utils'
-import { stripDigits } from '@/src/shared/lib/validateNombre'
-import { onlyDigits } from '@/src/shared/lib/validateTelefono'
-import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
-import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
-import { bogotaTomorrowStr } from '@/src/shared/lib/bogotaTime'
-import { toast } from 'sonner'
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('token') ?? sessionStorage.getItem('token') }
@@ -184,90 +168,6 @@ export function LandingPage() {
   const handleLogout = async () => {
     await performLogout()
     setToken(null)
-  }
-
-  // ── Agendar cita sin cuenta (invitado) ───────────────────────────────────
-  const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
-
-  const [apptOpen,    setApptOpen]    = useState(false)
-  const [apptStep,    setApptStep]    = useState<1 | 2>(1)
-  const [apptDone,    setApptDone]    = useState(false)
-  const [apptBusy,    setApptBusy]    = useState(false)
-  const [bookedSlots, setBookedSlots] = useState<{ hora: string }[]>([])
-
-  const [clientForm, setClientForm] = useState({
-    tipoDocumento: '', documento: '', nombre: '', correo: '', telefono: '',
-  })
-  const documentoError = clientForm.documento.length > 0
-    ? validarDocumentoPorTipo(clientForm.tipoDocumento, clientForm.documento)
-    : null
-  const correoError = clientForm.correo.length > 0 && !isEmailValid(clientForm.correo) ? EMAIL_ERROR : null
-  const [apptForm, setApptForm] = useState({ fecha: bogotaTomorrowStr(), hora: '', observacion: '' })
-  const [apptErrors, setApptErrors] = useState<Record<string, string>>({})
-
-  // Habeas data — agendar sin cuenta también crea un Cliente con datos
-  // personales, así que necesita la misma constancia de aceptación que
-  // register (ver ADR-007 §6 y guestAppointment en AuthController.ts).
-  const [acceptToS,       setAcceptToS]       = useState(false)
-  const [acceptPrivacy,   setAcceptPrivacy]   = useState(false)
-  const [apptLegalModal,  setApptLegalModal]  = useState<LegalDocTipo | null>(null)
-  const [apptSubmitted,   setApptSubmitted]   = useState(false)
-  const acceptTermsAppt = acceptToS && acceptPrivacy
-  const showAcceptTosError     = apptSubmitted && !acceptToS
-  const showAcceptPrivacyError = apptSubmitted && !acceptPrivacy
-
-  const openAppt = () => {
-    setApptStep(1)
-    setApptDone(false)
-    setClientForm({ tipoDocumento: '', documento: '', nombre: '', correo: '', telefono: '' })
-    setApptForm({ fecha: bogotaTomorrowStr(), hora: '', observacion: '' })
-    setApptErrors({})
-    setBookedSlots([])
-    setAcceptToS(false); setAcceptPrivacy(false); setApptSubmitted(false)
-    setApptOpen(true)
-  }
-
-  const loadAvailability = async (fecha: string) => {
-    try {
-      const res  = await fetch(`${BASE}/api/auth/availability?fecha=${fecha}`)
-      const body = await res.json()
-      setBookedSlots((body.data ?? []).map((d: { id_cita: number; hora: string }) => ({
-        hora: d.hora, id_cita: d.id_cita,
-      })))
-    } catch { setBookedSlots([]) }
-  }
-
-  const handleDateChange = async (fecha: string) => {
-    setApptForm(f => ({ ...f, fecha, hora: '' }))
-    setApptErrors(p => ({ ...p, fecha: '', hora: '' }))
-    await loadAvailability(fecha)
-  }
-
-  const handleApptSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const errs: Record<string, string> = {}
-    if (!apptForm.fecha) errs.fecha = 'Selecciona una fecha'
-    if (!apptForm.hora)  errs.hora  = 'Selecciona una hora'
-    if (apptForm.fecha < bogotaTomorrowStr()) errs.fecha = 'Solo puedes agendar desde mañana'
-    if (Object.keys(errs).length) { setApptErrors(errs); return }
-    setApptBusy(true)
-    try {
-      const res  = await fetch(`${BASE}/api/auth/guest-appointment`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ ...clientForm, ...apptForm, acceptTerms: acceptTermsAppt }),
-      })
-      const body = await res.json()
-      if (!res.ok) {
-        toast.error(body.message ?? 'Error al agendar cita')
-        return
-      }
-      setApptDone(true)
-    } catch {
-      toast.error('No se pudo conectar con el servidor')
-    } finally {
-      setApptBusy(false)
-    }
   }
 
   return (
@@ -438,14 +338,15 @@ export function LandingPage() {
                   </Button>
                 ) : (
                   <>
-                    <Button
-                      size="lg"
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
-                      onClick={openAppt}
-                    >
-                      <CalendarPlus className="h-5 w-5" />
-                      Quiero agendar una cita
-                    </Button>
+                    <Link to="/register">
+                      <Button
+                        size="lg"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+                      >
+                        <CalendarPlus className="h-5 w-5" />
+                        Quiero agendar una cita
+                      </Button>
+                    </Link>
                     <Link to="/login">
                       <Button
                         size="lg" variant="ghost"
@@ -560,14 +461,15 @@ export function LandingPage() {
               {!token && (
                 <FadeInView className="text-center mt-10 mb-2">
                   <div className="flex flex-col items-center gap-2">
-                    <Button
-                      size="lg"
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
-                      onClick={openAppt}
-                    >
-                      <CalendarPlus className="h-5 w-5" />
-                      Quiero agendar una cita
-                    </Button>
+                    <Link to="/register">
+                      <Button
+                        size="lg"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+                      >
+                        <CalendarPlus className="h-5 w-5" />
+                        Quiero agendar una cita
+                      </Button>
+                    </Link>
                     <p className="text-sm text-muted-foreground">
                       ¿Ya tienes cuenta?{' '}
                       <Link to="/login" className="text-primary underline underline-offset-2">Inicia sesión</Link>
@@ -667,12 +569,11 @@ export function LandingPage() {
               </div>
               {!token && (
                 <div className="mt-8">
-                  <Button
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 w-full gap-2"
-                    onClick={openAppt}
-                  >
-                    Agendar una Cita <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  <Link to="/register">
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full gap-2">
+                      Agendar una Cita <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
                 </div>
               )}
             </FadeInView>
@@ -697,269 +598,6 @@ export function LandingPage() {
       </footer>
 
     </div>
-
-    {/* ── Dialog agendar cita sin cuenta ────────────────────────────────── */}
-    <Dialog open={apptOpen} onOpenChange={setApptOpen}>
-      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-xl">
-            {apptDone ? '¡Cita agendada!' : apptStep === 1 ? 'Tus datos' : 'Elige tu cita'}
-          </DialogTitle>
-          {!apptDone && (
-            <p className="text-xs text-muted-foreground">
-              Paso {apptStep} de 2 ·{' '}
-              {apptStep === 1
-                ? 'Completa tus datos de contacto'
-                : 'Selecciona fecha y hora disponible'}
-            </p>
-          )}
-        </DialogHeader>
-
-        {/* ── Éxito ── */}
-        {apptDone && (
-          <div className="flex flex-col items-center gap-4 py-4 text-center">
-            <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center">
-              <BadgeCheck className="w-7 h-7 text-emerald-600" />
-            </div>
-            <div>
-              <p className="font-semibold text-foreground">¡Tu cita quedó registrada!</p>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                Te llegará una confirmación al correo. Nos vemos pronto en Arte Café.
-              </p>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              ¿Quieres rastrear el estado de tus pedidos?{' '}
-              <Link
-                to="/register"
-                className="text-primary underline underline-offset-2"
-                onClick={() => setApptOpen(false)}
-              >
-                Crea una cuenta
-              </Link>
-            </p>
-            <Button className="w-full" onClick={() => setApptOpen(false)}>Cerrar</Button>
-          </div>
-        )}
-
-        {/* ── Paso 1: datos del cliente ── */}
-        {!apptDone && apptStep === 1 && (
-          <form
-            onSubmit={async (e) => { e.preventDefault(); await loadAvailability(apptForm.fecha); setApptStep(2) }}
-            className="flex flex-col gap-4 pt-1"
-            noValidate
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="g-tipo">Tipo de documento <span className="text-destructive">*</span></Label>
-                <Select
-                  value={clientForm.tipoDocumento}
-                  onValueChange={v => setClientForm(f => ({ ...f, tipoDocumento: v }))}
-                  required
-                >
-                  <SelectTrigger id="g-tipo" className="w-full">
-                    <SelectValue placeholder="Seleccione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CC">Cédula de Ciudadanía</SelectItem>
-                    <SelectItem value="CE">Cédula de Extranjería</SelectItem>
-                    <SelectItem value="TI">Tarjeta de Identidad</SelectItem>
-                    <SelectItem value="PP">Pasaporte</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="g-doc">Número de documento <span className="text-destructive">*</span></Label>
-                <FieldErrorTooltip error={documentoError}>
-                  <Input
-                    id="g-doc"
-                    value={clientForm.documento}
-                    onChange={e => setClientForm(f => ({ ...f, documento: e.target.value }))}
-                    placeholder="Ej: 1023456789"
-                    required
-                  />
-                </FieldErrorTooltip>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="g-nombre">Nombre completo <span className="text-destructive">*</span></Label>
-              <Input
-                id="g-nombre"
-                value={clientForm.nombre}
-                onChange={e => setClientForm(f => ({ ...f, nombre: stripDigits(e.target.value) }))}
-                placeholder="Su nombre como aparece en el documento"
-                minLength={2}
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="g-correo">Correo electrónico <span className="text-destructive">*</span></Label>
-              <FieldErrorTooltip error={correoError}>
-                <Input
-                  id="g-correo"
-                  type="email"
-                  value={clientForm.correo}
-                  onChange={e => setClientForm(f => ({ ...f, correo: e.target.value }))}
-                  placeholder="nombre@ejemplo.com"
-                  required
-                />
-              </FieldErrorTooltip>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="g-tel">Teléfono <span className="text-destructive">*</span></Label>
-              <Input
-                id="g-tel"
-                type="tel"
-                value={clientForm.telefono}
-                onChange={e => setClientForm(f => ({ ...f, telefono: onlyDigits(e.target.value) }))}
-                placeholder="300 000 0000"
-                required
-              />
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              ¿Prefieres acceso completo con rastreo de pedidos?{' '}
-              <Link
-                to="/register"
-                className="text-primary underline underline-offset-2"
-                onClick={() => setApptOpen(false)}
-              >
-                Crear una cuenta
-              </Link>
-            </p>
-
-            {/* Habeas data — dos casillas, una por documento (ver aceptacion_legal) */}
-            <div className="space-y-2">
-              <FieldErrorTooltip
-                error={showAcceptTosError ? 'Debes aceptar los Términos de Servicio para continuar' : null}
-                side="right"
-              >
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id="g-accept-tos"
-                    checked={acceptToS}
-                    onCheckedChange={v => setAcceptToS(v === true)}
-                    className="mt-0.5"
-                  />
-                  <label htmlFor="g-accept-tos" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                    He leído y acepto los{' '}
-                    <span
-                      className="text-foreground font-semibold underline underline-offset-2 cursor-pointer hover:text-primary"
-                      onClick={e => { e.preventDefault(); setApptLegalModal('terminos-servicio') }}
-                    >
-                      Términos de Servicio
-                    </span>
-                    .
-                  </label>
-                </div>
-              </FieldErrorTooltip>
-              <FieldErrorTooltip
-                error={showAcceptPrivacyError ? 'Debes aceptar la Política de Privacidad para continuar' : null}
-                side="right"
-              >
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id="g-accept-privacy"
-                    checked={acceptPrivacy}
-                    onCheckedChange={v => setAcceptPrivacy(v === true)}
-                    className="mt-0.5"
-                  />
-                  <label htmlFor="g-accept-privacy" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                    He leído y autorizo el tratamiento de mis datos personales conforme a la{' '}
-                    <span
-                      className="text-foreground font-semibold underline underline-offset-2 cursor-pointer hover:text-primary"
-                      onClick={e => { e.preventDefault(); setApptLegalModal('politica-privacidad') }}
-                    >
-                      Política de Privacidad
-                    </span>
-                    .
-                  </label>
-                </div>
-              </FieldErrorTooltip>
-            </div>
-
-            <LegalDocumentModal
-              tipo={apptLegalModal}
-              open={apptLegalModal !== null}
-              onOpenChange={v => { if (!v) setApptLegalModal(null) }}
-              onAccept={() => {
-                if (apptLegalModal === 'terminos-servicio') setAcceptToS(true)
-                if (apptLegalModal === 'politica-privacidad') setAcceptPrivacy(true)
-              }}
-            />
-
-            <Button
-              type="submit"
-              onClick={() => setApptSubmitted(true)}
-              disabled={!clientForm.tipoDocumento || !clientForm.documento || !!documentoError || !clientForm.correo || !!correoError || !acceptTermsAppt}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              Siguiente →
-            </Button>
-          </form>
-        )}
-
-        {/* ── Paso 2: fecha y hora ── */}
-        {!apptDone && apptStep === 2 && (
-          <form onSubmit={handleApptSubmit} className="flex flex-col gap-4 pt-1" noValidate>
-            <div>
-              <Label className="mb-1.5 block">
-                Fecha <span className="text-destructive">*</span>
-              </Label>
-              <FieldErrorTooltip error={apptErrors.fecha}>
-                <div>
-                  <DatePicker
-                    value={apptForm.fecha}
-                    min={bogotaTomorrowStr()}
-                    error={apptErrors.fecha}
-                    onChange={handleDateChange}
-                  />
-                </div>
-              </FieldErrorTooltip>
-            </div>
-
-            <TimePicker
-              value={apptForm.hora}
-              onChange={v => { setApptForm(f => ({ ...f, hora: v })); setApptErrors(p => ({ ...p, hora: '' })) }}
-              error={apptErrors.hora}
-              bookedSlots={bookedSlots}
-            />
-
-            <div>
-              <Label className="mb-1.5 block" htmlFor="g-obs">
-                Observaciones{' '}
-                <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
-              </Label>
-              <textarea
-                id="g-obs"
-                value={apptForm.observacion}
-                onChange={e => setApptForm(f => ({ ...f, observacion: e.target.value }))}
-                placeholder="Cuéntanos qué necesitas, medidas, tipo de marco, etc."
-                rows={3}
-                className="w-full bg-muted border-0 border-b-2 border-transparent px-4 py-3 rounded-t-lg text-sm resize-none focus:outline-none focus:border-secondary transition-all"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setApptStep(1)}>
-                ← Atrás
-              </Button>
-              <Button
-                type="submit"
-                disabled={apptBusy}
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
-              >
-                <CalendarPlus className="h-4 w-4" />
-                {apptBusy ? 'Agendando…' : 'Confirmar cita'}
-              </Button>
-            </div>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
-
     </LazyMotion>
   )
 }

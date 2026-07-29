@@ -15,9 +15,9 @@ function getToken(): string | null {
 // podría desloguear a alguien que solo escribió mal su clave en /login
 // mientras tenía otra sesión válida abierta en otra pestaña.
 const PUBLIC_AUTH_ENDPOINTS = [
-  '/api/auth/login', '/api/auth/register', '/api/auth/register-guest',
+  '/api/auth/login', '/api/auth/register',
   '/api/auth/recover', '/api/auth/reset-password', '/api/auth/reenviar-codigo',
-  '/api/auth/guest-appointment', '/api/auth/validate-reset-token', '/api/auth/refresh',
+  '/api/auth/validate-reset-token', '/api/auth/refresh',
 ]
 
 // Se lanza cuando un 401 no pudo resolverse ni con refresh — señal para que
