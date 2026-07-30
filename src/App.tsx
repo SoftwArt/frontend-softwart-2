@@ -2,12 +2,12 @@
 // src/App.tsx
 // ============================================================
 
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { useBackendWakeup }      from '@/src/shared/hooks/useBackendWakeup'
 import { BackendWakeupBanner }   from '@/src/shared/components/BackendWakeupBanner'
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { checkAuthValidity } from '@/src/shared/lib/checkAuth'
-import { Toaster } from 'sonner'
+import { Toaster, toast } from 'sonner'
 import { AdminSidebar }     from '@/src/shared/components/AdminSidebar'
 import { LandingPage }      from '@/src/features/dashboard/components/LandingPage'
 import { performLogout }    from '@/src/features/auth/utils'
@@ -56,6 +56,24 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   if (isLoading) return <RouteFallback />
   if (!can('PANEL.ACCESO')) return <Navigate to="/login" replace />
   return <RequireSession>{children}</RequireSession>
+}
+
+// El sidebar (AdminSidebar.tsx) ya oculta los módulos sin permiso, pero eso
+// nunca bloqueaba la ruta en sí: un usuario con PANEL.ACCESO pero sin, ej.,
+// CITAS.VER podía navegar directo a /admin/appointments por URL y ver una
+// tabla vacía sin explicación (el backend sí devuelve 403 en la data, pero la
+// UI no lo comunicaba). Cada módulo bajo /admin queda ahora protegido acá con
+// el mismo nombre de permiso que ya usa el sidebar para decidir qué mostrar.
+function RequireModulePermission({ permiso, children }: { permiso: string; children: React.ReactNode }) {
+  const { can, isLoading } = useMyPermissions()
+  useEffect(() => {
+    if (!isLoading && !can(permiso)) {
+      toast.error('No tienes permiso para acceder a esa sección')
+    }
+  }, [isLoading, permiso]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (isLoading) return <RouteFallback />
+  if (!can(permiso)) return <Navigate to="/admin/dashboard" replace />
+  return <>{children}</>
 }
 
 function RequireCliente({ children }: { children: React.ReactNode }) {
@@ -160,16 +178,16 @@ export default function App() {
           <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>
             <Route index              element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard"   element={<DashboardPage />} />
-            <Route path="clients"      element={<ClientsPage />} />
-            <Route path="users"        element={<UsersPage />} />
-            <Route path="roles"        element={<RolesPage />} />
-            <Route path="services"     element={<ServicesPage />} />
-            <Route path="appointments" element={<AppointmentsPage />} />
-            <Route path="payments"     element={<PaymentsPage />} />
-            <Route path="calculator"   element={<CalculatorPage />} />
-            <Route path="sales"        element={<SalesPage />} />
-            <Route path="orders"       element={<OrdersPage />} />
-            <Route path="permissions"  element={<PermissionsPage />} />
+            <Route path="clients"      element={<RequireModulePermission permiso="CLIENTES.VER"><ClientsPage /></RequireModulePermission>} />
+            <Route path="users"        element={<RequireModulePermission permiso="USUARIOS.VER"><UsersPage /></RequireModulePermission>} />
+            <Route path="roles"        element={<RequireModulePermission permiso="ROLES.VER"><RolesPage /></RequireModulePermission>} />
+            <Route path="services"     element={<RequireModulePermission permiso="SERVICIOS.VER"><ServicesPage /></RequireModulePermission>} />
+            <Route path="appointments" element={<RequireModulePermission permiso="CITAS.VER"><AppointmentsPage /></RequireModulePermission>} />
+            <Route path="payments"     element={<RequireModulePermission permiso="PAGOS.VER"><PaymentsPage /></RequireModulePermission>} />
+            <Route path="calculator"   element={<RequireModulePermission permiso="MARCOS.VER"><CalculatorPage /></RequireModulePermission>} />
+            <Route path="sales"        element={<RequireModulePermission permiso="VENTAS.VER"><SalesPage /></RequireModulePermission>} />
+            <Route path="orders"       element={<RequireModulePermission permiso="PEDIDOS.VER"><OrdersPage /></RequireModulePermission>} />
+            <Route path="permissions"  element={<RequireModulePermission permiso="PERMISOS.VER"><PermissionsPage /></RequireModulePermission>} />
             <Route path="*"           element={<Navigate to="dashboard" replace />} />
           </Route>
 

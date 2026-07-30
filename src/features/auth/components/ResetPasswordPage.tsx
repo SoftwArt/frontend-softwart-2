@@ -35,7 +35,11 @@ export function ResetPasswordPage() {
   const [errorNueva,     setErrorNueva]     = useState('')
   const [errorConfirmar, setErrorConfirmar] = useState('')
   const [success,        setSuccess]        = useState(false)
-  const [tokenExpired,   setTokenExpired]   = useState(false)
+  // Cubre tanto "expiró" como "nunca existió" (token bien formado pero
+  // inexistente) — antes solo se reaccionaba a `expired`, así que un token
+  // inexistente pasaba este chequeo proactivo sin avisar y el usuario recién
+  // se enteraba al hacer submit real.
+  const [tokenInvalido,  setTokenInvalido]  = useState(false)
   const [checkingToken,  setCheckingToken]  = useState(!!token)
 
   // Reenviar enlace
@@ -45,14 +49,14 @@ export function ResetPasswordPage() {
 
   // Uno u otro, nunca ambos: con token válido solo tiene sentido pedir la
   // nueva contraseña; sin token (o vencido) solo tiene sentido reenviar.
-  const showFields = !!token && !checkingToken && !tokenExpired
-  const showResend = !token || (!checkingToken && tokenExpired)
+  const showFields = !!token && !checkingToken && !tokenInvalido
+  const showResend = !token || (!checkingToken && tokenInvalido)
 
   const passwordsMatch = nuevaClave === confirmarClave
   const passwordValid  = validatePassword(nuevaClave).valid
   const canSubmit =
     token.trim() !== '' &&
-    !tokenExpired &&
+    !tokenInvalido &&
     nuevaClave.trim() !== '' &&
     confirmarClave.trim() !== '' &&
     passwordsMatch &&
@@ -78,7 +82,7 @@ export function ResetPasswordPage() {
     apiRequest<{ success: boolean; data: { valid: boolean; expired: boolean } }>(
       `/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`
     )
-      .then(res => { if (!cancelled) setTokenExpired(res.data.expired) })
+      .then(res => { if (!cancelled) setTokenInvalido(!res.data.valid) })
       .catch(() => { /* si falla el chequeo, se deja que el submit lo valide igual */ })
       .finally(() => { if (!cancelled) setCheckingToken(false) })
     return () => { cancelled = true }
@@ -216,13 +220,14 @@ export function ResetPasswordPage() {
                       </div>
                     )}
 
-                    {/* Aviso proactivo: el token existe pero ya expiró — se detecta al
-                        cargar la página, no hay que esperar a que el usuario le dé submit */}
-                    {token && !checkingToken && tokenExpired && (
+                    {/* Aviso proactivo: el token ya expiró o nunca existió (link mal copiado,
+                        ya usado, etc.) — se detecta al cargar la página, no hay que esperar
+                        a que el usuario le dé submit para descubrirlo. */}
+                    {token && !checkingToken && tokenInvalido && (
                       <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
                         <p className="text-sm text-destructive">
-                          Este enlace ya expiró. Pide uno nuevo con tu correo en "¿No recibiste el enlace?"
-                          más abajo.
+                          Este enlace ya no es válido o expiró. Pide uno nuevo con tu correo en
+                          "¿No recibiste el enlace?" más abajo.
                         </p>
                       </div>
                     )}

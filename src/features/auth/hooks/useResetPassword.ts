@@ -28,6 +28,7 @@ export function useResetPassword() {
       setTimeout(() => navigate('/login'), 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al restablecer la contraseña')
+      throw err
     } finally {
       setIsLoading(false)
     }

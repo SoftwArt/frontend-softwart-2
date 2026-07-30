@@ -119,7 +119,11 @@ export function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {/* noValidate: sin esto, el `required` de los inputs dispara la validación
+                nativa del navegador ANTES del evento submit y el submitError de abajo
+                (mensaje anti-enumeración propio) nunca llega a mostrarse — mismo patrón
+                que RegisterPage/ResetPasswordPage, que ya usan noValidate + validación propia. */}
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
 
               {/* Correo */}
               <div className="space-y-2">
