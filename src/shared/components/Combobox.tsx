@@ -2,7 +2,7 @@
 // src/shared/components/Combobox.tsx
 // Searchable select usando Command + Popover de shadcn/ui
 // ============================================================
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, ChevronsUpDown, X } from 'lucide-react'
 import {
   Command,
@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from '@/src/shared/components/ui/popover'
 import { cn } from '@/src/shared/lib/utils'
+import { useDebouncedValue } from '@/src/shared/hooks/useDebouncedValue'
 
 export interface ComboboxOption {
   value: string
@@ -39,6 +40,12 @@ interface ComboboxProps {
   // lista y reencontrar la misma opción ya seleccionada. Opt-in porque no
   // tiene sentido en combos de selección obligatoria (Venta, Cliente, etc).
   clearable?:        boolean
+  // Opt-in: cuando se pasa, cada búsqueda (debounced) dispara este callback
+  // además del filtro local de cmdk — pensado para que `options` se enriquezca
+  // en vivo desde el servidor (ver useOptions.ts `search()`) en vez de quedar
+  // limitado al catálogo cargado al montar. Ver Combobox de Cliente/Venta en
+  // Citas/Ventas/Pagos/Pedidos.
+  onSearchChange?:   (query: string) => void
 }
 
 let _comboboxId = 0
@@ -54,14 +61,37 @@ export function Combobox({
   className,
   id,
   clearable        = false,
+  onSearchChange,
 }: ComboboxProps) {
   const [open, setOpen] = useState(false)
   const [listId] = useState(() => `combobox-list-${++_comboboxId}`)
+  const [query, setQuery] = useState('')
+  const debouncedQuery = useDebouncedValue(query, 300)
+
+  useEffect(() => {
+    if (onSearchChange && debouncedQuery.trim()) onSearchChange(debouncedQuery.trim())
+  }, [debouncedQuery]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mientras hay una búsqueda remota activa, no se re-filtra localmente lo
+  // que ya validó el backend (ILike) — el fuzzy-match de cmdk puede no
+  // reconocer un match parcial (ej. un fragmento de documento) y ocultarlo,
+  // mostrando "sin resultados" para algo que el servidor sí encontró.
+  const remoteFiltering = Boolean(onSearchChange) && debouncedQuery.trim().length > 0
 
   const selected = options.find((o) => o.value === value)
 
+  // Antes CommandInput era no-controlado y se remontaba entero al cerrar el
+  // Popover (Radix desmonta el contenido), así que cada apertura arrancaba
+  // con el buscador vacío. Ahora que `query` vive en Combobox (fuera del
+  // contenido que se desmonta) para poder debouncear onSearchChange, hay que
+  // limpiarlo a mano al cerrar para no cambiar ese comportamiento.
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next)
+    if (!next) setQuery('')
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           id={id}
@@ -98,10 +128,12 @@ export function Combobox({
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 bg-card border-border" align="start">
-        <Command id={listId} className="bg-card">
+        <Command id={listId} className="bg-card" shouldFilter={!remoteFiltering}>
           <CommandInput
             placeholder={searchPlaceholder}
             className="text-foreground placeholder:text-muted-foreground"
+            value={query}
+            onValueChange={setQuery}
           />
           <CommandList>
             <CommandEmpty className="py-4 text-center text-sm text-muted-foreground">

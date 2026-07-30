@@ -32,7 +32,7 @@ import { DatePicker } from '@/src/shared/components/DatePicker'
 
 export function PaymentsPage() {
   const { pagos, metodosPago, estadosPago, isLoading, onCreate, onChangeStatus, onChangeMethod } = usePayments()
-  const { options: ventasOpts, rawVentas } = useSalesOptions()
+  const { options: ventasOpts, rawVentas, search: searchVentas } = useSalesOptions()
 
   // ── Búsqueda y filtros ─────────────────────────────────────────────────────
   const [q,             setQ]             = useState('')
@@ -301,7 +301,7 @@ export function PaymentsPage() {
               <label className={labelCls} htmlFor="pago-venta">Venta <span className="text-destructive">*</span></label>
               <FieldErrorTooltip error={errors.idVenta}>
                 <div>
-                  <Combobox id="pago-venta" options={ventasOpts} value={idVenta} onValueChange={v => { setIdVenta(v); if (errors.idVenta) setErrors(p => ({...p, idVenta:''})) }} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
+                  <Combobox id="pago-venta" options={ventasOpts} value={idVenta} onValueChange={v => { setIdVenta(v); if (errors.idVenta) setErrors(p => ({...p, idVenta:''})) }} onSearchChange={searchVentas} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
                 </div>
               </FieldErrorTooltip>
               {ventaPagada && (

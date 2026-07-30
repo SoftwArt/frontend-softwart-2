@@ -3,38 +3,55 @@
 // Fetchers ligeros que devuelven ComboboxOption[] para los
 // selects relacionales en Citas, Ventas, Pedidos y Pagos.
 // ============================================================
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import type { ComboboxOption } from '@/src/shared/components/Combobox'
 
 type ApiResponse<T> = { success: boolean; data: T; meta?: unknown }
 
+// Upsert por id — nunca elimina entradas ya presentes. Así lo que ya estaba
+// seleccionado/visible (el top-100 inicial del mount, o algo encontrado en
+// una búsqueda anterior) no desaparece cuando una búsqueda nueva trae un
+// subconjunto distinto — filterX/las filas de tabla/lookups de nombre en
+// otras partes de la página siguen resolviendo lo que ya vieron sin cambios.
+function mergeById<T>(prev: T[], next: T[], idOf: (item: T) => number): T[] {
+  const byId = new Map(prev.map((item) => [idOf(item), item]))
+  for (const item of next) byId.set(idOf(item), item)
+  return Array.from(byId.values())
+}
+
 // ── Clientes ──────────────────────────────────────────────────
 type ClienteOption = { id_cliente: number; nombre: string; tipoDocumento: string; documento: string }
 
 export function useClientsOptions() {
-  const [options,     setOptions]     = useState<ComboboxOption[]>([])
   const [rawClientes, setRawClientes] = useState<ClienteOption[]>([])
-  const [isLoading,   setIsLoading]   = useState(true)
+  const [isLoading,    setIsLoading]    = useState(true)
+  const [isSearching,  setIsSearching]  = useState(false)
 
   useEffect(() => {
     apiRequest<ApiResponse<ClienteOption[]>>('/api/clients?limit=100')
-      .then((res) => {
-        const data = res.data ?? []
-        setRawClientes(data)
-        setOptions(
-          data.map((c) => ({
-            value:    String(c.id_cliente),
-            label:    c.nombre,
-            sublabel: c.documento,
-          }))
-        )
-      })
+      .then((res) => setRawClientes((prev) => mergeById(prev, res.data ?? [], (c) => c.id_cliente)))
       .catch(console.error)
       .finally(() => setIsLoading(false))
   }, [])
 
-  return { options, rawClientes, isLoading }
+  // Búsqueda contra el servidor (Combobox de Cliente en Citas/Ventas) — el
+  // top-100 inicial por recencia no alcanza a cubrir clientes más antiguos.
+  const search = useCallback((q: string) => {
+    if (!q.trim()) return
+    setIsSearching(true)
+    apiRequest<ApiResponse<ClienteOption[]>>(`/api/clients?limit=20&q=${encodeURIComponent(q)}`)
+      .then((res) => setRawClientes((prev) => mergeById(prev, res.data ?? [], (c) => c.id_cliente)))
+      .catch(console.error)
+      .finally(() => setIsSearching(false))
+  }, [])
+
+  const options = useMemo(
+    () => rawClientes.map((c) => ({ value: String(c.id_cliente), label: c.nombre, sublabel: c.documento })),
+    [rawClientes]
+  )
+
+  return { options, rawClientes, isLoading, isSearching, search }
 }
 
 // ── Ventas ────────────────────────────────────────────────────
@@ -42,28 +59,39 @@ type VentaPayment = { paymentStatus?: { nombre?: string } | null }
 type VentaOption = { id_venta: number; fecha: string; total: number; num_abonos?: number; payments?: VentaPayment[]; client?: { id_cliente: number; nombre?: string } | null }
 
 export function useSalesOptions() {
-  const [options,    setOptions]    = useState<ComboboxOption[]>([])
-  const [rawVentas,  setRawVentas]  = useState<VentaOption[]>([])
-  const [isLoading,  setIsLoading]  = useState(true)
+  const [rawVentas,   setRawVentas]   = useState<VentaOption[]>([])
+  const [isLoading,   setIsLoading]   = useState(true)
+  const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
     apiRequest<ApiResponse<VentaOption[]>>('/api/sales?limit=100')
-      .then((res) => {
-        const data = res.data ?? []
-        setRawVentas(data)
-        setOptions(
-          data.map((v) => ({
-            value:    String(v.id_venta),
-            label:    `Venta #${v.id_venta} — ${new Date(v.fecha).toLocaleDateString('es-CO')}`,
-            sublabel: v.total?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' }),
-          }))
-        )
-      })
+      .then((res) => setRawVentas((prev) => mergeById(prev, res.data ?? [], (v) => v.id_venta)))
       .catch(console.error)
       .finally(() => setIsLoading(false))
   }, [])
 
-  return { options, rawVentas, isLoading }
+  // Búsqueda contra el servidor (Combobox de Venta en Pagos/Pedidos) — el
+  // top-100 inicial por recencia no alcanza a cubrir ventas más antiguas.
+  const search = useCallback((q: string) => {
+    if (!q.trim()) return
+    setIsSearching(true)
+    apiRequest<ApiResponse<VentaOption[]>>(`/api/sales?limit=20&q=${encodeURIComponent(q)}`)
+      .then((res) => setRawVentas((prev) => mergeById(prev, res.data ?? [], (v) => v.id_venta)))
+      .catch(console.error)
+      .finally(() => setIsSearching(false))
+  }, [])
+
+  const options = useMemo(
+    () =>
+      rawVentas.map((v) => ({
+        value:    String(v.id_venta),
+        label:    `Venta #${v.id_venta} — ${new Date(v.fecha).toLocaleDateString('es-CO')}`,
+        sublabel: v.total?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' }),
+      })),
+    [rawVentas]
+  )
+
+  return { options, rawVentas, isLoading, isSearching, search }
 }
 
 // ── Citas ─────────────────────────────────────────────────────

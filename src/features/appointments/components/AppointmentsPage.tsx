@@ -39,7 +39,7 @@ import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 
 export function AppointmentsPage() {
   const { citas, estadosCita, isLoading, onCreate, onEdit, onDelete, onChangeStatus, refresh } = useAppointments()
-  const { options: clientesOpts, rawClientes } = useClientsOptions()
+  const { options: clientesOpts, rawClientes, search: searchClientes } = useClientsOptions()
   const { options: serviciosOpts } = useServicesOptions()
   const { options: marcosOpts }    = useFrameOptions()
   const [searchParams] = useSearchParams()
@@ -479,6 +479,7 @@ export function AppointmentsPage() {
                     id="cita-cliente"
                     options={clientesOpts} value={idCliente}
                     onValueChange={(v) => { setIdCliente(v); if (errors.idCliente) setErrors({...errors, idCliente: ''}) }}
+                    onSearchChange={searchClientes}
                     placeholder="Buscar cliente..." searchPlaceholder="Nombre o documento..."
                   />
                 </div>

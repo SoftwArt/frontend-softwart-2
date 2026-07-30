@@ -33,7 +33,7 @@ import { formatCurrency, fmtCOP } from '@/src/shared/lib/formatCurrency'
 
 export function OrdersPage() {
   const { pedidos, isLoading, onCreate, onEdit, onChangeStatus, onDelete } = useOrders()
-  const { options: ventasOpts, rawVentas } = useSalesOptions()
+  const { options: ventasOpts, rawVentas, search: searchVentas } = useSalesOptions()
   const { options: serviciosOpts } = useServicesOptions()
   const { options: marcosOpts }    = useFrameOptions()
   const estados = useEstadosServicio()
@@ -480,7 +480,7 @@ export function OrdersPage() {
               <label className={labelCls} htmlFor="ped-venta">Venta <span className="text-destructive">*</span></label>
               <FieldErrorTooltip error={errors.idVenta}>
                 <div>
-                  <Combobox id="ped-venta" options={ventasOpts} value={idVenta} onValueChange={handleVentaChange} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
+                  <Combobox id="ped-venta" options={ventasOpts} value={idVenta} onValueChange={handleVentaChange} onSearchChange={searchVentas} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
                 </div>
               </FieldErrorTooltip>
             </div>

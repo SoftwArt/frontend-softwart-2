@@ -38,7 +38,7 @@ export function SalesPage() {
 
   // ── Modal de abonos ───────────────────────────────────────────────────────
   const [abonoModalVenta, setAbonoModalVenta] = useState<{ id: number; label: string } | null>(null)
-  const { options: clientesOpts, rawClientes } = useClientsOptions()
+  const { options: clientesOpts, rawClientes, search: searchClientes } = useClientsOptions()
   const { options: citasOpts, rawCitas } = useAppointmentsOptions()
 
   // ── Búsqueda y filtros ─────────────────────────────────────────────────
@@ -369,6 +369,7 @@ export function SalesPage() {
                 <div>
                   <Combobox id="vta-cliente" options={clientesOpts} value={idCliente}
                     onValueChange={v => { setIdCliente(v); setIdCita(''); if (errors.idCliente) setErrors(p => ({...p, idCliente:''})) }}
+                    onSearchChange={searchClientes}
                     placeholder="Buscar cliente..." searchPlaceholder="Nombre o documento..." />
                 </div>
               </FieldErrorTooltip>
