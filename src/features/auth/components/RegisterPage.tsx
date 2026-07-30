@@ -12,7 +12,7 @@ import type { LegalDocTipo } from '@/src/shared/types/legal'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { isTelefonoValid, onlyDigits, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
-import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR, NOMBRE_MAX_LENGTH } from '@/src/shared/lib/validateNombre'
+import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR, NOMBRE_MAX_ERROR, NOMBRE_MAX_LENGTH } from '@/src/shared/lib/validateNombre'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { ArrowLeft, Eye, EyeOff, LogIn } from 'lucide-react'
 
@@ -67,6 +67,9 @@ export function RegisterPage() {
   const showTelefonoError = telefono.length > 0 && !telefonoValido
   const nombreValido      = isNombreLongitudValida(nombre)
   const showNombreError   = nombre.length > 0 && !nombreValido
+  // maxLength ya impide teclear/pegar más de esto — el tooltip es solo el
+  // aviso de que se llegó al tope, no una validación adicional de submit.
+  const showNombreMaxAviso = nombre.length >= NOMBRE_MAX_LENGTH
   const correoValido      = correo.length > 0 && isEmailValid(correo)
   const showCorreoError   = correo.length > 0 && !correoValido
   const documentoError    = validarDocumentoPorTipo(tipoDocumento, documento)
@@ -189,7 +192,7 @@ export function RegisterPage() {
             {/* Nombre */}
             <div>
               <label className={labelCls} htmlFor="nombre">Nombre completo <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={showNombreError ? NOMBRE_MIN_ERROR : null}>
+              <FieldErrorTooltip error={showNombreError ? NOMBRE_MIN_ERROR : (showNombreMaxAviso ? NOMBRE_MAX_ERROR : null)}>
                 <Input
                   id="nombre" type="text"
                   value={nombre} onChange={e => setNombre(stripDigits(e.target.value))}

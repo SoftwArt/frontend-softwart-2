@@ -16,7 +16,7 @@ import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { withToast } from '@/src/shared/lib/withToast'
 import { usePolling } from '@/src/shared/hooks/usePolling'
-import { stripDigits, NOMBRE_MAX_LENGTH } from '@/src/shared/lib/validateNombre'
+import { stripDigits, NOMBRE_MAX_LENGTH, NOMBRE_MAX_ERROR } from '@/src/shared/lib/validateNombre'
 import { onlyDigits } from '@/src/shared/lib/validateTelefono'
 import type { HistorialEstado } from '../types'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
@@ -680,7 +680,7 @@ export function MyAccountPage() {
                     <form onSubmit={submitPerfil} className="space-y-5" noValidate>
                       <div>
                         <label className={labelCls} htmlFor="perfil-nombre">Nombre completo</label>
-                        <FieldErrorTooltip error={perfilErrors.nombre}>
+                        <FieldErrorTooltip error={perfilErrors.nombre || (perfilNombre.length >= NOMBRE_MAX_LENGTH ? NOMBRE_MAX_ERROR : null)}>
                           <input id="perfil-nombre" type="text" value={perfilNombre}
                             onChange={e => setPerfilNombre(stripDigits(e.target.value))} required
                             maxLength={NOMBRE_MAX_LENGTH} className={inputCls} />

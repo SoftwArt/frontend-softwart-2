@@ -17,7 +17,7 @@ import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { withToast } from '@/src/shared/lib/withToast'
 import { isTelefonoValid, onlyDigits, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
-import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR, NOMBRE_MAX_LENGTH } from '@/src/shared/lib/validateNombre'
+import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR, NOMBRE_MAX_ERROR, NOMBRE_MAX_LENGTH } from '@/src/shared/lib/validateNombre'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
@@ -269,7 +269,7 @@ export function ClientsPage() {
             </div>
             <div>
               <label className={labelCls} htmlFor="cli-nombre">Nombre completo <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.nombre}>
+              <FieldErrorTooltip error={errors.nombre || (nombre.length >= NOMBRE_MAX_LENGTH ? NOMBRE_MAX_ERROR : null)}>
                 <input id="cli-nombre" value={nombre} placeholder="Nombre completo del cliente"
                   onChange={e => { setNombre(stripDigits(e.target.value)); if (errors.nombre) setErrors({...errors, nombre: ''}) }}
                   maxLength={NOMBRE_MAX_LENGTH}

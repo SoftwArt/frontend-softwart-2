@@ -6,7 +6,10 @@ export const NOMBRE_NUMEROS_ERROR = 'El nombre no puede contener números.'
 // El máximo se aplica vía el atributo HTML `maxLength` en el input (imposible
 // teclear o pegar más de esto), no con una validación de submit aparte —
 // mismo criterio que stripDigits: prevenir en vez de solo rechazar después.
+// El tooltip (NOMBRE_MAX_ERROR) es solo el aviso visual de que se llegó al
+// límite — maxLength ya hizo el trabajo de fondo, esto es feedback, no guard.
 export const NOMBRE_MAX_LENGTH    = 60
+export const NOMBRE_MAX_ERROR     = `El nombre no puede superar los ${NOMBRE_MAX_LENGTH} caracteres.`
 
 export function isNombreLongitudValida(nombre: string): boolean {
   return nombre.trim().length >= 5
