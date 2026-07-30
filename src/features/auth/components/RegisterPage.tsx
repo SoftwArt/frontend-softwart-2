@@ -12,7 +12,7 @@ import type { LegalDocTipo } from '@/src/shared/types/legal'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
 import { isTelefonoValid, onlyDigits, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
 import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
-import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
+import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR, NOMBRE_MAX_LENGTH } from '@/src/shared/lib/validateNombre'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { ArrowLeft, Eye, EyeOff, LogIn } from 'lucide-react'
 
@@ -194,6 +194,7 @@ export function RegisterPage() {
                   id="nombre" type="text"
                   value={nombre} onChange={e => setNombre(stripDigits(e.target.value))}
                   placeholder="Su nombre como aparece en el documento" required
+                  maxLength={NOMBRE_MAX_LENGTH}
                   className={fieldCls}
                 />
               </FieldErrorTooltip>
