@@ -15,7 +15,7 @@ import { FilterBar } from '@/src/shared/components/FilterBar'
 import { withToast } from '@/src/shared/lib/withToast'
 import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate, formatTime } from '@/src/shared/lib/formatDate'
-import { bogotaTodayStr } from '@/src/shared/lib/bogotaTime'
+import { bogotaTodayStr, bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
 import { isWithinBusinessHours } from '@/src/shared/lib/businessHours'
 import { Plus, Pencil, Eye, ShoppingCart, PlusCircle, Trash, Trash2 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
@@ -287,7 +287,7 @@ export function AppointmentsPage() {
             <p className="text-muted-foreground">Gestiona las citas programadas</p>
           </div>
           <div className="flex items-center gap-2">  
-            <SearchInput value={q} onChange={setQ} placeholder="Buscar por fecha, hora o #cita..." className="w-64" />
+            <SearchInput value={q} onChange={setQ} placeholder="Buscar por fecha, hora o #cita..." className="w-96" />
           <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Plus className="mr-2 h-4 w-4" />Registrar Cita
           </Button>
@@ -493,6 +493,7 @@ export function AppointmentsPage() {
                     id="cita-fecha"
                     value={fecha}
                     min={bogotaTodayStr()}
+                    max={bogotaMaxFuturoStr()}
                     onChange={(v) => { setFecha(v); if (errors.fecha) setErrors({...errors, fecha: ''}) }}
                     error={errors.fecha}
                   />

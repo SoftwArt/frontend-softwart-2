@@ -16,6 +16,7 @@ import { FilterBar } from '@/src/shared/components/FilterBar'
 import { withToast } from '@/src/shared/lib/withToast'
 import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate } from '@/src/shared/lib/formatDate'
+import { bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
 import { Plus, Pencil, Eye, CreditCard, CheckCircle2, CircleDashed, Trash2 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
@@ -194,7 +195,7 @@ export function SalesPage() {
           <p className="text-muted-foreground">Gestiona las ventas registradas</p>
         </div>
         <div className="flex items-center gap-2">
-          <SearchInput value={q} onChange={setQ} placeholder="Buscar cliente, cita, fecha..." className="w-64" />
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar cliente, cita, fecha..." className="w-96" />
           <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Venta
           </Button>
@@ -376,7 +377,7 @@ export function SalesPage() {
             </div>
             <div>
               <label className={labelCls} htmlFor="vta-cita">Cita (opcional)</label>
-              <Combobox id="vta-cita" options={citasFormOpts} value={idCita}
+              <Combobox id="vta-cita" options={citasFormOpts} value={idCita} clearable
                 onValueChange={v => {
                   setIdCita(v)
                   const citaFecha = rawCitas.find(c => String(c.id_cita) === v)?.fecha
@@ -392,6 +393,7 @@ export function SalesPage() {
                   <DatePicker
                     id="vta-fecha"
                     value={fecha}
+                    max={bogotaMaxFuturoStr()}
                     onChange={v => { setFecha(v); if (errors.fecha) setErrors(p => ({...p, fecha:''})) }}
                     error={errors.fecha}
                   />

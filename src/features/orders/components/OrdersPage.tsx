@@ -14,6 +14,7 @@ import { FilterBar } from '@/src/shared/components/FilterBar'
 import { withToast } from '@/src/shared/lib/withToast'
 import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { formatDate } from '@/src/shared/lib/formatDate'
+import { bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
 import { Plus, Pencil, Eye, Trash2 } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
 import { Badge } from '@/src/shared/components/ui/badge'
@@ -290,7 +291,7 @@ export function OrdersPage() {
           <p className="text-muted-foreground">Gestiona los servicios registrados</p>
         </div>
         <div className="flex items-center gap-2">
-          <SearchInput value={q} onChange={setQ} placeholder="Buscar venta, tipo de servicio, marco, fecha..." className="w-72" />
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar venta, tipo de servicio, marco, fecha..." className="w-96" />
           <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Servicio
           </Button>
@@ -477,10 +478,13 @@ export function OrdersPage() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
-              <label className={labelCls} htmlFor="ped-venta">Venta <span className="text-destructive">*</span></label>
+              <label className={labelCls} htmlFor="ped-venta">
+                Venta <span className="text-destructive">*</span>
+                {!!editingId && <span className="text-muted-foreground font-normal normal-case tracking-normal"> (no editable)</span>}
+              </label>
               <FieldErrorTooltip error={errors.idVenta}>
                 <div>
-                  <Combobox id="ped-venta" options={ventasOpts} value={idVenta} onValueChange={handleVentaChange} onSearchChange={searchVentas} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
+                  <Combobox id="ped-venta" options={ventasOpts} value={idVenta} onValueChange={handleVentaChange} onSearchChange={searchVentas} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." disabled={!!editingId} />
                 </div>
               </FieldErrorTooltip>
             </div>
@@ -504,6 +508,7 @@ export function OrdersPage() {
                   <DatePicker
                     id="ped-fecha"
                     value={fecha}
+                    max={bogotaMaxFuturoStr()}
                     onChange={(v) => { setFecha(v); if (errors.fecha) setErrors({...errors, fecha: ''}) }}
                     error={errors.fecha}
                   />

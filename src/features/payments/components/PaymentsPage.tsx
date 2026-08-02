@@ -27,6 +27,7 @@ import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
 import { FilterBar }   from '@/src/shared/components/FilterBar'
 import { formatDate } from '@/src/shared/lib/formatDate'
+import { bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
 import { DatePicker } from '@/src/shared/components/DatePicker'
 
 
@@ -138,7 +139,7 @@ export function PaymentsPage() {
           <p className="text-muted-foreground">Gestiona los pagos registrados</p>
         </div>
         <div className="flex items-center gap-2">
-          <SearchInput value={q} onChange={setQ} placeholder="Buscar venta, monto, fecha..." className="w-64" />
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar venta, monto, fecha..." className="w-96" />
           <Button onClick={() => openCreate()} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Pago
           </Button>
@@ -325,6 +326,7 @@ export function PaymentsPage() {
                   <DatePicker
                     id="pago-fecha"
                     value={fecha}
+                    max={bogotaMaxFuturoStr()}
                     onChange={v => { setFecha(v); if (errors.fecha) setErrors(p => ({...p, fecha:''})) }}
                     error={errors.fecha}
                   />

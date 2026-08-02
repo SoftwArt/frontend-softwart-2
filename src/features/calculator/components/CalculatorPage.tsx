@@ -97,7 +97,7 @@ export function CalculatorPage() {
           <p className="text-muted-foreground">Gestiona marcos y calcula precios</p>
         </div>
         <div className="flex items-center gap-2">
-          <SearchInput value={q} onChange={setQ} placeholder="Buscar por código..." className="w-56" />
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar por código..." className="w-64" />
           <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Marco
           </Button>

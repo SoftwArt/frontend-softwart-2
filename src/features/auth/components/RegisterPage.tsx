@@ -10,7 +10,7 @@ import { LegalDocumentModal } from '@/src/shared/components/LegalDocumentModal'
 import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import type { LegalDocTipo } from '@/src/shared/types/legal'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
-import { isTelefonoValid, onlyDigits, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
+import { isTelefonoValid, onlyDigits, TELEFONO_ERROR, TELEFONO_MAX_LENGTH } from '@/src/shared/lib/validateTelefono'
 import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
 import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR, NOMBRE_MAX_ERROR, NOMBRE_MAX_LENGTH } from '@/src/shared/lib/validateNombre'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
@@ -231,6 +231,7 @@ export function RegisterPage() {
                     id="telefono" type="tel"
                     value={telefono} onChange={e => setTelefono(onlyDigits(e.target.value))}
                     placeholder="300 000 0000" required
+                    maxLength={TELEFONO_MAX_LENGTH}
                     className={fieldCls}
                   />
                 </FieldErrorTooltip>

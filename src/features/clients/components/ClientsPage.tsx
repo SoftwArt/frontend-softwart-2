@@ -16,7 +16,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components
 import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { EmptyState } from '@/src/shared/components/EmptyState'
 import { withToast } from '@/src/shared/lib/withToast'
-import { isTelefonoValid, onlyDigits, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
+import { isTelefonoValid, onlyDigits, TELEFONO_ERROR, TELEFONO_MAX_LENGTH } from '@/src/shared/lib/validateTelefono'
 import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR, NOMBRE_MAX_ERROR, NOMBRE_MAX_LENGTH } from '@/src/shared/lib/validateNombre'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
@@ -53,6 +53,7 @@ export function ClientsPage() {
   // con longitud propia, CE/PP alfanumérico) — no espera al submit.
   const documentoFormatoError = documento.length > 0 ? validarDocumentoPorTipo(tipoDocumento, documento) : null
   const correoFormatoError = correo.length > 0 && !isEmailValid(correo) ? EMAIL_ERROR : null
+  const telefonoFormatoError = telefono.length > 0 && !isTelefonoValid(telefono) ? TELEFONO_ERROR : null
 
   const resetForm = () => {
     setTipoDocumento(''); setDocumento(''); setNombre('')
@@ -78,7 +79,7 @@ export function ClientsPage() {
     if (!correo.trim())    newErrors.correo        = 'Campo requerido'
     else if (correoFormatoError) newErrors.correo  = correoFormatoError
     if (!telefono.trim())           newErrors.telefono = 'Campo requerido'
-    else if (!isTelefonoValid(telefono)) newErrors.telefono = TELEFONO_ERROR
+    else if (telefonoFormatoError) newErrors.telefono = telefonoFormatoError
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
     setIsSubmitting(true)
     try {
@@ -105,7 +106,7 @@ export function ClientsPage() {
           <SearchInput
             value={q} onChange={setQ}
             placeholder="Buscar nombre, documento, correo..."
-            className="w-72"
+            className="w-96"
           />
           <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Cliente
@@ -288,8 +289,9 @@ export function ClientsPage() {
             )}
             <div>
               <label className={labelCls} htmlFor="cli-telefono">Teléfono <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.telefono}>
+              <FieldErrorTooltip error={errors.telefono || telefonoFormatoError}>
                 <input id="cli-telefono" type="tel" value={telefono} placeholder="Ej: 3001234567"
+                  maxLength={TELEFONO_MAX_LENGTH}
                   onChange={e => { setTelefono(onlyDigits(e.target.value)); if (errors.telefono) setErrors({...errors, telefono: ''}) }}
                   className={inputCls} />
               </FieldErrorTooltip>

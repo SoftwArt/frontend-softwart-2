@@ -11,7 +11,7 @@ import {
   modalBackdropVariants, modalPanelVariants,
   canCancelCita,
 } from '../utils'
-import { bogotaTomorrowStr } from '@/src/shared/lib/bogotaTime'
+import { bogotaTomorrowStr, bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
 import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
 import { apiRequest } from '@/src/shared/lib/apiClient'
 import { withToast } from '@/src/shared/lib/withToast'
@@ -825,7 +825,7 @@ export function MyAccountPage() {
                   <label className={labelCls} htmlFor="cita-fecha-mc">Fecha <span className="text-destructive">*</span></label>
                   <FieldErrorTooltip error={citaErrors.fecha}>
                     <div>
-                      <DatePicker id="cita-fecha-mc" value={citaFecha} min={bogotaTomorrowStr()} error={citaErrors.fecha} onChange={onCitaFechaChange} />
+                      <DatePicker id="cita-fecha-mc" value={citaFecha} min={bogotaTomorrowStr()} max={bogotaMaxFuturoStr()} error={citaErrors.fecha} onChange={onCitaFechaChange} />
                     </div>
                   </FieldErrorTooltip>
                 </div>

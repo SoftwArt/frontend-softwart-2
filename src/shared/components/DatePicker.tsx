@@ -10,6 +10,7 @@ interface DatePickerProps {
   value: string                     // YYYY-MM-DD
   onChange: (value: string) => void
   min?: string                      // YYYY-MM-DD — días anteriores deshabilitados
+  max?: string                      // YYYY-MM-DD — días posteriores deshabilitados
   placeholder?: string
   error?: string
   /** Sobreescribe el estilo del trigger (por defecto: underline igual al resto de inputs) */
@@ -29,6 +30,7 @@ export function DatePicker({
   value,
   onChange,
   min,
+  max,
   placeholder = 'Selecciona una fecha',
   error,
   triggerClassName,
@@ -38,6 +40,7 @@ export function DatePicker({
 
   const selected = parseDate(value)
   const minDate  = parseDate(min)
+  const maxDate  = parseDate(max)
 
   const displayText = selected
     ? format(selected, "d 'de' MMMM, yyyy", { locale: es })
@@ -64,7 +67,14 @@ export function DatePicker({
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="start" className="p-0 border-border shadow-xl rounded-xl overflow-hidden w-auto">
+      {/* side/avoidCollisions fijos: el calendario siempre se abre debajo del
+          trigger. Antes quedaba al criterio de colisión de Radix, que en
+          formularios dentro de un Dialog con scroll a veces decidía abrirlo
+          arriba aunque hubiera espacio de sobra abajo. */}
+      <PopoverContent
+        align="start" side="bottom" sideOffset={4} avoidCollisions={false}
+        className="p-0 border-border shadow-xl rounded-xl overflow-hidden w-auto"
+      >
         <DayPicker
           mode="single"
           locale={es}
@@ -76,7 +86,10 @@ export function DatePicker({
             setOpen(false)
           }}
           defaultMonth={selected ?? minDate ?? new Date()}
-          disabled={minDate ? { before: minDate } : undefined}
+          disabled={
+            [minDate && { before: minDate }, maxDate && { after: maxDate }]
+              .filter((m): m is { before: Date } | { after: Date } => Boolean(m))
+          }
           classNames={{
             root:            'p-4 bg-card select-none',
             months:          '',
@@ -84,13 +97,19 @@ export function DatePicker({
             month:           'w-[272px]',
             // px-10 reserva espacio para las flechas; los botones usan absolute
             month_caption:   'relative flex items-center justify-center h-9 px-10 mb-2',
-            caption_label:   'text-sm font-semibold text-secondary capitalize',
+            caption_label:   'text-sm font-semibold text-secondary capitalize truncate max-w-full',
             // nav vacío: los botones se posicionan absolute respecto a month_caption
             nav:             '',
             button_previous: 'absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-lg flex items-center justify-center text-secondary hover:bg-muted transition-colors disabled:opacity-30 disabled:pointer-events-none',
             button_next:     'absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-lg flex items-center justify-center text-secondary hover:bg-muted transition-colors disabled:opacity-30 disabled:pointer-events-none',
-            // month_grid es <table> — NO usar flex en sus hijos directos
-            month_grid:      'w-full',
+            // month_grid es <table> — NO usar flex en sus hijos directos. Alto
+            // mínimo fijo (6 filas × h-8 + gaps) para que el popover nunca
+            // cambie de tamaño entre meses de 4 y de 6 semanas, aunque
+            // fixedWeeks ya debería forzar 6 filas siempre. Padding horizontal
+            // igual al de month_caption (px-10 ahí, aquí repartido como
+            // márgenes de la tabla) para que ninguna columna de días quede
+            // bajo el área reservada de las flechas.
+            month_grid:      'w-full min-h-[248px]',
             weekdays:        '',
             weekday:         'text-center text-[11px] font-medium text-muted-foreground/60 pb-2 w-9',
             week:            '',

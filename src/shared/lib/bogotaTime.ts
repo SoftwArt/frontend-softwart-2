@@ -33,6 +33,17 @@ export function bogotaTomorrowStr(): string {
   return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 }
 
+// 'YYYY-MM-DD' de hoy + N meses (default 3) — límite superior para los
+// selectores de fecha (citas, ventas, pagos, servicios, abonos): sin esto no
+// había ningún tope a futuro, se podía agendar/registrar para dentro de
+// décadas. `Date.setMonth` maneja el rollover de año solo.
+export function bogotaMaxFuturoStr(mesesAdelante = 3): string {
+  const { y, mo, d } = bogotaParts(new Date())
+  const limite = new Date(y, mo - 1, d)
+  limite.setMonth(limite.getMonth() + mesesAdelante)
+  return `${limite.getFullYear()}-${String(limite.getMonth() + 1).padStart(2, '0')}-${String(limite.getDate()).padStart(2, '0')}`
+}
+
 // Epoch ms real de "ahora" — para comparaciones de precisión horaria.
 export function bogotaNowMs(): number {
   const { y, mo, d, h, mi, s } = bogotaParts(new Date())

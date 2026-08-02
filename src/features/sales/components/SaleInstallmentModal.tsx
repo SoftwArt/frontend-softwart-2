@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CheckCircle2, CreditCard, Settings2, ChevronRight } from 'lucide-react'
 import { formatDate } from '@/src/shared/lib/formatDate'
 import { DatePicker } from '@/src/shared/components/DatePicker'
+import { bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
 import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 
 // Mismo margen que el default de `tolerancia` en registerInstallment
@@ -236,6 +237,7 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
                         <DatePicker
                           id="abono-fecha"
                           value={fechaPago}
+                          max={bogotaMaxFuturoStr()}
                           onChange={v => setFechaPago(v)}
                         />
                       </div>

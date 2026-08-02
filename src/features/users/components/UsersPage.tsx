@@ -24,6 +24,7 @@ import { Pagination } from '@/src/shared/components/Pagination'
 import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
 import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { validatePassword } from '@/src/shared/lib/passwordValidation'
+import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
 
 
 export function UsersPage() {
@@ -72,10 +73,14 @@ export function UsersPage() {
 
   const handleDelete = (id: number) => withToast(onDelete(id), 'Usuario eliminado')
 
+  // Reactivo: igual que Register/Clientes, no espera al submit.
+  const correoFormatoError = correo.length > 0 && !isEmailValid(correo) ? EMAIL_ERROR : null
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
     if (!correo.trim())              newErrors.correo = 'Campo requerido'
+    else if (correoFormatoError)     newErrors.correo = correoFormatoError
     if (!editingId) {
       if (!clave.trim())             newErrors.clave  = 'Campo requerido'
       else {
@@ -254,7 +259,7 @@ export function UsersPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
             <div>
               <label className={labelCls} htmlFor="usr-correo">Correo <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.correo}>
+              <FieldErrorTooltip error={errors.correo || correoFormatoError}>
                 <input id="usr-correo" type="email" value={correo} placeholder='Ingrese el correo...' disabled={editingIsAdminBase} onChange={(e) => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo:''}) }} className={inputCls} />
               </FieldErrorTooltip>
               {editingIsAdminBase && <p className="text-xs text-muted-foreground mt-1">El correo del administrador base no puede cambiarse.</p>}

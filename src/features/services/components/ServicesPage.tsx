@@ -91,7 +91,7 @@ export function ServicesPage() {
           <p className="text-muted-foreground">Gestiona los tipos de servicio disponibles</p>
         </div>
         <div className="flex items-center gap-2">
-          <SearchInput value={q} onChange={setQ} placeholder="Buscar nombre o descripción..." className="w-64" />
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar nombre o descripción..." className="w-96" />
           <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Tipo
           </Button>
