@@ -32,6 +32,8 @@ const DOCUMENT_TYPES = [
 // en el flujo, así que ya no empujan el layout — el ajuste de tamaño que
 // sigue es solo para entrar en 1366×768 sin scroll, deliberadamente leve
 // (la primera pasada fue demasiado agresiva y acható el formulario).
+const REQUIRED_ERROR = 'Este campo es obligatorio.'
+
 const fieldCls =
   'w-full bg-[#f5f3ef] border-0 border-b border-border rounded-none rounded-t-lg ' +
   'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#002926] ' +
@@ -165,20 +167,22 @@ export function RegisterPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="reg-tipo-doc">Tipo de documento <span className="text-destructive">*</span></label>
-                <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
-                  <SelectTrigger id="reg-tipo-doc" className={fieldCls}>
-                    <SelectValue placeholder="Seleccione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DOCUMENT_TYPES.map(t => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FieldErrorTooltip error={submitted && !tipoDocumento ? REQUIRED_ERROR : null}>
+                  <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
+                    <SelectTrigger id="reg-tipo-doc" className={fieldCls}>
+                      <SelectValue placeholder="Seleccione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DOCUMENT_TYPES.map(t => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldErrorTooltip>
               </div>
               <div>
                 <label className={labelCls} htmlFor="documento">Número de documento <span className="text-destructive">*</span></label>
-                <FieldErrorTooltip error={documento.length > 0 ? documentoError : null}>
+                <FieldErrorTooltip error={documento.length > 0 ? documentoError : (submitted ? REQUIRED_ERROR : null)}>
                   <Input
                     id="documento" type="text"
                     value={documento} onChange={e => { setDocumento(e.target.value); clearError() }}
@@ -192,7 +196,11 @@ export function RegisterPage() {
             {/* Nombre */}
             <div>
               <label className={labelCls} htmlFor="nombre">Nombre completo <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={showNombreError ? NOMBRE_MIN_ERROR : (showNombreMaxAviso ? NOMBRE_MAX_ERROR : null)}>
+              <FieldErrorTooltip error={
+                showNombreError ? NOMBRE_MIN_ERROR :
+                showNombreMaxAviso ? NOMBRE_MAX_ERROR :
+                (submitted && !nombre ? REQUIRED_ERROR : null)
+              }>
                 <Input
                   id="nombre" type="text"
                   value={nombre} onChange={e => setNombre(stripDigits(e.target.value))}
@@ -207,7 +215,7 @@ export function RegisterPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="correo">Correo electrónico <span className="text-destructive">*</span></label>
-                <FieldErrorTooltip error={showCorreoError ? EMAIL_ERROR : null}>
+                <FieldErrorTooltip error={showCorreoError ? EMAIL_ERROR : (submitted && !correo ? REQUIRED_ERROR : null)}>
                   <Input
                     id="correo" type="email"
                     value={correo} onChange={e => { setCorreo(e.target.value); clearError() }}
@@ -218,7 +226,7 @@ export function RegisterPage() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="telefono">Teléfono <span className="text-destructive">*</span></label>
-                <FieldErrorTooltip error={showTelefonoError ? TELEFONO_ERROR : null}>
+                <FieldErrorTooltip error={showTelefonoError ? TELEFONO_ERROR : (submitted && !telefono ? REQUIRED_ERROR : null)}>
                   <Input
                     id="telefono" type="tel"
                     value={telefono} onChange={e => setTelefono(onlyDigits(e.target.value))}
@@ -233,28 +241,30 @@ export function RegisterPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls} htmlFor="clave">Contraseña <span className="text-destructive">*</span></label>
-                <div className="relative">
-                  <Input
-                    id="clave"
-                    type={showClave ? 'text' : 'password'}
-                    value={clave} onChange={e => setClave(e.target.value)}
-                    placeholder="••••••••" required
-                    className={`${fieldCls} pr-10`}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                    onClick={() => setShowClave(v => !v)}
-                    title={showClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    aria-label={showClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  >
-                    {showClave ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
+                <FieldErrorTooltip error={submitted && !clave ? REQUIRED_ERROR : (submitted && clave && !passwordValid ? 'La contraseña no cumple los requisitos.' : null)}>
+                  <div className="relative">
+                    <Input
+                      id="clave"
+                      type={showClave ? 'text' : 'password'}
+                      value={clave} onChange={e => setClave(e.target.value)}
+                      placeholder="••••••••" required
+                      className={`${fieldCls} pr-10`}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                      onClick={() => setShowClave(v => !v)}
+                      title={showClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      aria-label={showClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    >
+                      {showClave ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </FieldErrorTooltip>
               </div>
               <div>
                 <label className={labelCls} htmlFor="confirmarClave">Confirmar contraseña <span className="text-destructive">*</span></label>
-                <FieldErrorTooltip error={showMismatchError ? 'Las contraseñas no coinciden' : null}>
+                <FieldErrorTooltip error={showMismatchError ? 'Las contraseñas no coinciden' : (submitted && !confirmarClave ? REQUIRED_ERROR : null)}>
                   <div className="relative">
                     <Input
                       id="confirmarClave"
