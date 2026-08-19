@@ -1,0 +1,270 @@
+Listado de rutas de carpetas para el volumen OS
+El número de serie del volumen es 000000C4 E23F:D47E
+C:.
+|   App.tsx
+|   estructura_proyecto.txt
+|   index.css
+|   main.tsx
+|   vite-env.d.ts
+|   
++---features
+|   +---account
+|   |   |   utils.ts
+|   |   |   
+|   |   +---components
+|   |   |       MyAccountPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useAccount.ts
+|   |   |       
+|   |   \---types
+|   |           index.ts
+|   |           
+|   +---appointments
+|   |   +---components
+|   |   |       AppointmentsPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useAppointments.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---auth
+|   |   +---components
+|   |   |       AuthHeader.tsx
+|   |   |       AuthLayout.tsx
+|   |   |       LoginPage.tsx
+|   |   |       NotFoundPage.tsx
+|   |   |       RecoveryPage.tsx
+|   |   |       RegisterPage.tsx
+|   |   |       ResetPasswordPage.tsx
+|   |   |       
+|   |   +---context
+|   |   |       authContext.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useLogin.ts
+|   |   |       useRecovery.ts
+|   |   |       useRegister.ts
+|   |   |       useResetPassword.ts
+|   |   |       useSessionKeepAlive.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---calculator
+|   |   +---components
+|   |   |       CalculatorPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useCalculator.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---clients
+|   |   +---components
+|   |   |       ClientsPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useClients.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---dashboard
+|   |   +---components
+|   |   |       DashboardPage.tsx
+|   |   |       LandingPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useDashboard.ts
+|   |   |       useLanding.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---legal
+|   |   \---components
+|   |           LegalPageHeader.tsx
+|   |           PoliticaPrivacidadPage.tsx
+|   |           TerminosServicioPage.tsx
+|   |           
+|   +---orders
+|   |   +---components
+|   |   |       OrdersPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useEstadosServicio.ts
+|   |   |       useOrders.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---payments
+|   |   +---components
+|   |   |       PaymentsPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       usePayments.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---permissions
+|   |   +---components
+|   |   |       PermissionsPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       usePermissions.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---roles
+|   |   +---components
+|   |   |       RolesPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useRoles.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---sales
+|   |   +---components
+|   |   |       SaleInstallmentModal.tsx
+|   |   |       SalesPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useSales.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   +---services
+|   |   +---components
+|   |   |       ServicesPage.tsx
+|   |   |       
+|   |   +---hooks
+|   |   |       useServices.ts
+|   |   |       
+|   |   +---types
+|   |   |       index.ts
+|   |   |       
+|   |   \---utils
+|   |           index.ts
+|   |           
+|   \---users
+|       +---components
+|       |       UsersPage.tsx
+|       |       
+|       +---hooks
+|       |       useUsers.ts
+|       |       
+|       +---types
+|       |       index.ts
+|       |       
+|       \---utils
+|               index.ts
+|               
+\---shared
+    +---components
+    |   |   AdminSidebar.tsx
+    |   |   BackendWakeupBanner.tsx
+    |   |   CascadePreview.tsx
+    |   |   Combobox.tsx
+    |   |   DatePicker.tsx
+    |   |   EmptyState.tsx
+    |   |   FieldErrorTooltip.tsx
+    |   |   FilterBar.tsx
+    |   |   LegalDocumentContent.tsx
+    |   |   LegalDocumentModal.tsx
+    |   |   Pagination.tsx
+    |   |   PasswordChecklist.tsx
+    |   |   SearchInput.tsx
+    |   |   StatusSelect.tsx
+    |   |   TimePicker.tsx
+    |   |   ToggleSwitch.tsx
+    |   |   ViewDialog.tsx
+    |   |   
+    |   \---ui
+    |           alert-dialog.tsx
+    |           alert.tsx
+    |           badge.tsx
+    |           button.tsx
+    |           checkbox.tsx
+    |           command.tsx
+    |           dialog.tsx
+    |           dropdown-menu.tsx
+    |           input.tsx
+    |           label.tsx
+    |           popover.tsx
+    |           select.tsx
+    |           skeleton.tsx
+    |           switch.tsx
+    |           table.tsx
+    |           textarea.tsx
+    |           tooltip.tsx
+    |           
+    +---hooks
+    |       useBackendWakeup.ts
+    |       useDebouncedValue.ts
+    |       useLegalDocument.ts
+    |       useMyPermissions.ts
+    |       useOptions.ts
+    |       usePagination.ts
+    |       usePolling.ts
+    |       
+    +---lib
+    |       apiClient.ts
+    |       bogotaTime.ts
+    |       businessHours.ts
+    |       checkAuth.ts
+    |       formatCurrency.ts
+    |       formatDate.ts
+    |       legalFormatting.tsx
+    |       passwordValidation.ts
+    |       tokenRefresh.ts
+    |       undoableAction.ts
+    |       utils.ts
+    |       validateDocumento.ts
+    |       validateEmail.ts
+    |       validateNombre.ts
+    |       validateTelefono.ts
+    |       withToast.ts
+    |       
+    \---types
+            legal.ts
+            

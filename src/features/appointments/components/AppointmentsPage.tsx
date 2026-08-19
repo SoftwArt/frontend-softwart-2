@@ -123,7 +123,13 @@ export function AppointmentsPage() {
 
   // ── Form helpers ───────────────────────────────────────────────────────────
   const resetForm  = () => { setIdCliente(''); setFecha(''); setHora(''); setIdEstado(''); setErrors({}); setEditingId(null) }
-  const openCreate = () => { resetForm(); setIdEstado('1'); setFecha(todayStr()); setIsFormOpen(true) }
+  const openCreate = () => {
+    resetForm()
+    const confirmada = estadosCita.find(e => e.nombre.toLowerCase() === 'confirmada')
+    setIdEstado(String(confirmada?.id_estado_cita ?? 5))
+    setFecha(todayStr())
+    setIsFormOpen(true)
+  }
   const openEdit   = (c: Cita) => { setEditingId(c.id_cita); setIdCliente(String(c.id_cliente)); setFecha(c.fecha); setHora(c.hora); setIdEstado(String(c.id_estado_cita)); setErrors({}); setIsFormOpen(true) }
   const openView   = (c: Cita) => { setViewingItem(c); setIsViewOpen(true) }
 
