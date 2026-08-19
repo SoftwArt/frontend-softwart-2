@@ -8,5 +8,8 @@ export type Cliente = {
   estado:        boolean
 }
 
-export type CreateClienteDto = Omit<Cliente, 'id_cliente'>
+export type CreateClienteDto = Omit<Cliente, 'id_cliente'> & {
+  acceptToS: boolean
+  acceptPrivacy: boolean
+}
 export type UpdateClienteDto = Partial<Omit<CreateClienteDto, 'estado'>>

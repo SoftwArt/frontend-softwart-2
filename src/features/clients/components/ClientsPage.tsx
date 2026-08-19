@@ -5,6 +5,7 @@ import type { Cliente } from '../types'
 import { DOCUMENT_TYPES, inputCls, labelCls, selectCls, filterClientes } from '../utils'
 import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
 import { Button }   from '@/src/shared/components/ui/button'
+import { Checkbox } from '@/src/shared/components/ui/checkbox'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import { ToggleSwitch, ACTIVO_OPTIONS } from '@/src/shared/components/ToggleSwitch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
@@ -20,6 +21,8 @@ import { isTelefonoValid, onlyDigits, TELEFONO_ERROR, TELEFONO_MAX_LENGTH } from
 import { isNombreLongitudValida, stripDigits, NOMBRE_MIN_ERROR, NOMBRE_MAX_ERROR, NOMBRE_MAX_LENGTH } from '@/src/shared/lib/validateNombre'
 import { validarDocumentoPorTipo } from '@/src/shared/lib/validateDocumento'
 import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
+import { LegalDocumentModal } from '@/src/shared/components/LegalDocumentModal'
+import type { LegalDocTipo } from '@/src/shared/types/legal'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { FilterBar }     from '@/src/shared/components/FilterBar'
 import { Pagination }    from '@/src/shared/components/Pagination'
@@ -47,6 +50,9 @@ export function ClientsPage() {
   const [nombre,        setNombre]        = useState('')
   const [correo,        setCorreo]        = useState('')
   const [telefono,      setTelefono]      = useState('')
+  const [acceptToS,      setAcceptToS]      = useState(false)
+  const [acceptPrivacy,  setAcceptPrivacy]  = useState(false)
+  const [legalModal,     setLegalModal]    = useState<LegalDocTipo | null>(null)
   const [errors,        setErrors]        = useState<Record<string, string>>({})
 
   // Reactivo: cambia según el tipo de documento seleccionado (CC/TI numérico
@@ -58,6 +64,7 @@ export function ClientsPage() {
   const resetForm = () => {
     setTipoDocumento(''); setDocumento(''); setNombre('')
     setCorreo(''); setTelefono(''); setErrors({}); setEditingId(null)
+    setAcceptToS(false); setAcceptPrivacy(false); setLegalModal(null)
   }
   const openCreate = () => { resetForm(); setIsFormOpen(true) }
   const openEdit   = (c: Cliente) => {
@@ -80,13 +87,15 @@ export function ClientsPage() {
     else if (correoFormatoError) newErrors.correo  = correoFormatoError
     if (!telefono.trim())           newErrors.telefono = 'Campo requerido'
     else if (telefonoFormatoError) newErrors.telefono = telefonoFormatoError
+    if (!editingId && !acceptToS) newErrors.acceptToS = 'Debes aceptar los Términos de Servicio'
+    if (!editingId && !acceptPrivacy) newErrors.acceptPrivacy = 'Debes aceptar la Política de Privacidad'
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
     setIsSubmitting(true)
     try {
       await withToast(
-        editingId
-          ? onEdit(editingId, { tipoDocumento, documento, nombre, telefono })
-          : onCreate({ tipoDocumento, documento, nombre, correo, telefono, estado: true }),
+          editingId
+          ? onEdit(editingId, { tipoDocumento, documento, nombre, correo, telefono })
+          : onCreate({ tipoDocumento, documento, nombre, correo, telefono, estado: true, acceptToS, acceptPrivacy }),
         editingId ? 'Cliente actualizado correctamente' : 'Cliente registrado correctamente'
       )
       setIsFormOpen(false); resetForm()
@@ -243,7 +252,7 @@ export function ClientsPage() {
               {editingId ? 'Editar Cliente' : 'Registrar Cliente'}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {editingId ? 'Puedes editar todos los campos excepto el correo.' : 'Completa los datos del nuevo cliente.'}
+              {editingId ? 'Puedes editar los datos y el correo sincronizado con su usuario.' : 'Completa los datos del nuevo cliente.'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
@@ -277,16 +286,15 @@ export function ClientsPage() {
                   className={inputCls} />
               </FieldErrorTooltip>
             </div>
-            {!editingId && (
-              <div>
-                <label className={labelCls} htmlFor="cli-correo">Correo electrónico <span className="text-destructive">*</span></label>
-                <FieldErrorTooltip error={errors.correo || correoFormatoError}>
-                  <input id="cli-correo" type="email" value={correo} placeholder="correo@ejemplo.com"
-                    onChange={e => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo: ''}) }}
-                    className={inputCls} />
-                </FieldErrorTooltip>
-              </div>
-            )}
+            <div>
+              <label className={labelCls} htmlFor="cli-correo">Correo electrónico <span className="text-destructive">*</span></label>
+              <FieldErrorTooltip error={errors.correo || correoFormatoError}>
+                <input id="cli-correo" type="email" value={correo} placeholder="correo@ejemplo.com"
+                  onChange={e => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo: ''}) }}
+                  className={inputCls} />
+              </FieldErrorTooltip>
+              {editingId && <p className="text-xs text-muted-foreground mt-1">Se actualizará también en el usuario asociado.</p>}
+            </div>
             <div>
               <label className={labelCls} htmlFor="cli-telefono">Teléfono <span className="text-destructive">*</span></label>
               <FieldErrorTooltip error={errors.telefono || telefonoFormatoError}>
@@ -296,6 +304,28 @@ export function ClientsPage() {
                   className={inputCls} />
               </FieldErrorTooltip>
             </div>
+            {!editingId && (
+              <div className="space-y-2 border-t border-border pt-3">
+                <FieldErrorTooltip error={errors.acceptToS} side="right">
+                  <div className="flex items-start gap-3">
+                    <Checkbox id="cli-accept-tos" checked={acceptToS} onCheckedChange={v => setAcceptToS(v === true)} className="mt-0.5" />
+                    <label htmlFor="cli-accept-tos" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                      El cliente acepta los{' '}
+                      <button type="button" className="text-foreground font-semibold underline underline-offset-2" onClick={() => setLegalModal('terminos-servicio')}>Términos de Servicio</button>.
+                    </label>
+                  </div>
+                </FieldErrorTooltip>
+                <FieldErrorTooltip error={errors.acceptPrivacy} side="right">
+                  <div className="flex items-start gap-3">
+                    <Checkbox id="cli-accept-privacy" checked={acceptPrivacy} onCheckedChange={v => setAcceptPrivacy(v === true)} className="mt-0.5" />
+                    <label htmlFor="cli-accept-privacy" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                      El cliente acepta la{' '}
+                      <button type="button" className="text-foreground font-semibold underline underline-offset-2" onClick={() => setLegalModal('politica-privacidad')}>Política de Privacidad</button>.
+                    </label>
+                  </div>
+                </FieldErrorTooltip>
+              </div>
+            )}
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button"
                 onClick={() => { setIsFormOpen(false); resetForm() }}
@@ -308,6 +338,15 @@ export function ClientsPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <LegalDocumentModal
+        open={legalModal !== null}
+        tipo={legalModal}
+        onOpenChange={open => { if (!open) setLegalModal(null) }}
+        onAccept={() => {
+          if (legalModal === 'terminos-servicio') setAcceptToS(true)
+          if (legalModal === 'politica-privacidad') setAcceptPrivacy(true)
+        }}
+      />
     </div>
   )
 }
