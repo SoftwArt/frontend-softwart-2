@@ -233,7 +233,6 @@ export function ClientsPage() {
           open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Cliente — ${viewingItem.nombre}`}
           fields={[
-            { label: 'ID',             value: viewingItem.id_cliente },
             { label: 'Estado',         value: <EstadoBadge estado={viewingItem.estado} /> },
             { label: 'Tipo documento', value: viewingItem.tipoDocumento },
             { label: 'Documento',      value: viewingItem.documento },

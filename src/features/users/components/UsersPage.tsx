@@ -243,7 +243,6 @@ export function UsersPage() {
         <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Usuario #${viewingItem.id_usuario}`}
           fields={[
-            { label: 'ID',     value: viewingItem.id_usuario },
             { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },
             { label: 'Correo', value: viewingItem.correo, fullWidth: true },
             { label: 'Rol',    value: <Badge variant="outline" className={getRolBadgeClass(rawRoles, viewingItem.id_rol)}>{getRolLabel(rawRoles, viewingItem.id_rol)}</Badge> },

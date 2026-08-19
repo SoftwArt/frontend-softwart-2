@@ -252,7 +252,6 @@ export function PaymentsPage() {
         <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Pago #${viewingItem.id_pago}`}
           fields={[
-            { label: 'ID',             value: viewingItem.id_pago },
             { label: 'Venta',          value: ventasOpts.find(o => o.value === String(viewingItem.id_venta))?.label ?? `#${viewingItem.id_venta}`, fullWidth: true },
             { label: 'Monto',          value: formatCurrency(viewingItem.monto) },
             { label: 'Fecha',          value: formatDate(viewingItem.fecha) },

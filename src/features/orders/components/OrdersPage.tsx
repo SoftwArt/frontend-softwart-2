@@ -439,7 +439,6 @@ export function OrdersPage() {
           open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Pedido #${viewingItem.id_detalle}`}
           fields={[
-            { label: 'ID',          value: viewingItem.id_detalle },
             { label: 'Estado',      value: <Badge variant="outline" className={estadoColor(viewingItem.id_estado)}>{estadoNombre(viewingItem.id_estado)}</Badge> },
             { label: 'Venta',       value: ventasOpts.find(o => o.value === String(viewingItem.id_venta))?.label ?? `#${viewingItem.id_venta}`, fullWidth: true },
             { label: 'Servicio',    value: serviciosOpts.find(o => o.value === String(viewingItem.id_servicio))?.label ?? `#${viewingItem.id_servicio}` },

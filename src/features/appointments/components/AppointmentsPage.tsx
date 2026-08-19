@@ -454,7 +454,6 @@ export function AppointmentsPage() {
           open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Cita #${viewingItem.id_cita}`}
           fields={[
-            { label: 'ID',      value: viewingItem.id_cita },
             { label: 'Estado',  value: <Badge variant="outline" className={badgeClassByName(getEstadoLabel(viewingItem.id_estado_cita))}>{getEstadoLabel(viewingItem.id_estado_cita)}</Badge> },
             { label: 'Cliente', value: clientesOpts.find(o => o.value === String(viewingItem.id_cliente))?.label ?? `#${viewingItem.id_cliente}`, fullWidth: true },
             { label: 'Tipo de documento', value: DOCUMENT_TYPES.find(t => t.value === cliente?.tipoDocumento)?.label ?? cliente?.tipoDocumento },

@@ -344,7 +344,6 @@ export function SalesPage() {
         <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Venta #${viewingItem.id_venta}`}
           fields={[
-            { label: 'ID',     value: viewingItem.id_venta },
             { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },
             { label: 'Cliente', value: clientesOpts.find(o => o.value === String(viewingItem.id_cliente))?.label ?? `#${viewingItem.id_cliente}`, fullWidth: true },
             { label: 'Tipo de documento', value: DOCUMENT_TYPES.find(t => t.value === cliente?.tipoDocumento)?.label ?? cliente?.tipoDocumento },

@@ -200,7 +200,6 @@ export function CalculatorPage() {
         <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
           title={`Marco — ${viewingItem.codigo}`}
           fields={[
-            { label: 'ID',              value: viewingItem.id_marco },
             { label: 'Estado',          value: <EstadoBadge estado={viewingItem.estado} /> },
             { label: 'Código',          value: viewingItem.codigo },
             { label: 'Colilla',         value: `${viewingItem.colilla} mm` },
