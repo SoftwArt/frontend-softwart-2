@@ -245,7 +245,7 @@ export function ClientsPage() {
       )}
 
       {/* Form */}
-      <Dialog open={isFormOpen} onOpenChange={(v) => { setIsFormOpen(v); if (!v) resetForm() }}>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="bg-card text-card-foreground border-border max-w-md">
           <DialogHeader>
             <DialogTitle className="font-serif text-xl text-secondary">
@@ -328,7 +328,7 @@ export function ClientsPage() {
             )}
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button"
-                onClick={() => { setIsFormOpen(false); resetForm() }}
+                onClick={() => setIsFormOpen(false)}
                 className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">Cancelar</button>
               <button type="submit" disabled={isSubmitting}
                 className="px-5 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50">
