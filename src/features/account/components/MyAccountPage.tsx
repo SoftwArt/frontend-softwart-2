@@ -1,96 +1,33 @@
 // src/features/account/components/MyAccountPage.tsx
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { useAccount } from '../hooks/useAccount'
-import {
-  inputCls, labelCls, parseFechaBloque,
-  estadoBadgeClasses, estadoServicioBadgeClasses,
-  filterCitasCuenta, filterServiciosCuenta,
-  modalBackdropVariants, modalPanelVariants,
-  canCancelCita,
-} from '../utils'
-import { bogotaTomorrowStr, bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
+import { estadoServicioBadgeClasses } from '../utils'
 import { getAuthToken, getAuthRol } from '@/src/features/auth/utils'
-import { apiRequest } from '@/src/shared/lib/apiClient'
-import { withToast } from '@/src/shared/lib/withToast'
-import { usePolling } from '@/src/shared/hooks/usePolling'
-import { stripDigits, NOMBRE_MAX_LENGTH, NOMBRE_MAX_ERROR } from '@/src/shared/lib/validateNombre'
-import { onlyDigits } from '@/src/shared/lib/validateTelefono'
-import type { HistorialEstado } from '../types'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
-import { formatDate }     from '@/src/shared/lib/formatDate'
-import { SearchInput }    from '@/src/shared/components/SearchInput'
-import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
-import { Pagination }     from '@/src/shared/components/Pagination'
-import { usePagination }  from '@/src/shared/hooks/usePagination'
-import { Skeleton }       from '@/src/shared/components/ui/skeleton'
+import { formatDate } from '@/src/shared/lib/formatDate'
+import { Skeleton } from '@/src/shared/components/ui/skeleton'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/src/shared/components/ui/dropdown-menu'
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from '@/src/shared/components/ui/alert-dialog'
-import {
-  CalendarDays, LogOut, User, Lock, AlertTriangle,
-  Plus, Clock, CalendarPlus, Wrench, X, ChevronDown,
+  CalendarDays, LogOut, User, Wrench, ChevronDown, Clock,
   ClipboardList, ArrowRight, MapPin, MessageCircle, Phone,
 } from 'lucide-react'
-import { TimePicker } from '@/src/shared/components/TimePicker'
-import { DatePicker }  from '@/src/shared/components/DatePicker'
-import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
+import { AppointmentsModal } from './AppointmentsModal'
+import { ServicesModal } from './ServicesModal'
+import { ProfileModal } from './ProfileModal'
+import { NewAppointmentModal } from './NewAppointmentModal'
 
 export function MyAccountPage() {
   const [searchParams] = useSearchParams()
 
-  // UI state
   const [showCitaForm,       setShowCitaForm]       = useState(false)
   const [showCitasModal,     setShowCitasModal]     = useState(false)
   const [showServiciosModal, setShowServiciosModal] = useState(false)
   const [showPerfilModal,    setShowPerfilModal]    = useState(false)
-  const [cancelingId,        setCancelingId]        = useState<number | null>(null)
-  const [qCitas,             setQCitas]             = useState('')
-  const [qServicios,         setQServicios]         = useState('')
-  const [expandedServicioId, setExpandedServicioId] = useState<number | null>(null)
-  const [historialById,      setHistorialById]      = useState<Record<number, HistorialEstado[]>>({})
-  const [historialLoadingId, setHistorialLoadingId]  = useState<number | null>(null)
-  const [cancelMotivo,       setCancelMotivo]        = useState('')
-
-  // silent=true (polling) no toca el spinner de carga ni pisa el estado si el
-  // contenido no cambió — mismo patrón de diffing que fetchMyAppointments/
-  // fetchMyServices en useAccount.
-  const fetchHistorial = useCallback(async (id_detalle: number, opts?: { silent?: boolean }) => {
-    if (!opts?.silent) setHistorialLoadingId(id_detalle)
-    try {
-      const res = await apiRequest<{ success: boolean; data: HistorialEstado[] }>(`/api/account/servicios/${id_detalle}/historial`)
-      const nuevo = res.data ?? []
-      setHistorialById(prev =>
-        JSON.stringify(prev[id_detalle]) === JSON.stringify(nuevo) ? prev : { ...prev, [id_detalle]: nuevo }
-      )
-    } catch {
-      if (!opts?.silent) setHistorialById(prev => ({ ...prev, [id_detalle]: [] }))
-    } finally {
-      if (!opts?.silent) setHistorialLoadingId(null)
-    }
-  }, [])
-
-  const toggleHistorial = (id_detalle: number) => {
-    if (expandedServicioId === id_detalle) { setExpandedServicioId(null); return }
-    setExpandedServicioId(id_detalle)
-    if (!historialById[id_detalle]) fetchHistorial(id_detalle)
-  }
-
-  // Refresco scoped: solo mientras el modal "Mis servicios" está abierto y hay
-  // un historial expandido — evita pollear algo que el usuario ni está viendo.
-  const pollHistorial = useCallback(() => {
-    if (expandedServicioId != null && showServiciosModal) fetchHistorial(expandedServicioId, { silent: true })
-  }, [expandedServicioId, showServiciosModal, fetchHistorial])
-
-  usePolling(pollHistorial, 15000)
 
   const {
     perfil, citas, servicios, isLoading, error,
@@ -104,12 +41,6 @@ export function MyAccountPage() {
     onCitaFechaChange, onCitaHoraChange, submitCita, resetCitaForm,
     onCancelAppointment, isDeleting, onDeleteAccount, handleLogout,
   } = useAccount()
-
-  const filteredCitas     = useMemo(() => filterCitasCuenta([...citas].sort((a, b) => b.fecha.localeCompare(a.fecha)), qCitas), [citas, qCitas])
-  const filteredServicios = useMemo(() => filterServiciosCuenta(servicios, qServicios), [servicios, qServicios])
-
-  const citasPag     = usePagination(filteredCitas)
-  const serviciosPag = usePagination(filteredServicios)
 
   const closeCitaForm = () => { setShowCitaForm(false); resetCitaForm() }
 
@@ -134,229 +65,229 @@ export function MyAccountPage() {
 
   return (
     <LazyMotion features={domAnimation}>
-    <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col">
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-20 h-16 bg-card/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 shrink-0">
-        <img src="/softwart-logo.png" alt="SoftwArt" className="h-8 w-8 object-contain" />
+        {/* ── Header ────────────────────────────────────────────────────── */}
+        <header className="sticky top-0 z-20 h-16 bg-card/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 shrink-0">
+          <img src="/softwart-logo.png" alt="SoftwArt" className="h-8 w-8 object-contain" />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent transition-colors outline-none">
-              <div className="h-7 w-7 rounded-full bg-secondary/10 border border-secondary/20 flex items-center justify-center shrink-0">
-                <span className="text-xs font-semibold text-secondary">{initial}</span>
-              </div>
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-medium text-foreground leading-tight truncate max-w-[160px]">{perfil?.nombre ?? ''}</p>
-                <p className="text-[10px] text-muted-foreground leading-tight">Cliente</p>
-              </div>
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block shrink-0" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <div className="px-2 py-1.5">
-              <p className="text-xs font-medium text-foreground truncate">{perfil?.nombre ?? ''}</p>
-              <p className="text-[10px] text-muted-foreground">Cliente</p>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="text-rose-500 focus:text-rose-500 focus:bg-rose-500/10 cursor-pointer"
-            >
-              <LogOut className="h-4 w-4 mr-2 shrink-0" />
-              Cerrar sesión
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
-
-      {/* ── Content ─────────────────────────────────────────────────────────── */}
-      <main className="flex-1 p-6 md:p-8">
-        <div className="max-w-5xl mx-auto">
-
-          <h1 className="font-serif text-3xl text-secondary mb-6">
-            {isLoading ? <Skeleton className="h-9 w-56" /> : `Hola, ${primerNombre} 👋`}
-          </h1>
-
-          {error && (
-            <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive p-4 text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-6">
-
-            {/* Chips de acceso rápido */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-              <m.div
-                onClick={() => proximaCita || isLoading ? setShowCitasModal(true) : setShowCitaForm(true)}
-                className="bg-card border border-border rounded-xl p-5 text-left hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <CalendarDays className="h-5 w-5 text-primary" />
-                  </div>
-                  <button
-                    onClick={e => { e.stopPropagation(); setShowCitasModal(true) }}
-                    className="text-xs text-primary hover:underline inline-flex items-center gap-1 shrink-0 mt-1"
-                  >
-                    Ver todos <ArrowRight className="h-3 w-3" />
-                  </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent transition-colors outline-none">
+                <div className="h-7 w-7 rounded-full bg-secondary/10 border border-secondary/20 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-semibold text-secondary">{initial}</span>
                 </div>
-                <div className="mt-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Próxima cita</p>
-                  {isLoading ? (
-                    <Skeleton className="h-5 w-36" />
-                  ) : proximaCita ? (
-                    <p className="font-semibold text-foreground">
-                      {formatDate(proximaCita.fecha)} · {proximaCita.hora?.slice(0, 5)}
-                    </p>
-                  ) : (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Sin citas próximas</p>
-                      <p className="text-xs text-primary mt-1 inline-flex items-center gap-1">
-                        Agendar cita <ArrowRight className="h-3 w-3" />
-                      </p>
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs font-medium text-foreground leading-tight truncate max-w-[160px]">{perfil?.nombre ?? ''}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">Cliente</p>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <div className="px-2 py-1.5">
+                <p className="text-xs font-medium text-foreground truncate">{perfil?.nombre ?? ''}</p>
+                <p className="text-[10px] text-muted-foreground">Cliente</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-rose-500 focus:text-rose-500 focus:bg-rose-500/10 cursor-pointer"
+              >
+                <LogOut className="h-4 w-4 mr-2 shrink-0" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+
+        {/* ── Content ───────────────────────────────────────────────────── */}
+        <main className="flex-1 p-6 md:p-8">
+          <div className="max-w-5xl mx-auto">
+
+            <h1 className="font-serif text-3xl text-secondary mb-6">
+              {isLoading ? <Skeleton className="h-9 w-56" /> : `Hola, ${primerNombre} 👋`}
+            </h1>
+
+            {error && (
+              <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive p-4 text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-6">
+
+              {/* Chips de acceso rápido */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                <m.div
+                  onClick={() => proximaCita || isLoading ? setShowCitasModal(true) : setShowCitaForm(true)}
+                  className="bg-card border border-border rounded-xl p-5 text-left hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <CalendarDays className="h-5 w-5 text-primary" />
                     </div>
-                  )}
-                </div>
-              </m.div>
-
-              <m.button
-                onClick={() => setShowServiciosModal(true)}
-                className="bg-card border border-border rounded-xl p-5 text-left hover:border-primary/30 hover:shadow-sm transition-all group"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.07, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
-                    <Wrench className="h-5 w-5 text-secondary" />
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" />
-                </div>
-                <div className="mt-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Servicios activos</p>
-                  {isLoading ? (
-                    <Skeleton className="h-5 w-24" />
-                  ) : serviciosActivos > 0 ? (
-                    <p className="font-semibold text-foreground">
-                      {serviciosActivos} {serviciosActivos === 1 ? 'servicio' : 'servicios'} en curso
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Sin servicios activos</p>
-                  )}
-                </div>
-              </m.button>
-
-            </div>
-
-            {/* Asymmetric grid: left 2/3 · right 1/3 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-              {/* LEFT col-span-2: services area (historial) */}
-              <m.section
-                className="md:col-span-2 bg-card border border-border rounded-xl p-5"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4 text-primary" />
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Servicios recientes</h2>
-                  </div>
-                  {servicios.length > 0 && (
                     <button
-                      onClick={() => setShowServiciosModal(true)}
-                      className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                      onClick={e => { e.stopPropagation(); setShowCitasModal(true) }}
+                      className="text-xs text-primary hover:underline inline-flex items-center gap-1 shrink-0 mt-1"
                     >
                       Ver todos <ArrowRight className="h-3 w-3" />
                     </button>
-                  )}
-                </div>
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
                   </div>
-                ) : serviciosRecientes.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Aún no tienes servicios registrados.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {serviciosRecientes.map(s => (
-                      <div key={s.id_detalle} className="flex items-center justify-between gap-4 py-2 border-b border-border last:border-0">
-                        <div className="min-w-0">
-                          <p className="font-medium text-foreground text-sm truncate">{s.servicio}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {formatDate(s.fecha)} · {formatCurrency(s.precio)}
-                          </p>
-                        </div>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${estadoServicioBadgeClasses(s.estado)}`}>
-                          {s.estado}
-                        </span>
+                  <div className="mt-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Próxima cita</p>
+                    {isLoading ? (
+                      <Skeleton className="h-5 w-36" />
+                    ) : proximaCita ? (
+                      <p className="font-semibold text-foreground">
+                        {formatDate(proximaCita.fecha)} · {proximaCita.hora?.slice(0, 5)}
+                      </p>
+                    ) : (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Sin citas próximas</p>
+                        <p className="text-xs text-primary mt-1 inline-flex items-center gap-1">
+                          Agendar cita <ArrowRight className="h-3 w-3" />
+                        </p>
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </m.section>
+                </m.div>
 
-              {/* RIGHT col: account info */}
-              <div className="flex flex-col gap-6">
-                <m.section
-                  className="bg-card border border-border rounded-xl p-5"
+                <m.button
+                  onClick={() => setShowServiciosModal(true)}
+                  className="bg-card border border-border rounded-xl p-5 text-left hover:border-primary/30 hover:shadow-sm transition-all group"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.21, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.3, delay: 0.07, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <div className="flex items-center gap-2 mb-4">
-                    <User className="h-4 w-4 text-primary" />
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Mi cuenta</h2>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
+                      <Wrench className="h-5 w-5 text-secondary" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" />
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Servicios activos</p>
+                    {isLoading ? (
+                      <Skeleton className="h-5 w-24" />
+                    ) : serviciosActivos > 0 ? (
+                      <p className="font-semibold text-foreground">
+                        {serviciosActivos} {serviciosActivos === 1 ? 'servicio' : 'servicios'} en curso
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Sin servicios activos</p>
+                    )}
+                  </div>
+                </m.button>
+
+              </div>
+
+              {/* Asymmetric grid: left 2/3 · right 1/3 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                {/* LEFT col-span-2: services area */}
+                <m.section
+                  className="md:col-span-2 bg-card border border-border rounded-xl p-5"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 text-primary" />
+                      <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Servicios recientes</h2>
+                    </div>
+                    {servicios.length > 0 && (
+                      <button
+                        onClick={() => setShowServiciosModal(true)}
+                        className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        Ver todos <ArrowRight className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                   {isLoading ? (
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-52" />
-                      <Skeleton className="h-4 w-36" />
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
                     </div>
+                  ) : serviciosRecientes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aún no tienes servicios registrados.</p>
                   ) : (
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <p><span className="text-foreground font-medium">{perfil?.correo}</span></p>
-                      {perfil?.telefono && <p>{perfil.telefono}</p>}
-                      <button
-                        onClick={() => setShowPerfilModal(true)}
-                        className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1"
-                      >
-                        Editar datos <ArrowRight className="h-3 w-3" />
-                      </button>
+                    <div className="space-y-3">
+                      {serviciosRecientes.map(s => (
+                        <div key={s.id_detalle} className="flex items-center justify-between gap-4 py-2 border-b border-border last:border-0">
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground text-sm truncate">{s.servicio}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {formatDate(s.fecha)} · {formatCurrency(s.precio)}
+                            </p>
+                          </div>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${estadoServicioBadgeClasses(s.estado)}`}>
+                            {s.estado}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </m.section>
-                <m.section
-                  className="bg-card border border-border rounded-xl p-5"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <div className="flex items-center gap-2 mb-4">
-                    <Phone className="h-4 w-4 text-primary" />
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Contacto</h2>
-                  </div>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex gap-3 items-start">
-                      <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                      <span className="text-muted-foreground">Cra. 74 #50, Los Colores – Estadio, Medellín</span>
+
+                {/* RIGHT col: account info */}
+                <div className="flex flex-col gap-6">
+                  <m.section
+                    className="bg-card border border-border rounded-xl p-5"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.21, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <User className="h-4 w-4 text-primary" />
+                      <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Mi cuenta</h2>
                     </div>
-                    <div className="flex gap-3 items-start">
-                      <Clock className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                      <div className="text-muted-foreground">
-                        <p>Lun – Vie: 09:00 – 18:00</p>
-                        <p>Sábado: 10:00 – 14:00</p>
+                    {isLoading ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-52" />
+                        <Skeleton className="h-4 w-36" />
                       </div>
+                    ) : (
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <p><span className="text-foreground font-medium">{perfil?.correo}</span></p>
+                        {perfil?.telefono && <p>{perfil.telefono}</p>}
+                        <button
+                          onClick={() => setShowPerfilModal(true)}
+                          className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1"
+                        >
+                          Editar datos <ArrowRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </m.section>
+                  <m.section
+                    className="bg-card border border-border rounded-xl p-5"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <Phone className="h-4 w-4 text-primary" />
+                      <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Contacto</h2>
                     </div>
-                    <div className="flex gap-3 items-start">
+                    <div className="space-y-3 text-sm">
+                      <div className="flex gap-3 items-start">
+                        <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <span className="text-muted-foreground">Cra. 74 #50, Los Colores – Estadio, Medellín</span>
+                      </div>
+                      <div className="flex gap-3 items-start">
+                        <Clock className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <div className="text-muted-foreground">
+                          <p>Lun – Vie: 09:00 – 18:00</p>
+                          <p>Sábado: 10:00 – 14:00</p>
+                        </div>
+                      </div>
+                       <div className="flex gap-3 items-start">
                       <MessageCircle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                       <a
                         href="https://wa.me/573005414130"
@@ -367,499 +298,96 @@ export function MyAccountPage() {
                         +57 300 5414130
                       </a>
                     </div>
-                  </div>
-                </m.section>
+                    </div>
+                  </m.section>
+                </div>
+
               </div>
 
             </div>
-
           </div>
-        </div>
-      </main>
+        </main>
 
-      <footer className="bg-secondary border-t border-secondary-foreground/10 py-6 shrink-0">
-        <div className="max-w-3xl mx-auto px-6 flex flex-col items-center gap-1 text-center">
-          <span className="font-serif text-base font-bold italic text-secondary-foreground">Arte Café</span>
-          <span className="text-xs text-secondary-foreground/50">
-            © {new Date().getFullYear()} SoftwArt · Todos los derechos reservados
-          </span>
-        </div>
-      </footer>
+        <footer className="bg-secondary border-t border-secondary-foreground/10 py-6 shrink-0">
+          <div className="max-w-3xl mx-auto px-6 flex flex-col items-center gap-1 text-center">
+            <span className="font-serif text-base font-bold italic text-secondary-foreground">Arte Café</span>
+            <span className="text-xs text-secondary-foreground/50">
+              © {new Date().getFullYear()} SoftwArt · Todos los derechos reservados
+            </span>
+          </div>
+        </footer>
 
-      {/* ── Modales ──────────────────────────────────────────────────────────── */}
+        {/* ── Modals ────────────────────────────────────────────────────── */}
 
-      {/* Modal: Mis citas */}
-      <AnimatePresence>
-        {showCitasModal && (
-          <m.div
-            key="backdrop-citas"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-            onClick={() => setShowCitasModal(false)}
-            variants={modalBackdropVariants}
-            initial="initial" animate="animate" exit="exit"
-          >
-            <m.div
-              className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col gap-4 p-6 relative max-h-[90dvh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-              variants={modalPanelVariants}
-              initial="initial" animate="animate" exit="exit"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-serif text-xl text-secondary">Mis citas</h3>
-                <button type="button" onClick={() => setShowCitasModal(false)} title="Cerrar" aria-label="Cerrar" className="text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <AnimatePresence>
+          {showCitasModal && (
+            <AppointmentsModal
+              appointments={citas}
+              isLoading={isLoading}
+              onClose={() => setShowCitasModal(false)}
+              onNewAppointment={() => { setShowCitasModal(false); setShowCitaForm(true) }}
+              onCancelAppointment={onCancelAppointment}
+            />
+          )}
+        </AnimatePresence>
 
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <SearchInput value={qCitas} onChange={setQCitas} placeholder="Buscar por ID, fecha o estado..." className="w-full sm:w-72" />
-                  <button
-                    onClick={() => { setShowCitasModal(false); setShowCitaForm(true) }}
-                    className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-secondary/90 transition-all active:scale-95 shrink-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Nueva cita
-                  </button>
-                </div>
+        <AnimatePresence>
+          {showServiciosModal && (
+            <ServicesModal
+              services={servicios}
+              isLoading={isLoading}
+              onClose={() => setShowServiciosModal(false)}
+            />
+          )}
+        </AnimatePresence>
 
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
-                  </div>
-                ) : citas.length === 0 ? (
-                  <div className="text-center py-16 bg-card rounded-xl border border-border">
-                    <CalendarDays className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                    <p className="text-muted-foreground mb-5">Aún no tienes citas agendadas.</p>
-                    <button
-                      onClick={() => { setShowCitasModal(false); setShowCitaForm(true) }}
-                      className="bg-secondary text-secondary-foreground px-5 py-2.5 rounded-lg font-medium inline-flex items-center gap-2 hover:bg-secondary/90 transition-all active:scale-95 text-sm"
-                    >
-                      <CalendarPlus className="h-4 w-4" />
-                      Agendar mi primera cita
-                    </button>
-                  </div>
-                ) : filteredCitas.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-10">Sin resultados para "{qCitas}".</p>
-                ) : (
-                  <>
-                    <div className="space-y-3">
-                      {citasPag.paginated.map(c => {
-                        const { mes, dia } = parseFechaBloque(c.fecha)
-                        const estadoLower   = c.appointmentStatus?.nombre?.toLowerCase() ?? ''
-                        const esCancelable  = estadoLower.includes('pend') || estadoLower.includes('confirmada')
-                        const puedeCancelar = esCancelable && canCancelCita(c.fecha, c.hora)
-                        return (
-                          <div key={c.id_cita}
-                            className="bg-card rounded-xl border border-border p-5 flex flex-col sm:flex-row sm:items-center gap-4 hover:border-primary/20 transition-colors">
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                              <div className="bg-secondary/5 border border-secondary/10 rounded-lg p-3 flex flex-col items-center min-w-[56px] shrink-0">
-                                <span className="text-[10px] uppercase font-bold text-secondary/60 tracking-wider">{mes}</span>
-                                <span className="text-2xl font-bold text-secondary leading-none">{dia}</span>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-semibold text-foreground">Cita #{c.id_cita}</p>
-                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-0.5">
-                                  <Clock className="h-3.5 w-3.5 shrink-0" />
-                                  {c.hora?.slice(0, 5)}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                              <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${estadoBadgeClasses(c.appointmentStatus?.nombre)}`}>
-                                {c.appointmentStatus?.nombre ?? 'Sin estado'}
-                              </span>
-                              {esCancelable && !puedeCancelar && (
-                                <span className="text-muted-foreground text-xs italic" title="Solo se puede cancelar hasta 6 horas antes de la cita">
-                                  No cancelable (faltan &lt;6h)
-                                </span>
-                              )}
-                              {puedeCancelar && (
-                                <AlertDialog onOpenChange={(open) => { if (!open) setCancelMotivo('') }}>
-                                  <AlertDialogTrigger asChild>
-                                    <button disabled={cancelingId === c.id_cita}
-                                      className="text-destructive text-xs font-medium hover:underline disabled:opacity-50 transition-all">
-                                      {cancelingId === c.id_cita ? 'Cancelando...' : 'Cancelar'}
-                                    </button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent className="bg-card text-card-foreground border-border">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle className="font-serif text-secondary">¿Cancelar esta cita?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        La cita del {parseFechaBloque(c.fecha).dia} de {parseFechaBloque(c.fecha).mes} a las {c.hora?.slice(0, 5)} será cancelada. Esta acción no se puede deshacer.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <div>
-                                      <label className={labelCls} htmlFor={`cancel-motivo-${c.id_cita}`}>
-                                        Motivo{' '}
-                                        <span className="text-muted-foreground font-normal normal-case tracking-normal">(opcional)</span>
-                                      </label>
-                                      <textarea id={`cancel-motivo-${c.id_cita}`} value={cancelMotivo} onChange={e => setCancelMotivo(e.target.value)}
-                                        placeholder="Cuéntanos por qué cancelas, nos ayuda a mejorar..."
-                                        rows={3} maxLength={500} className={`${inputCls} resize-none`} />
-                                    </div>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel className="border-border text-foreground">Volver</AlertDialogCancel>
-                                      <AlertDialogAction className="bg-destructive text-destructive-foreground"
-                                        onClick={async () => {
-                                          const motivo = cancelMotivo
-                                          setCancelingId(c.id_cita)
-                                          try { await withToast(onCancelAppointment(c.id_cita, motivo), 'Cita cancelada') }
-                                          finally { setCancelingId(null); setCancelMotivo('') }
-                                        }}>
-                                        Sí, cancelar cita
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                    <Pagination
-                      page={citasPag.page} totalPages={citasPag.totalPages}
-                      total={citasPag.total} pageSize={citasPag.pageSize}
-                      onChange={citasPag.setPage} onPageSizeChange={citasPag.setPageSize}
-                    />
-                  </>
-                )}
-              </div>
+        <AnimatePresence>
+          {showPerfilModal && (
+            <ProfileModal
+              isLoading={isLoading}
+              onClose={() => setShowPerfilModal(false)}
+              name={perfilNombre}
+              onNameChange={setPerfilNombre}
+              phone={perfilTelefono}
+              onPhoneChange={setPerfilTelefono}
+              email={perfilCorreo}
+              onEmailChange={setPerfilCorreo}
+              errors={perfilErrors}
+              isSavingProfile={isSavingPerfil}
+              onSubmitProfile={submitPerfil}
+              currentPassword={claveActual}
+              onCurrentPasswordChange={setClaveActual}
+              newPassword={claveNueva}
+              onNewPasswordChange={setClaveNueva}
+              confirmPassword={claveConfirm}
+              onConfirmPasswordChange={setClaveConfirm}
+              isSavingPassword={isSavingClave}
+              onSubmitPassword={submitClave}
+              isDeleting={isDeleting}
+              onDeleteAccount={onDeleteAccount}
+            />
+          )}
+        </AnimatePresence>
 
-              <button type="button" onClick={() => setShowCitasModal(false)}
-                className="text-muted-foreground text-sm hover:text-foreground transition-colors py-2 text-center w-full">
-                Cerrar
-              </button>
-            </m.div>
-          </m.div>
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {showCitaForm && (
+            <NewAppointmentModal
+              date={citaFecha}
+              time={citaHora}
+              notes={citaObs}
+              onNotesChange={setCitaObs}
+              errors={citaErrors}
+              isSubmitting={isAgendando}
+              bookedSlots={disponibilidad}
+              onDateChange={onCitaFechaChange}
+              onTimeChange={onCitaHoraChange}
+              onSubmit={handleSubmitCita}
+              onClose={closeCitaForm}
+            />
+          )}
+        </AnimatePresence>
 
-      {/* Modal: Mis servicios */}
-      <AnimatePresence>
-        {showServiciosModal && (
-          <m.div
-            key="backdrop-servicios"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-            onClick={() => setShowServiciosModal(false)}
-            variants={modalBackdropVariants}
-            initial="initial" animate="animate" exit="exit"
-          >
-            <m.div
-              className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col gap-4 p-6 relative max-h-[90dvh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-              variants={modalPanelVariants}
-              initial="initial" animate="animate" exit="exit"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-serif text-xl text-secondary">Mis servicios</h3>
-                <button type="button" onClick={() => setShowServiciosModal(false)} title="Cerrar" aria-label="Cerrar" className="text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <SearchInput value={qServicios} onChange={setQServicios} placeholder="Buscar por servicio o estado..." className="w-full sm:w-72" />
-
-              {isLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
-                </div>
-              ) : servicios.length === 0 ? (
-                <div className="text-center py-16 bg-card rounded-xl border border-border">
-                  <Wrench className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">Aún no tienes servicios registrados.</p>
-                </div>
-              ) : filteredServicios.length === 0 ? (
-                <p className="text-center text-muted-foreground py-10">Sin resultados para "{qServicios}".</p>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    {serviciosPag.paginated.map(s => (
-                      <div key={s.id_detalle}
-                        className="bg-card rounded-xl border border-border p-5 hover:border-primary/20 transition-colors">
-                        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-foreground">{s.servicio}</p>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                              <span className="text-xs text-muted-foreground">{formatDate(s.fecha)}</span>
-                              <span className="text-xs font-medium text-primary">{formatCurrency(s.precio)}</span>
-                            </div>
-                            {s.observacion && (
-                              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{s.observacion}</p>
-                            )}
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shrink-0 ${estadoServicioBadgeClasses(s.estado)}`}>
-                            {s.estado}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => toggleHistorial(s.id_detalle)}
-                          className="mt-3 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                        >
-                          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expandedServicioId === s.id_detalle ? 'rotate-180' : ''}`} />
-                          {expandedServicioId === s.id_detalle ? 'Ocultar historial' : 'Ver historial'}
-                        </button>
-
-                        {expandedServicioId === s.id_detalle && (
-                          <div className="mt-3 pl-2 border-l-2 border-border space-y-2">
-                            {historialLoadingId === s.id_detalle ? (
-                              <p className="text-xs text-muted-foreground">Cargando...</p>
-                            ) : (historialById[s.id_detalle]?.length ?? 0) === 0 ? (
-                              <p className="text-xs text-muted-foreground">Sin historial disponible.</p>
-                            ) : (
-                              historialById[s.id_detalle]!.map(h => (
-                                <div key={h.id_historial} className="text-xs">
-                                  <span className="font-medium text-foreground">{h.estado}</span>
-                                  <span className="text-muted-foreground"> — {new Date(h.fecha).toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <Pagination
-                    page={serviciosPag.page} totalPages={serviciosPag.totalPages}
-                    total={serviciosPag.total} pageSize={serviciosPag.pageSize}
-                    onChange={serviciosPag.setPage} onPageSizeChange={serviciosPag.setPageSize}
-                  />
-                </>
-              )}
-
-              <button type="button" onClick={() => setShowServiciosModal(false)}
-                className="text-muted-foreground text-sm hover:text-foreground transition-colors py-2 text-center w-full">
-                Cerrar
-              </button>
-            </m.div>
-          </m.div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Mi perfil */}
-      <AnimatePresence>
-        {showPerfilModal && (
-          <m.div
-            key="backdrop-perfil"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-            onClick={() => setShowPerfilModal(false)}
-            variants={modalBackdropVariants}
-            initial="initial" animate="animate" exit="exit"
-          >
-            <m.div
-              className="bg-card rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col gap-6 p-6 relative max-h-[90dvh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-              variants={modalPanelVariants}
-              initial="initial" animate="animate" exit="exit"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-serif text-xl text-secondary">Mi perfil</h3>
-                <button type="button" onClick={() => setShowPerfilModal(false)} title="Cerrar" aria-label="Cerrar" className="text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Mis datos + Cambiar contraseña — 2 columnas en desktop */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                <section className="bg-card rounded-xl p-6 border border-border shadow-sm">
-                  <div className="flex items-center gap-3 mb-6">
-                    <User className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-serif text-secondary">Mis datos</h2>
-                  </div>
-                  {isLoading ? (
-                    <div className="space-y-5">
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-12 w-full" />
-                    </div>
-                  ) : (
-                    <form onSubmit={submitPerfil} className="space-y-5" noValidate>
-                      <div>
-                        <label className={labelCls} htmlFor="perfil-nombre">Nombre completo</label>
-                        <FieldErrorTooltip error={perfilErrors.nombre || (perfilNombre.length >= NOMBRE_MAX_LENGTH ? NOMBRE_MAX_ERROR : null)}>
-                          <input id="perfil-nombre" type="text" value={perfilNombre}
-                            onChange={e => setPerfilNombre(stripDigits(e.target.value))} required
-                            maxLength={NOMBRE_MAX_LENGTH} className={inputCls} />
-                        </FieldErrorTooltip>
-                      </div>
-                      <div>
-                        <label className={labelCls} htmlFor="perfil-telefono">Teléfono <span className="text-destructive">*</span></label>
-                        <FieldErrorTooltip error={perfilErrors.telefono}>
-                          <input id="perfil-telefono" type="tel" value={perfilTelefono}
-                            onChange={e => setPerfilTelefono(onlyDigits(e.target.value))} required className={inputCls} />
-                        </FieldErrorTooltip>
-                      </div>
-                      <div>
-                        <label className={labelCls} htmlFor="perfil-correo">Correo electrónico</label>
-                        <FieldErrorTooltip error={perfilErrors.correo}>
-                          <input id="perfil-correo" type="email" value={perfilCorreo}
-                            onChange={e => setPerfilCorreo(e.target.value)} required className={inputCls} />
-                        </FieldErrorTooltip>
-                      </div>
-                      <div className="pt-1 flex items-center gap-4">
-                        <button type="submit" disabled={isSavingPerfil}
-                          className="bg-secondary text-secondary-foreground py-2.5 px-6 rounded-lg font-medium hover:bg-secondary/90 transition-colors active:scale-95 disabled:opacity-60">
-                          {isSavingPerfil ? 'Guardando...' : 'Guardar cambios'}
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </section>
-
-                <section className="bg-card rounded-xl p-6 border border-border shadow-sm">
-                  <div className="flex items-center gap-3 mb-6">
-                    <Lock className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-serif text-secondary">Cambiar contraseña</h2>
-                  </div>
-                  <form onSubmit={submitClave} className="space-y-5">
-                    <div>
-                      <label className={labelCls} htmlFor="clave-actual">Contraseña actual</label>
-                      <input id="clave-actual" type="password" value={claveActual}
-                        onChange={e => setClaveActual(e.target.value)} className={inputCls} />
-                    </div>
-                    <div>
-                      <label className={labelCls} htmlFor="clave-nueva">Nueva contraseña</label>
-                      <input id="clave-nueva" type="password" value={claveNueva}
-                        onChange={e => setClaveNueva(e.target.value)} className={inputCls} />
-                      <PasswordChecklist password={claveNueva} confirmPassword={claveConfirm} />
-                    </div>
-                    <div>
-                      <label className={labelCls} htmlFor="clave-confirm">Confirmar contraseña</label>
-                      <input id="clave-confirm" type="password" value={claveConfirm}
-                        onChange={e => setClaveConfirm(e.target.value)} className={inputCls} />
-                    </div>
-                    <div className="pt-1">
-                      <button type="submit" disabled={isSavingClave}
-                        className="w-full border-2 border-primary/30 text-primary py-2.5 rounded-lg font-medium hover:bg-primary/5 transition-colors disabled:opacity-60">
-                        {isSavingClave ? 'Actualizando...' : 'Actualizar contraseña'}
-                      </button>
-                    </div>
-                  </form>
-                </section>
-
-              </div>
-
-              {/* Eliminar cuenta — ancho completo */}
-              <section className="border border-destructive/20 rounded-xl p-6 bg-destructive/5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                      <h3 className="font-serif text-lg text-destructive">Eliminar cuenta</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Esta acción es permanente. Si tienes historial activo, la cuenta se desactivará en su lugar.
-                    </p>
-                  </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button disabled={isDeleting}
-                        className="text-destructive border border-destructive/30 hover:bg-destructive hover:text-destructive-foreground px-5 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 shrink-0">
-                        {isDeleting ? 'Procesando...' : 'Eliminar cuenta'}
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-card text-card-foreground border-border">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="font-serif text-secondary">¿Eliminar tu cuenta?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta acción es permanente y eliminará toda tu información. Si tienes historial activo, la cuenta se desactivará en su lugar.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="border-border text-foreground">Cancelar</AlertDialogCancel>
-                        <AlertDialogAction className="bg-destructive text-destructive-foreground"
-                          onClick={async () => {
-                            try {
-                              const message = await onDeleteAccount()
-                              toast.success(message)
-                            } catch (e) {
-                              toast.error(e instanceof Error ? e.message : 'Error al eliminar la cuenta')
-                            }
-                          }}>
-                          Sí, eliminar cuenta
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </section>
-
-              <button type="button" onClick={() => setShowPerfilModal(false)}
-                className="text-muted-foreground text-sm hover:text-foreground transition-colors py-2 text-center w-full">
-                Cancelar
-              </button>
-            </m.div>
-          </m.div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Nueva cita */}
-      <AnimatePresence>
-        {showCitaForm && (
-          <m.div
-            key="backdrop-nueva-cita"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-            onClick={closeCitaForm}
-            variants={modalBackdropVariants}
-            initial="initial" animate="animate" exit="exit"
-          >
-            <m.div
-              className="bg-card rounded-2xl shadow-2xl w-full max-w-md flex flex-col gap-4 p-6 relative"
-              onClick={e => e.stopPropagation()}
-              variants={modalPanelVariants}
-              initial="initial" animate="animate" exit="exit"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-serif text-xl text-secondary">Agendar nueva cita</h3>
-                <button type="button" onClick={closeCitaForm} title="Cerrar" aria-label="Cerrar" className="text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmitCita} className="flex flex-col gap-4" noValidate>
-                <div>
-                  <label className={labelCls} htmlFor="cita-fecha-mc">Fecha <span className="text-destructive">*</span></label>
-                  <FieldErrorTooltip error={citaErrors.fecha}>
-                    <div>
-                      <DatePicker id="cita-fecha-mc" value={citaFecha} min={bogotaTomorrowStr()} max={bogotaMaxFuturoStr()} error={citaErrors.fecha} onChange={onCitaFechaChange} />
-                    </div>
-                  </FieldErrorTooltip>
-                </div>
-
-                <TimePicker value={citaHora} onChange={onCitaHoraChange} error={citaErrors.hora} bookedSlots={disponibilidad} />
-
-                <div>
-                  <label className={labelCls} htmlFor="cita-obs">
-                    Observaciones{' '}
-                    <span className="text-muted-foreground font-normal normal-case tracking-normal">(opcional)</span>
-                  </label>
-                  <textarea id="cita-obs" value={citaObs} onChange={e => setCitaObs(e.target.value)}
-                    placeholder="Cuéntanos qué necesitas, medidas, tipo de marco, etc."
-                    rows={3} className={`${inputCls} resize-none`} />
-                </div>
-
-                <div className="flex flex-col gap-2 pt-1">
-                  <button type="submit" disabled={isAgendando}
-                    className="bg-secondary text-secondary-foreground py-3 rounded-lg font-medium hover:bg-secondary/90 transition-colors active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60">
-                    <CalendarPlus className="h-4 w-4" />
-                    {isAgendando ? 'Agendando...' : 'Confirmar cita'}
-                  </button>
-                  <button type="button" onClick={closeCitaForm}
-                    className="text-muted-foreground text-sm hover:text-foreground transition-colors py-2">
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            </m.div>
-          </m.div>
-        )}
-      </AnimatePresence>
-
-    </div>
+      </div>
     </LazyMotion>
   )
 }
