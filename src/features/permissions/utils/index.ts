@@ -1,12 +1,13 @@
 import type { ComponentType } from 'react'
 import {
-  UserRound, UserCircle, Calendar, ShoppingBag, ClipboardList,
+  UserRound, UserCircle, Calendar, ShoppingBag, ClipboardList, LayoutDashboard,
   CreditCard, Calculator, Wrench, Users, Shield, ShieldCheck,
 } from 'lucide-react'
 
 export const ADMIN_ROL_ID = 1
 
 export const MODULO_LABELS: Record<string, string> = {
+  DASHBOARD: 'Dashboard',
   CUENTA:    'Mi Cuenta (Cliente)',
   CLIENTES:  'Clientes',
   CITAS:     'Citas',
@@ -23,6 +24,7 @@ export const MODULO_LABELS: Record<string, string> = {
 // Mismos iconos que AdminSidebar.tsx para el módulo equivalente — consistencia
 // visual (Nielsen H4), ADR-004 tarea 7: reemplazo de emojis por iconos shadcn/lucide.
 export const MODULO_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  DASHBOARD: LayoutDashboard,
   CUENTA:    UserRound,
   CLIENTES:  UserCircle,
   CITAS:     Calendar,
@@ -37,7 +39,7 @@ export const MODULO_ICONS: Record<string, ComponentType<{ className?: string }>>
 }
 
 export const MODULO_ORDER = [
-  'CUENTA', 'CLIENTES', 'CITAS', 'VENTAS', 'PEDIDOS',
+  'DASHBOARD', 'CUENTA', 'CLIENTES', 'CITAS', 'VENTAS', 'PEDIDOS',
   'PAGOS', 'MARCOS', 'SERVICIOS', 'USUARIOS', 'ROLES', 'PERMISOS',
 ]
 

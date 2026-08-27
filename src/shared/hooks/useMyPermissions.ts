@@ -13,7 +13,8 @@ export function useMyPermissions() {
       .finally(() => setReady(true))
   }, [])
 
-  // Si aún no cargó o falló → muestra todo (backend protege los datos)
-  const can = (permiso: string) => !ready || failed || !permiso || permisos.has(permiso)
-  return { can, isLoading: !ready }
+  // Mientras carga se permite renderizar para evitar parpadeos; las rutas
+  // esperan isLoading. Si la consulta falla, se deniega por seguridad.
+  const can = (permiso: string) => !ready || (!failed && !!permiso && permisos.has(permiso))
+  return { can, permisos, isLoading: !ready }
 }

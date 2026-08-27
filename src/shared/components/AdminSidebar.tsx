@@ -17,7 +17,7 @@ interface NavItem {
   permiso?: string
 }
 
-const DASHBOARD_ITEM: NavItem = { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard }
+const DASHBOARD_ITEM: NavItem = { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, permiso: 'DASHBOARD.VER' }
 
 // Grupos según el flujo real del negocio
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
@@ -99,7 +99,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
         <ul className="flex flex-col gap-0.5">
           {/* Dashboard — ítem suelto sin grupo */}
           <li>
-            {collapsed ? (
+            {can(DASHBOARD_ITEM.permiso ?? '') && (collapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
@@ -130,7 +130,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                 <DASHBOARD_ITEM.icon className="h-4 w-4 shrink-0" />
                 <span className="truncate">{DASHBOARD_ITEM.label}</span>
               </Link>
-            )}
+            ))}
           </li>
 
           {NAV_GROUPS.map((group) => (

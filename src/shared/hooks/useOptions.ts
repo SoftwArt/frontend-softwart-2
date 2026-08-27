@@ -56,7 +56,7 @@ export function useClientsOptions() {
 
 // ── Ventas ────────────────────────────────────────────────────
 type VentaPayment = { paymentStatus?: { nombre?: string } | null }
-type VentaOption = { id_venta: number; fecha: string; total: number; num_abonos?: number; payments?: VentaPayment[]; client?: { id_cliente: number; nombre?: string } | null }
+type VentaOption = { id_venta: number; fecha: string; total: number; num_abonos?: number; porcentaje_primer_abono?: number; payments?: VentaPayment[]; client?: { id_cliente: number; nombre?: string } | null }
 
 export function useSalesOptions() {
   const [rawVentas,   setRawVentas]   = useState<VentaOption[]>([])

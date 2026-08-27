@@ -60,9 +60,71 @@ export function PaymentsPage() {
     if (!idVenta) return false
     const v = rawVentas.find(rv => String(rv.id_venta) === idVenta)
     if (!v) return false
-    const pagosActivos = (v.payments ?? []).filter((p: any) => !p.paymentStatus?.nombre?.toLowerCase().includes('anulado'))
-    return pagosActivos.length >= (v.num_abonos ?? 2)
+    const pagosValidados = pagos.filter(p => {
+      if (String(p.id_venta) !== idVenta) return false
+      const estado = estadosPago.find(e => e.id_estado_pago === p.id_estado_pago)?.nombre ?? ''
+      return estado.toLowerCase().includes('validado')
+    })
+    const totalInstallments = Number(v.num_abonos)
+    return Number.isFinite(totalInstallments) && totalInstallments > 0 && pagosValidados.length >= totalInstallments
+  }, [idVenta, rawVentas, pagos, estadosPago])
+
+  const totalVenta = useMemo(() => {
+    if (!idVenta) return null
+    const venta = rawVentas.find(rv => String(rv.id_venta) === idVenta) as any
+    if (!venta) return null
+
+    const total = Number(venta.total ?? venta.total_venta ?? venta.monto_total ?? venta.valor_total)
+    return Number.isFinite(total) && total >= 0 ? total : null
   }, [idVenta, rawVentas])
+
+  const saldoPendiente = useMemo(() => {
+    if (!idVenta || totalVenta === null) return null
+    const pagosActivos = pagos.filter(p => {
+      if (String(p.id_venta) !== idVenta) return false
+      const estado = estadosPago.find(e => e.id_estado_pago === p.id_estado_pago)?.nombre ?? ''
+      return !estado.toLowerCase().includes('anulado')
+    })
+    const pagado = pagosActivos.reduce((sum, p) => sum + Number(p.monto ?? 0), 0)
+
+    return Math.max(0, totalVenta - pagado)
+  }, [idVenta, pagos, estadosPago, totalVenta])
+
+  const ventaCompletada = ventaPagada || saldoPendiente === 0
+
+  // Primer abono con 70% por defecto; los siguientes reparten el saldo
+  // pendiente entre los installments restantes.
+  const nextInstallment = useMemo(() => {
+    if (!idVenta) return null
+    const venta = rawVentas.find(rv => String(rv.id_venta) === idVenta) as any
+    if (!venta) return null
+
+    const total = Number(venta.total ?? venta.total_venta ?? venta.monto_total ?? venta.valor_total)
+    const totalInstallments = Number(venta.num_abonos ?? venta.numero_abonos ?? venta.installments)
+    if (!Number.isFinite(total) || !Number.isFinite(totalInstallments) || totalInstallments <= 0) return null
+
+    const pagosActivos = pagos.filter(p => {
+      if (String(p.id_venta) !== idVenta) return false
+      const estado = estadosPago.find(e => e.id_estado_pago === p.id_estado_pago)?.nombre ?? ''
+      return !estado.toLowerCase().includes('anulado')
+    })
+    const pagado = pagosActivos.reduce((sum, p) => sum + Number(p.monto ?? 0), 0)
+    const installmentsRestantes = totalInstallments - pagosActivos.length
+    if (installmentsRestantes <= 0) return null
+
+    if (pagosActivos.length === 0) {
+      const porcentajePrimerAbono = Number(venta.porcentaje_primer_abono ?? venta.porcentajePrimerAbono ?? 70)
+      if (Number.isFinite(porcentajePrimerAbono) && porcentajePrimerAbono > 0 && porcentajePrimerAbono < 100) {
+        return Math.max(0, total * porcentajePrimerAbono / 100)
+      }
+    }
+
+    return Math.max(0, (total - pagado) / installmentsRestantes)
+  }, [idVenta, rawVentas, pagos, estadosPago])
+
+  useEffect(() => {
+    setMonto(nextInstallment === null ? '' : String(Math.round(nextInstallment)))
+  }, [nextInstallment])
 
   const resetForm  = () => { setIdVenta(''); setMonto(''); setFecha(''); setIdMetodo(''); setIdEstado(''); setErrors({}) }
   const openCreate = (preIdVenta = '') => {
@@ -88,7 +150,7 @@ export function PaymentsPage() {
   const getEstadoLabel = (id: number) => estadosPago.find(e => e.id_estado_pago === id)?.nombre ?? `#${id}`
 
   // ── Protección de estado Validado / Anulado ────────────────────────────────
-  const [alertEstado, setAlertEstado] = useState<{ open: boolean; msg: string; pagoId?: number; showAnular?: boolean }>({ open: false, msg: '' })
+  const [alertEstado, setAlertEstado] = useState<{ open: boolean; msg: string; title?: string; pagoId?: number; showAnular?: boolean }>({ open: false, msg: '' })
 
   const handleChangeStatus = (pago: Pago, nuevoIdEstado: number) => {
     const estadoActual = getEstadoLabel(pago.id_estado_pago).toLowerCase()
@@ -114,6 +176,28 @@ export function PaymentsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (ventaCompletada) {
+      setAlertEstado({
+        open: true,
+        title: 'Venta completada',
+        msg: ventaPagada
+          ? 'Esta venta ya tiene todos sus abonos registrados y no admite más pagos.'
+          : 'Esta venta ya tiene el total pagado y no admite más pagos.',
+      })
+      return
+    }
+
+    const montoIngresado = Number(monto)
+    if (saldoPendiente !== null && Number.isFinite(montoIngresado) && montoIngresado > saldoPendiente) {
+      setAlertEstado({
+        open: true,
+        title: 'Monto superior al saldo pendiente',
+        msg: `No se puede ingresar más de ${formatCurrency(saldoPendiente)} en esta venta.`,
+      })
+      return
+    }
+
     const errs: Record<string, string> = {}
     if (!idVenta)      errs.idVenta  = 'Campo requerido'
     if (!monto.trim()) errs.monto    = 'Campo requerido'
@@ -263,7 +347,7 @@ export function PaymentsPage() {
       <AlertDialog open={alertEstado.open} onOpenChange={v => { if (!v) setAlertEstado({ open: false, msg: '' }) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{alertEstado.showAnular ? '¿Anular este pago?' : 'Estado no modificable'}</AlertDialogTitle>
+            <AlertDialogTitle>{alertEstado.title ?? (alertEstado.showAnular ? '¿Anular este pago?' : 'Estado no modificable')}</AlertDialogTitle>
             <AlertDialogDescription>{alertEstado.msg}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -311,12 +395,50 @@ export function PaymentsPage() {
             <div>
               <label className={labelCls} htmlFor="pago-monto">Monto <span className="text-destructive">*</span></label>
               <FieldErrorTooltip error={errors.monto}>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                  <input id="pago-monto" type="number" step="1" min="0" value={monto} onChange={e => { setMonto(e.target.value); if (errors.monto) setErrors(p => ({...p, monto:''})) }} className={inputCls + ' pl-8'} placeholder="0" />
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="relative">
+                      <input
+                        id="pago-monto"
+                        type="text"
+                        inputMode="numeric"
+                        value={monto ? formatCurrency(monto) : ''}
+                        readOnly={!idVenta || saldoPendiente === 0}
+                        aria-disabled={!idVenta || saldoPendiente === 0}
+                        onChange={e => {
+                          const digits = e.target.value.replace(/\D/g, '')
+                          const numericValue = Number(digits)
+                          const cappedValue = saldoPendiente !== null && Number.isFinite(numericValue) && numericValue > saldoPendiente
+                            ? String(saldoPendiente)
+                            : digits
+                          setMonto(cappedValue)
+                          if (saldoPendiente !== null && Number.isFinite(numericValue) && numericValue > saldoPendiente) {
+                            setAlertEstado({
+                              open: true,
+                              title: 'Monto superior al saldo pendiente',
+                              msg: `No se puede ingresar más de ${formatCurrency(saldoPendiente)} en esta venta.`,
+                            })
+                          }
+                          if (errors.monto) setErrors(p => ({...p, monto:''}))
+                        }}
+                        className={inputCls + ` ${(!idVenta || saldoPendiente === 0) ? 'cursor-not-allowed opacity-60' : ''}`}
+                        placeholder={idVenta ? '0' : 'Seleccione una venta'}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  {(!idVenta || saldoPendiente === 0) && (
+                    <TooltipContent>
+                      {!idVenta ? 'Elija primero una venta para habilitar el monto.' : 'Esta venta ya está totalmente pagada.'}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
               </FieldErrorTooltip>
-              {monto && <p className="text-xs text-muted-foreground">{formatCurrency(Number(monto))}</p>}
+              {nextInstallment !== null && !ventaPagada && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Próximo abono sugerido:{' '}
+                  <span className="font-semibold text-foreground">{formatCurrency(nextInstallment)}</span>
+                </p>
+              )}
             </div>
             <div>
               <label className={labelCls} htmlFor="pago-fecha">Fecha <span className="text-destructive">*</span></label>
@@ -352,7 +474,7 @@ export function PaymentsPage() {
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t border-border">
               <button type="button" onClick={() => { setIsFormOpen(false); resetForm() }} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">Cancelar</button>
-              <button type="submit" disabled={isSubmitting || ventaPagada} className="px-5 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50">Registrar</button>
+              <button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50">Registrar</button>
             </div>
           </form>
         </DialogContent>

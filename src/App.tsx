@@ -72,8 +72,41 @@ function RequireModulePermission({ permiso, children }: { permiso: string; child
     }
   }, [isLoading, permiso]) // eslint-disable-line react-hooks/exhaustive-deps
   if (isLoading) return <RouteFallback />
-  if (!can(permiso)) return <Navigate to="/admin/dashboard" replace />
+  if (!can(permiso)) return <Navigate to={firstAllowedAdminPath(can)} replace />
   return <>{children}</>
+}
+
+const ADMIN_MODULES = [
+  { path: '/admin/dashboard', permiso: 'DASHBOARD.VER' },
+  { path: '/admin/clients', permiso: 'CLIENTES.VER' },
+  { path: '/admin/appointments', permiso: 'CITAS.VER' },
+  { path: '/admin/sales', permiso: 'VENTAS.VER' },
+  { path: '/admin/orders', permiso: 'PEDIDOS.VER' },
+  { path: '/admin/payments', permiso: 'PAGOS.VER' },
+  { path: '/admin/calculator', permiso: 'MARCOS.VER' },
+  { path: '/admin/services', permiso: 'SERVICIOS.VER' },
+  { path: '/admin/users', permiso: 'USUARIOS.VER' },
+  { path: '/admin/roles', permiso: 'ROLES.VER' },
+  { path: '/admin/permissions', permiso: 'PERMISOS.VER' },
+] as const
+
+function firstAllowedAdminPath(can: (permiso: string) => boolean): string {
+  return ADMIN_MODULES.find(module => can(module.permiso))?.path ?? '/admin/access-denied'
+}
+
+function AdminIndexRedirect() {
+  const { can, isLoading } = useMyPermissions()
+  if (isLoading) return <RouteFallback />
+  return <Navigate to={firstAllowedAdminPath(can)} replace />
+}
+
+function AccessDeniedPage() {
+  return (
+    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-2 text-center">
+      <h1 className="text-2xl font-bold text-foreground">Acceso denegado</h1>
+      <p className="text-muted-foreground">Tu rol no tiene módulos habilitados.</p>
+    </div>
+  )
 }
 
 function RequireCliente({ children }: { children: React.ReactNode }) {
@@ -176,8 +209,8 @@ export default function App() {
 
           {/* Panel admin */}
           <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>
-            <Route index              element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard"   element={<DashboardPage />} />
+            <Route index              element={<AdminIndexRedirect />} />
+            <Route path="dashboard"   element={<RequireModulePermission permiso="DASHBOARD.VER"><DashboardPage /></RequireModulePermission>} />
             <Route path="clients"      element={<RequireModulePermission permiso="CLIENTES.VER"><ClientsPage /></RequireModulePermission>} />
             <Route path="users"        element={<RequireModulePermission permiso="USUARIOS.VER"><UsersPage /></RequireModulePermission>} />
             <Route path="roles"        element={<RequireModulePermission permiso="ROLES.VER"><RolesPage /></RequireModulePermission>} />
@@ -188,7 +221,8 @@ export default function App() {
             <Route path="sales"        element={<RequireModulePermission permiso="VENTAS.VER"><SalesPage /></RequireModulePermission>} />
             <Route path="orders"       element={<RequireModulePermission permiso="PEDIDOS.VER"><OrdersPage /></RequireModulePermission>} />
             <Route path="permissions"  element={<RequireModulePermission permiso="PERMISOS.VER"><PermissionsPage /></RequireModulePermission>} />
-            <Route path="*"           element={<Navigate to="dashboard" replace />} />
+            <Route path="access-denied" element={<AccessDeniedPage />} />
+            <Route path="*"           element={<AdminIndexRedirect />} />
           </Route>
 
           {/* Catch-all global → 404 */}
