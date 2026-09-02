@@ -21,7 +21,7 @@ function mergeById<T>(prev: T[], next: T[], idOf: (item: T) => number): T[] {
 }
 
 // ── Clientes ──────────────────────────────────────────────────
-type ClienteOption = { id_cliente: number; nombre: string; tipoDocumento: string; documento: string }
+export type ClienteOption = { id_cliente: number; nombre: string; tipoDocumento: string; documento: string }
 
 export function useClientsOptions() {
   const [rawClientes, setRawClientes] = useState<ClienteOption[]>([])
@@ -56,7 +56,7 @@ export function useClientsOptions() {
 
 // ── Ventas ────────────────────────────────────────────────────
 type VentaPayment = { paymentStatus?: { nombre?: string } | null }
-type VentaOption = { id_venta: number; fecha: string; total: number; num_abonos?: number; porcentaje_primer_abono?: number; payments?: VentaPayment[]; client?: { id_cliente: number; nombre?: string } | null }
+export type VentaOption = { id_venta: number; fecha: string; total: number; num_abonos?: number; porcentaje_primer_abono?: number; payments?: VentaPayment[]; client?: { id_cliente: number; nombre?: string } | null }
 
 export function useSalesOptions() {
   const [rawVentas,   setRawVentas]   = useState<VentaOption[]>([])
@@ -95,7 +95,7 @@ export function useSalesOptions() {
 }
 
 // ── Citas ─────────────────────────────────────────────────────
-type CitaOption = { id_cita: number; fecha: string; hora: string; client?: { id_cliente: number } | null }
+export type CitaOption = { id_cita: number; fecha: string; hora: string; client?: { id_cliente: number } | null }
 
 export function useAppointmentsOptions() {
   const [options,   setOptions]   = useState<ComboboxOption[]>([])

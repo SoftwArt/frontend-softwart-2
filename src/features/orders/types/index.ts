@@ -33,3 +33,7 @@ export type SalePreview           = { id_venta: number; saleDetails?: SiblingDet
 export type PedidoDetalle         = BackendDetalle & { sale?: SalePreview | null }
 
 export type HistorialEstado = { id_historial: number; estado: string; fecha: string }
+
+export type PedidoCancelTarget  = { id: number; id_estado: number; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] }
+export type PedidoAdvanceTarget = { id: number; id_estado: number }
+export type PedidoDeleteTarget  = { id: number; label: string }

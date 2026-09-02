@@ -1,5 +1,6 @@
-import type { Cita } from '../types'
+import type { Cita, EstadoCita, PaymentPreview, SalePreview } from '../types'
 import { bogotaTodayStr } from '@/src/shared/lib/bogotaTime'
+import { fmtCOP } from '@/src/shared/lib/formatCurrency'
 
 export const inputCls  = 'w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all text-sm'
 export const labelCls  = 'block text-xs font-bold capitalize tracking-widest text-muted-foreground mb-2'
@@ -60,3 +61,45 @@ export function validateFecha(f: string): boolean {
 }
 
 export { fmtCOP } from '@/src/shared/lib/formatCurrency'
+
+// ── Estado de cita ────────────────────────────────────────────
+export function estadoLabel(estados: EstadoCita[], id: number): string {
+  return estados.find(e => e.id_estado_cita === id)?.nombre ?? `Estado ${id}`
+}
+export function isCitaCancelada(estados: EstadoCita[], id: number): boolean {
+  return estadoLabel(estados, id).toLowerCase().includes('cancelada')
+}
+export function isCitaCompletada(estados: EstadoCita[], id: number): boolean {
+  return estadoLabel(estados, id).toLowerCase().includes('completada')
+}
+
+// ── Cascadas (eliminar / cancelar) ───────────────────────────────
+export function hasValidatedPayments(payments?: PaymentPreview[]): boolean {
+  return (payments ?? []).some(p => p.paymentStatus?.nombre?.toLowerCase().includes('validado'))
+}
+
+export function buildDeleteCitaLines(sale: SalePreview): string[] {
+  return [
+    `Venta #${sale.id_venta} se eliminará`,
+    ...(sale.saleDetails ?? []).map(d => `Servicio #${d.id_detalle} se eliminará`),
+    ...(sale.payments ?? []).map(p => `Abono #${p.id_pago} se eliminará`),
+  ]
+}
+
+export function buildCancelCitaLines(sale: SalePreview): string[] {
+  const serviciosACancelar = (sale.saleDetails ?? [])
+    .filter(d => {
+      const n = d.serviceStatus?.nombre?.toLowerCase() ?? ''
+      return !n.includes('finaliz') && !n.includes('cancel')
+    })
+    .map(d => d.id_detalle)
+
+  const abonosAAnular = (sale.payments ?? [])
+    .filter(p => p.paymentStatus?.nombre?.toLowerCase().includes('pendiente'))
+
+  return [
+    `Se anulará la Venta #${sale.id_venta}`,
+    ...serviciosACancelar.map(id => `Servicio #${id} se cancelará`),
+    ...abonosAAnular.map(p => `Abono #${p.id_pago} (${fmtCOP(p.monto)}) se anulará`),
+  ]
+}

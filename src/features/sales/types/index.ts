@@ -49,6 +49,8 @@ export type EstadoPagos = {
   historial_pagos:         { id_pago: number; monto: number; fecha: string; estado: string }[]
 }
 
+export type VentaCascadeTarget = { id: number; label: string; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] }
+
 export interface SaleInstallmentModalProps {
   open:       boolean
   onClose:    () => void

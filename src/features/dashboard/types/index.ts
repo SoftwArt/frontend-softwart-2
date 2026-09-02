@@ -1,3 +1,5 @@
+export type LandingServicio = { id_servicio: number; nombre: string; descripcion?: string | null }
+
 export type DashboardKpis = {
   ventas_mes_actual:      number
   ventas_mes_anterior:    number

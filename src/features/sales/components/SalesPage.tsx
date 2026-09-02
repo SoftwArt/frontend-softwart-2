@@ -1,191 +1,46 @@
 // src/features/sales/components/SalesPage.tsx
 import { useSales } from '../hooks/useSales'
+import { useSaleForm } from '../hooks/useSaleForm'
+import { useSaleDangerZone } from '../hooks/useSaleDangerZone'
 import { useClientsOptions, useAppointmentsOptions } from '@/src/shared/hooks/useOptions'
-import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { SaleInstallmentModal } from './SaleInstallmentModal'
 import { useState, useMemo } from 'react'
-import type { Venta, VentaDetalle } from '../types'
-import { apiRequest } from '@/src/shared/lib/apiClient'
-import { inputCls, labelCls, filterVentas } from '../utils'
-import { DOCUMENT_TYPES } from '@/src/features/clients/utils'
+import type { Venta } from '../types'
+import { filterVentas } from '../utils'
 import { useSearchParams } from 'react-router-dom'
 import { SearchInput } from '@/src/shared/components/SearchInput'
-import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
 import { FilterBar } from '@/src/shared/components/FilterBar'
-import { withToast } from '@/src/shared/lib/withToast'
-import { undoableAction } from '@/src/shared/lib/undoableAction'
-import { formatDate } from '@/src/shared/lib/formatDate'
-import { bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
-import { Plus, Pencil, Eye, CreditCard, CheckCircle2, CircleDashed, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Button } from '@/src/shared/components/ui/button'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
-import { ToggleSwitch, ACTIVO_OPTIONS } from '@/src/shared/components/ToggleSwitch'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/src/shared/components/ui/alert-dialog'
-import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
-import { Combobox } from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
-import { DatePicker } from '@/src/shared/components/DatePicker'
-import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
-import { CascadePreview } from '@/src/shared/components/CascadePreview'
-
+import { SalesTable } from './SalesTable'
+import { SaleFormDialog } from './SaleFormDialog'
+import { SaleViewDialog } from './SaleViewDialog'
+import { SaleAnnulAlert } from './SaleAnnulAlert'
+import { SaleDeleteAlert } from './SaleDeleteAlert'
 
 export function SalesPage() {
   const { ventas, isLoading, onCreate, onEdit, onToggleStatus, onDelete, refetch } = useSales()
   const [searchParams] = useSearchParams()
 
-  // ── Modal de abonos ───────────────────────────────────────────────────────
   const [abonoModalVenta, setAbonoModalVenta] = useState<{ id: number; label: string } | null>(null)
   const { options: clientesOpts, rawClientes, search: searchClientes } = useClientsOptions()
   const { options: citasOpts, rawCitas } = useAppointmentsOptions()
 
-  // ── Búsqueda y filtros ─────────────────────────────────────────────────
   const [q,            setQ]            = useState(searchParams.get('q') ?? '')
   const [filterEstado, setFilterEstado] = useState('')
 
   const filtered = useMemo(() => filterVentas(ventas, clientesOpts, citasOpts, q, filterEstado), [ventas, clientesOpts, citasOpts, q, filterEstado])
-
   const { paginated, page, setPage, totalPages, total: paginationTotal, pageSize, setPageSize } = usePagination(filtered)
 
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [isViewOpen, setIsViewOpen] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [isViewOpen,  setIsViewOpen]  = useState(false)
   const [viewingItem, setViewingItem] = useState<Venta | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  // Confirmación de anulación (desactivar es definitivo: no se puede reactivar)
-  const [anularTarget, setAnularTarget] = useState<{ id: number; label: string; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
-
-  const MSG_ANULAR_BASE = 'Esta acción es definitiva y no se puede reactivar.'
-
-  // Confirmación de eliminar (hard-delete: cascadea SaleDetail + Payment no
-  // validados) — mismo patrón que openAnular: previsualizar qué se borra
-  // antes de confirmar, en vez de un texto genérico fijo.
-  const [eliminarTarget, setEliminarTarget] = useState<{ id: number; label: string; loading?: boolean; bloqueado?: boolean; msg?: string; lines: string[] } | null>(null)
-
-  const openEliminar = (id: number, label: string) => {
-    setEliminarTarget({ id, label, loading: true, lines: [] })
-    apiRequest<{ success: boolean; data: VentaDetalle }>(`/api/sales/${id}`)
-      .then((res) => {
-        const sale = res.data
-        const pagosValidados = (sale.payments ?? []).some(
-          p => p.paymentStatus?.nombre?.toLowerCase().includes('validado')
-        )
-        if (pagosValidados) {
-          setEliminarTarget(prev => prev && prev.id === id
-            ? { ...prev, loading: false, bloqueado: true, msg: 'Tiene abonos validados. No se puede eliminar, solo anular.', lines: [] }
-            : prev)
-          return
-        }
-        const lines = [
-          ...(sale.saleDetails ?? []).map(d => `Servicio #${d.id_detalle} se eliminará`),
-          ...(sale.payments ?? []).map(p => `Abono #${p.id_pago} (${formatCurrency(p.monto)}) se eliminará`),
-        ]
-        setEliminarTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines } : prev)
-      })
-      .catch(() => setEliminarTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines: [] } : prev))
-  }
-
-  const confirmEliminar = () => {
-    if (!eliminarTarget || eliminarTarget.loading || eliminarTarget.bloqueado) return
-    const { id, label } = eliminarTarget
-    setEliminarTarget(null)
-    undoableAction({
-      message: `Eliminando ${label}...`,
-      successMsg: 'Venta eliminada',
-      onCommit: () => onDelete(id),
-    })
-  }
-
-  const openAnular = (id: number, label: string) => {
-    setAnularTarget({ id, label, loading: true, lines: [] })
-    apiRequest<{ success: boolean; data: VentaDetalle }>(`/api/sales/${id}`)
-      .then((res) => {
-        const sale = res.data
-        const pagosValidados = (sale.payments ?? []).some(
-          p => p.paymentStatus?.nombre?.toLowerCase().includes('validado')
-        )
-        if (pagosValidados) {
-          setAnularTarget(prev => prev && prev.id === id
-            ? { ...prev, loading: false, bloqueado: true, msg: 'Tiene pagos validados. Registra la devolución antes de anularla.', lines: [] }
-            : prev)
-          return
-        }
-        const serviciosACancelar = (sale.saleDetails ?? [])
-          .filter(d => {
-            const n = d.serviceStatus?.nombre?.toLowerCase() ?? ''
-            return !n.includes('finaliz') && !n.includes('cancel')
-          })
-          .map(d => d.id_detalle)
-        const abonosAAnular = (sale.payments ?? [])
-          .filter(p => p.paymentStatus?.nombre?.toLowerCase().includes('pendiente'))
-        const lines = [
-          ...serviciosACancelar.map(id_ => `Servicio #${id_} se cancelará`),
-          ...abonosAAnular.map(p => `Abono #${p.id_pago} (${formatCurrency(p.monto)}) se anulará`),
-        ]
-        setAnularTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines } : prev)
-      })
-      .catch(() => setAnularTarget(prev => prev && prev.id === id ? { ...prev, loading: false, lines: [] } : prev))
-  }
-  const [idCliente, setIdCliente] = useState('')
-  const [idCita, setIdCita] = useState('')
-
-  // Citas filtradas por el cliente seleccionado — últimas 5
-  const citasFormOpts = useMemo(() => {
-    if (!idCliente) return []
-    const del_cliente = citasOpts.filter(opt =>
-      rawCitas.find(c => String(c.id_cita) === opt.value)?.client?.id_cliente === Number(idCliente)
-    )
-    return del_cliente.slice(-5)
-  }, [idCliente, citasOpts, rawCitas])
-  const [fecha, setFecha] = useState('')
-  const [total, setTotal] = useState('')
-  const [observacion, setObservacion] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const confirmAnular = () => {
-    if (!anularTarget || anularTarget.loading || anularTarget.bloqueado) return
-    const { id, label } = anularTarget
-    setAnularTarget(null)
-    undoableAction({
-      message: `Anulando ${label}...`,
-      successMsg: 'Venta anulada',
-      onCommit: async () => {
-        await onToggleStatus(id)
-        await refetch() // refrescar: la anulación cambió abonos/servicios en cascada
-      },
-    })
-  }
-
-  const resetForm = () => { setIdCliente(''); setIdCita(''); setFecha(''); setTotal(''); setObservacion(''); setErrors({}); setEditingId(null) }
-  const openCreate = () => { resetForm(); setFecha(new Date().toISOString().slice(0, 10)); setIsFormOpen(true) }
-  const openEdit = (v: Venta) => {
-    setEditingId(v.id_venta); setIdCliente(String(v.id_cliente))
-    setIdCita(v.id_cita ? String(v.id_cita) : ''); setFecha(v.fecha)
-    setTotal(String(v.total)); setObservacion(v.observacion ?? '')
-    setErrors({}); setIsFormOpen(true)
-  }
   const openView = (v: Venta) => { setViewingItem(v); setIsViewOpen(true) }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const errs: Record<string, string> = {}
-    if (!idCliente)    errs.idCliente = 'Campo requerido'
-    if (!fecha.trim()) errs.fecha = 'Campo requerido'
-    if (!total.trim()) errs.total = 'Campo requerido'
-    if (Object.keys(errs).length) { setErrors(errs); return }
-    setIsSubmitting(true)
-    try {
-      const data = { id_cliente: Number(idCliente), id_cita: idCita ? Number(idCita) : null, fecha, total: Number(total), observacion, estado: true }
-      await withToast(
-        editingId ? onEdit(editingId, data) : onCreate(data),
-        editingId ? 'Venta actualizada' : 'Venta registrada'
-      )
-      setIsFormOpen(false); resetForm()
-    } catch { } finally { setIsSubmitting(false) }
-  }
+  const form = useSaleForm({ citasOpts, rawCitas, onCreate, onEdit })
+  const dangerZone = useSaleDangerZone({ onToggleStatus, onDelete, refetch })
 
   return (
     <div className="flex flex-col gap-6">
@@ -196,7 +51,7 @@ export function SalesPage() {
         </div>
         <div className="flex items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Buscar cliente, cita, fecha..." className="w-96" />
-          <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+          <Button onClick={form.openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Venta
           </Button>
         </div>
@@ -215,266 +70,56 @@ export function SalesPage() {
       ) : filtered.length === 0 ? (
         <EmptyState title="Sin registros" description="No hay ventas registradas aún." />
       ) : (
-        <>
-        <div className="flex flex-col gap-2">
-          <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-           
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[24%]">Cliente</TableHead>
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[15%]">Cita</TableHead>
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[12%]">Fecha</TableHead>
-                <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[17%]">Total</TableHead>
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[14%]">Estado</TableHead>
-                <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[18%]">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginated.map(v => {
-                const clienteLabel = clientesOpts.find(o => o.value === String(v.id_cliente))?.label ?? `#${v.id_cliente}`
-                const citaLabel = v.id_cita ? (citasOpts.find(o => o.value === String(v.id_cita))?.label ?? `#${v.id_cita}`) : '—'
-                const pagada = v.pagos_realizados >= v.num_abonos
-                const cliente = rawClientes.find(rc => rc.id_cliente === v.id_cliente)
-                // Siglas (CC/TI/CE/PP), mismo formato que la columna Documento del CRUD de Clientes.
-                const documentoLabel = cliente ? `${cliente.tipoDocumento} · ${cliente.documento}` : null
-                return (
-                  <TableRow key={v.id_venta} className={pagada ? 'bg-emerald-50 dark:bg-emerald-950/30 border-border' : 'hover:bg-muted/40 transition-colors border-border'}>
+        <SalesTable
+          ventas={paginated}
+          clientesOpts={clientesOpts} citasOpts={citasOpts}
+          rawClientes={rawClientes}
+          page={page} totalPages={totalPages} total={paginationTotal} pageSize={pageSize}
+          onPageChange={setPage} onPageSizeChange={setPageSize}
+          onView={openView}
+          onAnular={dangerZone.openAnular}
+          onEliminar={dangerZone.openEliminar}
+          onManagePayments={setAbonoModalVenta}
+        />
+      )}
 
-                    <TableCell className="text-foreground">
-                      <div className="font-medium">{clienteLabel}</div>
-                      {documentoLabel && <div className="text-xs text-muted-foreground">{documentoLabel}</div>}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{citaLabel}</TableCell>
-                    <TableCell className="text-foreground">{formatDate(v.fecha)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end gap-0.5">
-                        <span className="font-medium tabular-nums text-foreground">{formatCurrency(v.total)}</span>
-                        {pagada
-                          ? <span className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium"><CheckCircle2 className="h-3 w-3" />Pagada</span>
-                          : <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><CircleDashed className="h-3 w-3" />{v.pagos_realizados}/{v.num_abonos} abonos</span>
-                        }
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <ToggleSwitch value={v.estado ? 1 : 0} onChange={() => openAnular(v.id_venta, `Venta #${v.id_venta} · ${clienteLabel}`)} options={ACTIVO_OPTIONS} disabled={!v.estado} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" aria-label="Ver detalle de venta" onClick={() => openView(v)}>
-                              <Eye className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Ver detalle</TooltipContent>
-                        </Tooltip>
+      {viewingItem && (
+        <SaleViewDialog
+          open={isViewOpen} onOpenChange={setIsViewOpen}
+          venta={viewingItem}
+          clientesOpts={clientesOpts} citasOpts={citasOpts} rawClientes={rawClientes}
+        />
+      )}
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost" size="icon"
-                              aria-label="Gestionar abonos"
-                              aria-disabled={!v.estado}
-                              onClick={() => {
-                                if (!v.estado) return
-                                setAbonoModalVenta({
-                                  id:    v.id_venta,
-                                  label: `Venta #${v.id_venta} · ${clienteLabel}`,
-                                })
-                              }}
-                              className={!v.estado ? 'opacity-40 cursor-not-allowed' : ''}
-                            >
-                              <CreditCard className={`h-4 w-4 ${v.estado ? 'text-primary' : 'text-muted-foreground'}`} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {v.estado ? 'Gestionar abonos' : 'No se pueden gestionar abonos: la venta está anulada'}
-                          </TooltipContent>
-                        </Tooltip>
+      <SaleFormDialog
+        open={form.isFormOpen}
+        onOpenChange={v => { form.setIsFormOpen(v); if (!v) form.resetForm() }}
+        editingId={form.editingId}
+        clientesOpts={clientesOpts} onSearchClientes={searchClientes}
+        citasFormOpts={form.citasFormOpts}
+        idCliente={form.idCliente} onIdClienteChange={form.setIdCliente}
+        idCita={form.idCita} onIdCitaChange={form.setIdCita}
+        fecha={form.fecha} onFechaChange={form.setFecha}
+        total={form.total} onTotalChange={form.setTotal}
+        observacion={form.observacion} onObservacionChange={form.setObservacion}
+        errors={form.errors}
+        isSubmitting={form.isSubmitting}
+        onSubmit={form.handleSubmit}
+        onCancel={() => { form.setIsFormOpen(false); form.resetForm() }}
+      />
 
-                        {v.tiene_abono_validado ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost" size="icon"
-                                aria-label="Eliminar venta"
-                                aria-disabled
-                                onClick={() => {}}
-                                className="opacity-40 cursor-not-allowed"
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>No se puede eliminar: tiene abonos validados</TooltipContent>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost" size="icon" aria-label="Eliminar venta"
-                                onClick={() => openEliminar(v.id_venta, `Venta #${v.id_venta} · ${clienteLabel}`)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Eliminar</TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-          </div>
+      <SaleAnnulAlert
+        target={dangerZone.anularTarget}
+        onOpenChange={(o) => { if (!o) dangerZone.setAnularTarget(null) }}
+        onConfirm={dangerZone.confirmAnular}
+      />
 
-          <Pagination
-            page={page} totalPages={totalPages} total={paginationTotal} pageSize={pageSize}
-            onChange={setPage} onPageSizeChange={setPageSize} className="px-2 pb-2"
-          />
-        </div>
-        </>
-        )}
+      <SaleDeleteAlert
+        target={dangerZone.eliminarTarget}
+        onOpenChange={(o) => { if (!o) dangerZone.setEliminarTarget(null) }}
+        onConfirm={dangerZone.confirmEliminar}
+      />
 
-      {viewingItem && (() => {
-        const cliente = rawClientes.find(c => c.id_cliente === viewingItem.id_cliente)
-        return (
-        <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
-          title={`Venta #${viewingItem.id_venta}`}
-          fields={[
-            { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },
-            { label: 'Cliente', value: clientesOpts.find(o => o.value === String(viewingItem.id_cliente))?.label ?? `#${viewingItem.id_cliente}`, fullWidth: true },
-            { label: 'Tipo de documento', value: DOCUMENT_TYPES.find(t => t.value === cliente?.tipoDocumento)?.label ?? cliente?.tipoDocumento },
-            { label: 'Documento',         value: cliente?.documento },
-            { label: 'Cita',   value: viewingItem.id_cita ? (citasOpts.find(o => o.value === String(viewingItem.id_cita))?.label ?? `#${viewingItem.id_cita}`) : '—' },
-            { label: 'Fecha',  value: formatDate(viewingItem.fecha) },
-            { label: 'Total',  value: formatCurrency(viewingItem.total) },
-            { label: 'Observación', value: viewingItem.observacion ?? '—', fullWidth: true },
-          ]} />
-        )
-      })()}
-
-      <Dialog open={isFormOpen} onOpenChange={v => { setIsFormOpen(v); if (!v) resetForm() }}>
-        <DialogContent className="bg-card text-card-foreground border-border max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-serif text-xl text-secondary">{editingId ? 'Editar Venta' : 'Registrar Venta'}</DialogTitle>
-            <DialogDescription className="text-muted-foreground">Completa los datos de la venta.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
-            <div>
-              <label className={labelCls} htmlFor="vta-cliente">Cliente <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.idCliente}>
-                <div>
-                  <Combobox id="vta-cliente" options={clientesOpts} value={idCliente}
-                    onValueChange={v => { setIdCliente(v); setIdCita(''); if (errors.idCliente) setErrors(p => ({...p, idCliente:''})) }}
-                    onSearchChange={searchClientes}
-                    placeholder="Buscar cliente..." searchPlaceholder="Nombre o documento..." />
-                </div>
-              </FieldErrorTooltip>
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="vta-cita">Cita (opcional)</label>
-              <Combobox id="vta-cita" options={citasFormOpts} value={idCita} clearable
-                onValueChange={v => {
-                  setIdCita(v)
-                  const citaFecha = rawCitas.find(c => String(c.id_cita) === v)?.fecha
-                  if (citaFecha) setFecha(citaFecha)
-                }}
-                placeholder={idCliente ? 'Vincular a una cita...' : 'Selecciona un cliente primero'}
-                searchPlaceholder="Buscar cita..." />
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="vta-fecha">Fecha <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.fecha}>
-                <div>
-                  <DatePicker
-                    id="vta-fecha"
-                    value={fecha}
-                    max={bogotaMaxFuturoStr()}
-                    onChange={v => { setFecha(v); if (errors.fecha) setErrors(p => ({...p, fecha:''})) }}
-                    error={errors.fecha}
-                  />
-                </div>
-              </FieldErrorTooltip>
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="vta-total">Total <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.total}>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                  <input id="vta-total" type="number" step="1" min="0" value={total}
-                    onChange={e => { setTotal(e.target.value); if (errors.total) setErrors(p => ({...p, total:''})) }}
-                    className={inputCls + ' pl-8'} placeholder="0" />
-                </div>
-              </FieldErrorTooltip>
-              {total && <p className="text-xs text-muted-foreground">{formatCurrency(Number(total))}</p>}
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="vta-observacion">Observación (opcional)</label>
-              <textarea id="vta-observacion" value={observacion} placeholder="Notas o detalles de la venta..." onChange={e => setObservacion(e.target.value)}
-                className={inputCls + ' resize-none'} rows={3} />
-            </div>
-            <div className="flex justify-end gap-3 pt-2 border-t border-border">
-              <button type="button" onClick={() => { setIsFormOpen(false); resetForm() }} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">
-                Cancelar
-              </button>
-              <button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50">
-                {editingId ? 'Guardar cambios' : 'Registrar'}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirmación de anulación de venta */}
-      <AlertDialog open={anularTarget !== null} onOpenChange={(o) => { if (!o) setAnularTarget(null) }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Anular esta venta?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {anularTarget?.label}. {anularTarget?.bloqueado ? anularTarget.msg : MSG_ANULAR_BASE}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <CascadePreview lines={anularTarget?.lines ?? []} loading={anularTarget?.loading} />
-          <AlertDialogFooter>
-            <AlertDialogCancel>Volver</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={anularTarget?.loading || anularTarget?.bloqueado}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={confirmAnular}
-            >
-              {anularTarget?.bloqueado ? 'No se puede anular' : 'Sí, anular venta'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Confirmación de eliminar venta (hard-delete, cascadea servicios/abonos) */}
-      <AlertDialog open={eliminarTarget !== null} onOpenChange={(o) => { if (!o) setEliminarTarget(null) }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar esta venta?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {eliminarTarget?.label}. {eliminarTarget?.bloqueado ? eliminarTarget.msg : 'Esta acción no se puede deshacer.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <CascadePreview lines={eliminarTarget?.lines ?? []} loading={eliminarTarget?.loading} />
-          <AlertDialogFooter>
-            <AlertDialogCancel>Volver</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={eliminarTarget?.loading || eliminarTarget?.bloqueado}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={confirmEliminar}
-            >
-              {eliminarTarget?.bloqueado ? 'No se puede eliminar' : 'Sí, eliminar venta'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Modal abonos */}
       {abonoModalVenta && (
         <SaleInstallmentModal
           open={abonoModalVenta !== null}
