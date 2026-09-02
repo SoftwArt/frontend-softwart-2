@@ -1,57 +1,35 @@
 // src/features/services/components/ServicesPage.tsx
 import { useServices } from '../hooks/useServices'
+import { useServiceForm } from '../hooks/useServiceForm'
 import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import type { Servicio } from '../types'
-import { inputCls, labelCls, fmtDuracion, filterServicios } from '../utils'
-import { Plus, Pencil, Eye, CalendarDays, Trash2 } from 'lucide-react'
+import { filterServicios } from '../utils'
+import { Plus } from 'lucide-react'
 import { Button }   from '@/src/shared/components/ui/button'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
-import { ToggleSwitch, ACTIVO_OPTIONS } from '@/src/shared/components/ToggleSwitch'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
-import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
-import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { EmptyState }    from '@/src/shared/components/EmptyState'
 import { SearchInput }   from '@/src/shared/components/SearchInput'
 import { FilterBar }     from '@/src/shared/components/FilterBar'
-import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
-import { withToast }     from '@/src/shared/lib/withToast'
-
+import { ServicesTable } from './ServicesTable'
+import { ServiceFormDialog } from './ServiceFormDialog'
+import { ServiceViewDialog } from './ServiceViewDialog'
 
 export function ServicesPage() {
   const { servicios, isLoading, onCreate, onEdit, onDelete, onToggleStatus } = useServices()
 
-  // ── Búsqueda y filtros ─────────────────────────────────────────────────────
   const [q,            setQ]            = useState('')
   const [filterEstado, setFilterEstado] = useState('')
 
   const filtered = useMemo(() => filterServicios(servicios, q, filterEstado), [servicios, q, filterEstado])
-
   const { paginated, page, setPage, totalPages, total, pageSize, setPageSize } = usePagination(filtered)
 
-  // ── Form ───────────────────────────────────────────────────────────────────
-  const [isFormOpen,   setIsFormOpen]   = useState(false)
-  const [isViewOpen,   setIsViewOpen]   = useState(false)
-  const [editingId,    setEditingId]    = useState<number | null>(null)
-  const [viewingItem,  setViewingItem]  = useState<Servicio | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [nombre,       setNombre]       = useState('')
-  const [descripcion,  setDescripcion]  = useState('')
-  const [duracionStr,  setDuracionStr]  = useState('')
-  const [errors,       setErrors]       = useState<Record<string, string>>({})
-
-  const resetForm  = () => { setNombre(''); setDescripcion(''); setDuracionStr(''); setErrors({}); setEditingId(null) }
-  const openCreate = () => { resetForm(); setIsFormOpen(true) }
-  const openEdit   = (s: Servicio) => {
-    setEditingId(s.id_servicio); setNombre(s.nombre)
-    setDescripcion(s.descripcion ?? ''); setDuracionStr(String(s.duracion))
-    setErrors({}); setIsFormOpen(true)
-  }
+  const [isViewOpen,  setIsViewOpen]  = useState(false)
+  const [viewingItem, setViewingItem] = useState<Servicio | null>(null)
   const openView = (s: Servicio) => { setViewingItem(s); setIsViewOpen(true) }
+
+  const form = useServiceForm({ onCreate, onEdit })
 
   const handleDelete = async (id: number) => {
     const err = await onDelete(id)
@@ -59,32 +37,8 @@ export function ServicesPage() {
     else toast.success('Tipo de servicio eliminado')
   }
 
-  const validate = () => {
-    const e: Record<string, string> = {}
-    if (!nombre.trim())      e.nombre   = 'Campo requerido'
-    if (!duracionStr.trim()) e.duracion = 'Campo requerido'
-    else if (Number(duracionStr) <= 0) e.duracion = 'Debe ser mayor a 0'
-    return e
-  }
-
-  const handleSubmit = async (ev: React.FormEvent) => {
-    ev.preventDefault()
-    const e = validate(); if (Object.keys(e).length) { setErrors(e); return }
-    setIsSubmitting(true)
-    try {
-      const data = { nombre, descripcion, duracion: Number(duracionStr), estado: true }
-      await withToast(
-        editingId ? onEdit(editingId, data) : onCreate(data),
-        editingId ? 'Servicio actualizado' : 'Servicio registrado'
-      )
-      setIsFormOpen(false); resetForm()
-    } catch { } finally { setIsSubmitting(false) }
-  }
-
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-secondary">Tipos de Servicio</h1>
@@ -92,7 +46,7 @@ export function ServicesPage() {
         </div>
         <div className="flex items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Buscar nombre o descripción..." className="w-96" />
-          <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+          <Button onClick={form.openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Tipo
           </Button>
         </div>
@@ -106,160 +60,38 @@ export function ServicesPage() {
         onClear={() => setFilterEstado('')}
       />
 
-
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={`sk-${i}`} className="h-12 w-full rounded-md" />)}</div>
       ) : filtered.length === 0 ? (
         <EmptyState title="Sin resultados" description="No hay servicios que coincidan." />
       ) : (
-        <div className="flex flex-col gap-2">
-          <div className="overflow-x-auto rounded-lg border border-border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                
-                  <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[18%]">Nombre</TableHead>
-                  <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[10%]">Duración</TableHead>
-                  <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[36%]">Descripción</TableHead>
-                  <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[12%]">Estado</TableHead>
-                  <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[24%]">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginated.map(s => (
-                  <TableRow key={s.id_servicio} className="hover:bg-muted/40 transition-colors border-border">
-             
-                    <TableCell className="text-foreground font-medium">{s.nombre}</TableCell>
-                    <TableCell className="text-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
-                        {fmtDuracion(s.duracion)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground max-w-xs truncate">{s.descripcion ?? '—'}</TableCell>
-                    <TableCell>
-                      <ToggleSwitch value={s.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(s.id_servicio), 'Estado actualizado')} options={ACTIVO_OPTIONS} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" aria-label="Ver detalle de servicio" onClick={() => openView(s)}>
-                              <Eye className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Ver detalle</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" aria-label="Editar servicio" onClick={() => openEdit(s)}>
-                              <Pencil className="h-4 w-4 text-foreground" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Editar</TooltipContent>
-                        </Tooltip>
-                        <AlertDialog>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label="Eliminar tipo de servicio">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent>Eliminar</TooltipContent>
-                          </Tooltip>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar este tipo de servicio?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Se eliminará <strong>{s.nombre}</strong>. Si ya está siendo usado en algún
-                                pedido registrado, no podrá eliminarse. Esta acción no se puede deshacer.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() => handleDelete(s.id_servicio)}
-                              >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <Pagination page={page} totalPages={totalPages} total={total} pageSize={pageSize}
-            onChange={setPage} onPageSizeChange={setPageSize} className="px-2 pb-2" />
-        </div>
+        <ServicesTable
+          servicios={paginated}
+          page={page} totalPages={totalPages} total={total} pageSize={pageSize}
+          onPageChange={setPage} onPageSizeChange={setPageSize}
+          onView={openView}
+          onEdit={form.openEdit}
+          onToggleStatus={onToggleStatus}
+          onDelete={handleDelete}
+        />
       )}
 
       {viewingItem && (
-        <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
-          title={`Servicio — ${viewingItem.nombre}`}
-          fields={[
-            { label: 'Estado',      value: <EstadoBadge estado={viewingItem.estado} /> },
-            { label: 'Nombre',      value: viewingItem.nombre,       fullWidth: true },
-            { label: 'Duración',    value: fmtDuracion(viewingItem.duracion) },
-            { label: 'Descripción', value: viewingItem.descripcion,  fullWidth: true },
-          ]} />
+        <ServiceViewDialog open={isViewOpen} onOpenChange={setIsViewOpen} servicio={viewingItem} />
       )}
 
-      <Dialog open={isFormOpen} onOpenChange={v => { setIsFormOpen(v); if (!v) resetForm() }}>
-        <DialogContent className="bg-card text-card-foreground border-border max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-serif text-xl text-secondary">
-              {editingId ? 'Editar Tipo de Servicio' : 'Registrar Tipo de Servicio'}
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              La duración estimada ayuda a planificar la entrega del pedido.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
-            <div>
-              <label className={labelCls} htmlFor="srv-nombre">Nombre <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.nombre}>
-                <input id="srv-nombre" value={nombre} placeholder="Ej: Enmarcado simple"
-                  onChange={e => { setNombre(e.target.value); if (errors.nombre) setErrors(p => ({...p, nombre:''})) }}
-                  className={inputCls} />
-              </FieldErrorTooltip>
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="srv-duracion">
-                Duración estimada (días) <span className="text-destructive">*</span>
-              </label>
-              <FieldErrorTooltip error={errors.duracion}>
-                <input id="srv-duracion" type="number" min="1" step="1" value={duracionStr}
-                  onChange={e => { setDuracionStr(e.target.value); if (errors.duracion) setErrors(p => ({...p, duracion:''})) }}
-                  className={inputCls}
-                  placeholder="Ej: 7 (= 1 semana)" />
-              </FieldErrorTooltip>
-              {duracionStr && Number(duracionStr) > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">{fmtDuracion(Number(duracionStr))}</p>
-              )}
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="srv-descripcion">Descripción (opcional)</label>
-              <textarea id="srv-descripcion" value={descripcion} placeholder="Descripción del servicio..." onChange={e => setDescripcion(e.target.value)}
-                className={`${inputCls} resize-none`} rows={3} />
-            </div>
-            <div className="flex justify-end gap-3 pt-2 border-t border-border">
-              <button type="button" onClick={() => { setIsFormOpen(false); resetForm() }}
-                className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">Cancelar</button>
-              <button type="submit" disabled={isSubmitting}
-                className="px-5 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50">
-                {editingId ? 'Guardar cambios' : 'Registrar'}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ServiceFormDialog
+        open={form.isFormOpen}
+        onOpenChange={v => { form.setIsFormOpen(v); if (!v) form.resetForm() }}
+        editingId={form.editingId}
+        nombre={form.nombre} onNombreChange={form.setNombre}
+        duracionStr={form.duracionStr} onDuracionChange={form.setDuracionStr}
+        descripcion={form.descripcion} onDescripcionChange={form.setDescripcion}
+        errors={form.errors}
+        isSubmitting={form.isSubmitting}
+        onSubmit={form.handleSubmit}
+        onCancel={() => { form.setIsFormOpen(false); form.resetForm() }}
+      />
     </div>
   )
 }

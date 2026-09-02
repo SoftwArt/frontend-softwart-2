@@ -1,11 +1,11 @@
-// src/features/auth/components/ResetPasswordHeader.tsx
+// src/features/auth/components/LoginHeader.tsx
 import { Link } from 'react-router-dom'
 import { m } from 'framer-motion'
-import { ArrowLeft, LogIn } from 'lucide-react'
+import { ArrowLeft, UserPlus } from 'lucide-react'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
-export function ResetPasswordHeader() {
+export function LoginHeader() {
   return (
     <m.header
       className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm"
@@ -19,11 +19,11 @@ export function ResetPasswordHeader() {
         </Link>
         <div className="flex items-center gap-4">
           <Link
-            to="/login"
+            to="/register"
             className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors duration-300"
           >
-            <LogIn className="h-3.5 w-3.5" />
-            Iniciar sesión
+            <UserPlus className="h-3.5 w-3.5" />
+            Crear cuenta
           </Link>
           <Link
             to="/"

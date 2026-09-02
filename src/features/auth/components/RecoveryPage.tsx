@@ -1,19 +1,11 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 import { useRecovery } from '../hooks/useRecovery'
-import { Button } from '@/src/shared/components/ui/button'
-import { Input }  from '@/src/shared/components/ui/input'
-import { ArrowLeft, ArrowRight, LockKeyhole, Loader2, LogIn, MailCheck } from 'lucide-react'
-import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
+import { AuthMinimalHeader } from './AuthMinimalHeader'
+import { RecoverySuccess } from './RecoverySuccess'
+import { RecoveryFormFields } from './RecoveryFormFields'
 
 const EASE = [0.22, 1, 0.36, 1] as const
-
-const labelCls = 'block text-xs font-medium capitalize tracking-widest text-foreground/70 mb-2'
-const fieldCls =
-  'bg-[#f5f3ef] border-0 border-b border-border rounded-none ' +
-  'focus-visible:ring-0 focus-visible:ring-offset-0 ' +
-  'px-4 py-4 h-auto transition-all text-foreground placeholder:text-muted-foreground/50'
 
 export function RecoveryPage() {
   const { onSubmit, isLoading, error: hookError } = useRecovery()
@@ -35,35 +27,7 @@ export function RecoveryPage() {
     <LazyMotion features={domAnimation}>
     <div className="min-h-screen flex flex-col bg-[#002926] selection:bg-[#805533]/30">
 
-      {/* ── Header ────────────────────────────────────────────────────── */}
-      <m.header
-        className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: EASE }}
-      >
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/">
-            <img src="/softwart-logo.png" alt="SoftwArt" className="h-9 w-auto object-contain" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors duration-300"
-            >
-              <LogIn className="h-3.5 w-3.5" />
-              Iniciar sesión
-            </Link>
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors duration-300"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Volver al inicio
-            </Link>
-          </div>
-        </div>
-      </m.header>
+      <AuthMinimalHeader />
 
       {/* ── Main ──────────────────────────────────────────────────────── */}
       <main className="flex-1 flex items-center justify-center px-6 py-24 relative overflow-hidden">
@@ -85,95 +49,22 @@ export function RecoveryPage() {
           >
             <AnimatePresence mode="wait">
               {success ? (
-
-                /* ── Estado: código enviado ── */
-                <m.div
-                  key="success"
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.4, ease: EASE }}
-                  className="text-center space-y-5"
-                >
-                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-                    <MailCheck className="h-8 w-8 text-emerald-600" />
-                  </div>
-                  <div>
-                    <h2 className="font-serif text-2xl font-bold text-foreground">¡Solicitud enviada!</h2>
-                    <p className="text-muted-foreground text-sm mt-2">
-                      Si el correo <span className="font-medium text-foreground">{correo}</span> está registrado,
-                      te llegará un enlace para restablecer tu contraseña. Expira en 15 minutos.
-                    </p>
-                  </div>
-                </m.div>
-
+                <RecoverySuccess correo={correo} />
               ) : (
-
-                /* ── Formulario ── */
                 <m.div
                   key="form"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: EASE }}
                 >
-                  {/* Ícono */}
-                  <div className="flex justify-center mb-8">
-                    <div className="w-16 h-16 rounded-full bg-[#efeeea] flex items-center justify-center">
-                      <LockKeyhole className="h-7 w-7 text-[#805533]" />
-                    </div>
-                  </div>
-
-                  {/* Título */}
-                  <h1 className="font-serif italic text-3xl md:text-4xl text-center text-[#002926] tracking-tight mb-4">
-                    Recuperar contraseña
-                  </h1>
-                  <p className="text-muted-foreground text-center text-sm mb-10 px-4 leading-relaxed">
-                    Ingresa tu correo para enviarte un enlace de recuperación
-                  </p>
-
-                  <form onSubmit={handleSubmit} className="space-y-8" noValidate>
-
-                    {/* Campo correo con subrayado animado */}
-                    <div className="relative group">
-                      <label className={labelCls} htmlFor="correo">Correo electrónico</label>
-                      <FieldErrorTooltip error={localError}>
-                        <Input
-                          id="correo" type="email"
-                          value={correo}
-                          onChange={e => { setCorreo(e.target.value); if (localError) setLocalError('') }}
-                          placeholder="ejemplo@artecafe.com" required
-                          className={fieldCls}
-                        />
-                      </FieldErrorTooltip>
-                      {/* Barra animada de focus */}
-                      <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#002926] transition-all duration-500 group-focus-within:w-full" />
-                    </div>
-
-                    {/* Error de submit (ya salió, ej. rate-limit) anclado al botón —
-                        mismo patrón que RegisterPage/LoginPage/ResetPasswordPage. */}
-                    <FieldErrorTooltip error={hookError} side="top">
-                    <Button
-                      type="submit" disabled={isLoading}
-                      className="w-full bg-[#805533] hover:bg-[#a6714a] text-white font-serif italic text-xl py-6 rounded-lg shadow-lg shadow-[#805533]/20 transition-all active:scale-[0.98] gap-2"
-                    >
-                      {isLoading
-                        ? <><Loader2 className="h-4 w-4 animate-spin" />Enviando...</>
-                        : <>Enviar enlace <ArrowRight className="h-4 w-4" /></>
-                      }
-                    </Button>
-                    </FieldErrorTooltip>
-                  </form>
-
-                  <div className="mt-12 text-center">
-                    <Link
-                      to="/login"
-                      className="inline-flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-[#805533] transition-colors"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Volver al inicio de sesión
-                    </Link>
-                  </div>
+                  <RecoveryFormFields
+                    correo={correo} onCorreoChange={v => { setCorreo(v); if (localError) setLocalError('') }}
+                    localError={localError}
+                    hookError={hookError}
+                    isLoading={isLoading}
+                    onSubmit={handleSubmit}
+                  />
                 </m.div>
-
               )}
             </AnimatePresence>
           </m.div>

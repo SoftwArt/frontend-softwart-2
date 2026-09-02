@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 import { useResetPasswordFlow } from '../hooks/useResetPasswordFlow'
-import { ResetPasswordHeader } from './ResetPasswordHeader'
+import { AuthMinimalHeader } from './AuthMinimalHeader'
 import { ResetPasswordSuccess } from './ResetPasswordSuccess'
 import { ResetPasswordFormFields } from './ResetPasswordFormFields'
 import { ResendLinkForm } from './ResendLinkForm'
@@ -28,7 +28,7 @@ export function ResetPasswordPage() {
     <LazyMotion features={domAnimation}>
     <div className="min-h-screen flex flex-col bg-[#002926] selection:bg-[#805533]/30">
 
-      <ResetPasswordHeader />
+      <AuthMinimalHeader />
 
       {/* ── Main ──────────────────────────────────────────────────────── */}
       <main className="flex-1 flex items-center justify-center px-6 py-24 relative overflow-hidden">
