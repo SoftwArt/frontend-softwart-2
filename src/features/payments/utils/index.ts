@@ -1,4 +1,4 @@
-import type { Pago } from '../types'
+import type { Pago, MetodoPago, EstadoPago } from '../types'
 
 export const inputCls  = 'w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all text-sm'
 export const labelCls  = 'block text-xs font-bold capitalize tracking-widest text-muted-foreground mb-2'
@@ -35,4 +35,11 @@ export function filterPagos(
     const matchEstado = !filterEstado || String(p.id_estado_pago) === filterEstado
     return matchQ && matchMetodo && matchEstado
   })
+}
+
+export function metodoLabel(metodos: MetodoPago[], id: number): string {
+  return metodos.find(m => m.id_metodo_pago === id)?.nombre ?? `#${id}`
+}
+export function estadoLabel(estados: EstadoPago[], id: number): string {
+  return estados.find(e => e.id_estado_pago === id)?.nombre ?? `#${id}`
 }

@@ -14,6 +14,8 @@ export type EstadoPago  = { id_estado_pago: number; nombre: string }
 export type CreatePagoDto = Omit<Pago, 'id_pago'>
 export type UpdatePagoDto = Partial<CreatePagoDto>
 
+export type PagoStatusAlert = { open: boolean; msg: string; title?: string; pagoId?: number; showAnular?: boolean }
+
 export type BackendPago = {
   id_pago:        number
   fecha:          string

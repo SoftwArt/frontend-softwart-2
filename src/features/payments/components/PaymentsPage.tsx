@@ -1,219 +1,40 @@
 // src/features/payments/components/PaymentsPage.tsx
 import { usePayments } from '../hooks/usePayments'
+import { usePaymentForm } from '../hooks/usePaymentForm'
+import { usePaymentStatusFlow } from '../hooks/usePaymentStatusFlow'
 import { useSalesOptions } from '@/src/shared/hooks/useOptions'
-import { formatCurrency } from '@/src/shared/lib/formatCurrency'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import type { Pago } from '../types'
-import { inputCls, labelCls, selectCls, ESTADO_BADGE, METODO_BADGE, filterPagos } from '../utils'
-import { useSearchParams } from 'react-router-dom'
-import { Plus, Eye } from 'lucide-react'
+import { filterPagos } from '../utils'
+import { Plus } from 'lucide-react'
 import { Button }   from '@/src/shared/components/ui/button'
-import { Badge }    from '@/src/shared/components/ui/badge'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
-import { StatusSelect } from '@/src/shared/components/StatusSelect'
-import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
-import { ViewDialog } from '@/src/shared/components/ViewDialog'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
-import { Combobox }    from '@/src/shared/components/Combobox'
 import { EmptyState } from '@/src/shared/components/EmptyState'
-import { withToast } from '@/src/shared/lib/withToast'
-import { undoableAction } from '@/src/shared/lib/undoableAction'
 import { SearchInput } from '@/src/shared/components/SearchInput'
-import { Pagination }    from '@/src/shared/components/Pagination'
 import { usePagination } from '@/src/shared/hooks/usePagination'
 import { FilterBar }   from '@/src/shared/components/FilterBar'
-import { formatDate } from '@/src/shared/lib/formatDate'
-import { bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
-import { DatePicker } from '@/src/shared/components/DatePicker'
-
+import { PaymentsTable } from './PaymentsTable'
+import { PaymentFormDialog } from './PaymentFormDialog'
+import { PaymentViewDialog } from './PaymentViewDialog'
+import { PaymentStatusAlert } from './PaymentStatusAlert'
 
 export function PaymentsPage() {
   const { pagos, metodosPago, estadosPago, isLoading, onCreate, onChangeStatus, onChangeMethod } = usePayments()
   const { options: ventasOpts, rawVentas, search: searchVentas } = useSalesOptions()
 
-  // ── Búsqueda y filtros ─────────────────────────────────────────────────────
   const [q,             setQ]             = useState('')
   const [filterMetodo,  setFilterMetodo]  = useState('')
   const [filterEstado,  setFilterEstado]  = useState('')
 
   const filtered = useMemo(() => filterPagos(pagos, ventasOpts, q, filterMetodo, filterEstado), [pagos, ventasOpts, q, filterMetodo, filterEstado])
-
   const { paginated, page, setPage, totalPages, total, pageSize, setPageSize } = usePagination(filtered)
 
-  // ── Form ───────────────────────────────────────────────────────────────────
-  const [isFormOpen,   setIsFormOpen]   = useState(false)
-  const [isViewOpen,   setIsViewOpen]   = useState(false)
-  const [viewingItem,  setViewingItem]  = useState<Pago | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [idVenta,  setIdVenta]  = useState('')
-  const [monto,    setMonto]    = useState('')
-  const [fecha,    setFecha]    = useState('')
-  const [idMetodo, setIdMetodo] = useState('')
-  const [idEstado, setIdEstado] = useState('')
-  const [errors,   setErrors]   = useState<Record<string, string>>({})
+  const [isViewOpen,  setIsViewOpen]  = useState(false)
+  const [viewingItem, setViewingItem] = useState<Pago | null>(null)
+  const openView = (p: Pago) => { setViewingItem(p); setIsViewOpen(true) }
 
-  const ventaPagada = useMemo(() => {
-    if (!idVenta) return false
-    const v = rawVentas.find(rv => String(rv.id_venta) === idVenta)
-    if (!v) return false
-    const pagosValidados = pagos.filter(p => {
-      if (String(p.id_venta) !== idVenta) return false
-      const estado = estadosPago.find(e => e.id_estado_pago === p.id_estado_pago)?.nombre ?? ''
-      return estado.toLowerCase().includes('validado')
-    })
-    const totalInstallments = Number(v.num_abonos)
-    return Number.isFinite(totalInstallments) && totalInstallments > 0 && pagosValidados.length >= totalInstallments
-  }, [idVenta, rawVentas, pagos, estadosPago])
-
-  const totalVenta = useMemo(() => {
-    if (!idVenta) return null
-    const venta = rawVentas.find(rv => String(rv.id_venta) === idVenta) as any
-    if (!venta) return null
-
-    const total = Number(venta.total ?? venta.total_venta ?? venta.monto_total ?? venta.valor_total)
-    return Number.isFinite(total) && total >= 0 ? total : null
-  }, [idVenta, rawVentas])
-
-  const saldoPendiente = useMemo(() => {
-    if (!idVenta || totalVenta === null) return null
-    const pagosActivos = pagos.filter(p => {
-      if (String(p.id_venta) !== idVenta) return false
-      const estado = estadosPago.find(e => e.id_estado_pago === p.id_estado_pago)?.nombre ?? ''
-      return !estado.toLowerCase().includes('anulado')
-    })
-    const pagado = pagosActivos.reduce((sum, p) => sum + Number(p.monto ?? 0), 0)
-
-    return Math.max(0, totalVenta - pagado)
-  }, [idVenta, pagos, estadosPago, totalVenta])
-
-  const ventaCompletada = ventaPagada || saldoPendiente === 0
-
-  // Primer abono con 70% por defecto; los siguientes reparten el saldo
-  // pendiente entre los installments restantes.
-  const nextInstallment = useMemo(() => {
-    if (!idVenta) return null
-    const venta = rawVentas.find(rv => String(rv.id_venta) === idVenta) as any
-    if (!venta) return null
-
-    const total = Number(venta.total ?? venta.total_venta ?? venta.monto_total ?? venta.valor_total)
-    const totalInstallments = Number(venta.num_abonos ?? venta.numero_abonos ?? venta.installments)
-    if (!Number.isFinite(total) || !Number.isFinite(totalInstallments) || totalInstallments <= 0) return null
-
-    const pagosActivos = pagos.filter(p => {
-      if (String(p.id_venta) !== idVenta) return false
-      const estado = estadosPago.find(e => e.id_estado_pago === p.id_estado_pago)?.nombre ?? ''
-      return !estado.toLowerCase().includes('anulado')
-    })
-    const pagado = pagosActivos.reduce((sum, p) => sum + Number(p.monto ?? 0), 0)
-    const installmentsRestantes = totalInstallments - pagosActivos.length
-    if (installmentsRestantes <= 0) return null
-
-    if (pagosActivos.length === 0) {
-      const porcentajePrimerAbono = Number(venta.porcentaje_primer_abono ?? venta.porcentajePrimerAbono ?? 70)
-      if (Number.isFinite(porcentajePrimerAbono) && porcentajePrimerAbono > 0 && porcentajePrimerAbono < 100) {
-        return Math.max(0, total * porcentajePrimerAbono / 100)
-      }
-    }
-
-    return Math.max(0, (total - pagado) / installmentsRestantes)
-  }, [idVenta, rawVentas, pagos, estadosPago])
-
-  useEffect(() => {
-    setMonto(nextInstallment === null ? '' : String(Math.round(nextInstallment)))
-  }, [nextInstallment])
-
-  const resetForm  = () => { setIdVenta(''); setMonto(''); setFecha(''); setIdMetodo(''); setIdEstado(''); setErrors({}) }
-  const openCreate = (preIdVenta = '') => {
-    resetForm()
-    if (preIdVenta) setIdVenta(preIdVenta)
-    setFecha(new Date().toISOString().slice(0, 10))
-    setIsFormOpen(true)
-  }
-
-  // Abrir form automáticamente si viene ?id_venta=X en la URL
-  const [searchParams, setSearchParams] = useSearchParams()
-  useEffect(() => {
-    const idVentaParam = searchParams.get('id_venta')
-    if (idVentaParam) {
-      openCreate(idVentaParam)
-      // Limpiar el param de la URL sin redirigir
-      setSearchParams({}, { replace: true })
-    }
-  }, [])
-  const openView   = (p: Pago) => { setViewingItem(p); setIsViewOpen(true) }
-
-  const getMetodoLabel = (id: number) => metodosPago.find(m => m.id_metodo_pago === id)?.nombre ?? `#${id}`
-  const getEstadoLabel = (id: number) => estadosPago.find(e => e.id_estado_pago === id)?.nombre ?? `#${id}`
-
-  // ── Protección de estado Validado / Anulado ────────────────────────────────
-  const [alertEstado, setAlertEstado] = useState<{ open: boolean; msg: string; title?: string; pagoId?: number; showAnular?: boolean }>({ open: false, msg: '' })
-
-  const handleChangeStatus = (pago: Pago, nuevoIdEstado: number) => {
-    const estadoActual = getEstadoLabel(pago.id_estado_pago).toLowerCase()
-    const estadoNuevo  = getEstadoLabel(nuevoIdEstado).toLowerCase()
-
-    if (estadoActual.includes('anulado')) {
-      setAlertEstado({ open: true, msg: 'Este pago fue anulado y su estado no puede modificarse.' })
-      return
-    }
-    if (estadoActual.includes('validado') && !estadoNuevo.includes('anulado')) {
-      setAlertEstado({ open: true, msg: 'Un pago validado no puede cambiar de estado. Si es necesario, solo se puede anular.', pagoId: pago.id_pago, showAnular: true })
-      return
-    }
-    // Anular es terminal e irreversible → pedir confirmación antes de aplicar
-    if (estadoNuevo.includes('anulado')) {
-      setAlertEstado({ open: true, msg: 'Anular un pago es definitivo: no podrá modificarse ni reactivarse después.', pagoId: pago.id_pago, showAnular: true })
-      return
-    }
-    withToast(onChangeStatus(pago.id_pago, nuevoIdEstado), 'Estado actualizado')
-  }
-
-  const idEstadoAnulado = estadosPago.find(e => e.nombre.toLowerCase().includes('anulado'))?.id_estado_pago
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (ventaCompletada) {
-      setAlertEstado({
-        open: true,
-        title: 'Venta completada',
-        msg: ventaPagada
-          ? 'Esta venta ya tiene todos sus abonos registrados y no admite más pagos.'
-          : 'Esta venta ya tiene el total pagado y no admite más pagos.',
-      })
-      return
-    }
-
-    const montoIngresado = Number(monto)
-    if (saldoPendiente !== null && Number.isFinite(montoIngresado) && montoIngresado > saldoPendiente) {
-      setAlertEstado({
-        open: true,
-        title: 'Monto superior al saldo pendiente',
-        msg: `No se puede ingresar más de ${formatCurrency(saldoPendiente)} en esta venta.`,
-      })
-      return
-    }
-
-    const errs: Record<string, string> = {}
-    if (!idVenta)      errs.idVenta  = 'Campo requerido'
-    if (!monto.trim()) errs.monto    = 'Campo requerido'
-    if (!fecha.trim()) errs.fecha    = 'Campo requerido'
-    if (!idMetodo)     errs.idMetodo = 'Campo requerido'
-    if (!idEstado)     errs.idEstado = 'Campo requerido'
-    if (Object.keys(errs).length) { setErrors(errs); return }
-    setIsSubmitting(true)
-    try {
-      await withToast(
-        onCreate({ id_venta: Number(idVenta), monto: Number(monto), fecha, id_metodo_pago: Number(idMetodo), id_estado_pago: Number(idEstado) }),
-        'Pago registrado correctamente'
-      )
-      setIsFormOpen(false); resetForm()
-    } catch { } finally { setIsSubmitting(false) }
-  }
+  const statusFlow = usePaymentStatusFlow({ estadosPago, onChangeStatus })
+  const form = usePaymentForm({ pagos, estadosPago, rawVentas, onCreate, onAlert: statusFlow.setAlertEstado })
 
   return (
     <div className="flex flex-col gap-4">
@@ -224,7 +45,7 @@ export function PaymentsPage() {
         </div>
         <div className="flex items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Buscar venta, monto, fecha..." className="w-96" />
-          <Button onClick={() => openCreate()} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+          <Button onClick={() => form.openCreate()} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Pago
           </Button>
         </div>
@@ -245,240 +66,52 @@ export function PaymentsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState title="Sin resultados" description="No hay pagos que coincidan." />
       ) : (
-        <div className="flex flex-col gap-2">
-          <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-     
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[28%]">Venta</TableHead>
-                <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[11%]">Monto</TableHead>
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[13%]">Fecha</TableHead>
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[16%]">Método</TableHead>
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[18%]">Estado</TableHead>
-                <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[14%]">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginated.map(p => {
-                const ventaLabel   = ventasOpts.find(o => o.value === String(p.id_venta))?.label ?? `#${p.id_venta}`
-                const clienteLabel = rawVentas.find(rv => rv.id_venta === p.id_venta)?.client?.nombre ?? null
-                const estadoNombre = getEstadoLabel(p.id_estado_pago)
-                // Mismo estándar visual que Ventas/Servicios (bg-emerald): un
-                // pago Validado ya completó su flujo — se reconoce de un
-                // vistazo, sin tener que leer el badge de estado.
-                const validado = estadoNombre.toLowerCase().includes('validado')
-                return (
-                  <TableRow
-                    key={p.id_pago}
-                    className={validado
-                      ? 'bg-emerald-50 dark:bg-emerald-950/30 border-border'
-                      : 'hover:bg-muted/40 transition-colors border-border'}
-                  >
-     
-                    <TableCell className="text-foreground text-sm">
-                      <div className="font-medium">{ventaLabel}</div>
-                      {clienteLabel && <div className="text-xs text-muted-foreground">{clienteLabel}</div>}
-                    </TableCell>
-                    <TableCell className="text-foreground text-right font-medium tabular-nums">{formatCurrency(p.monto)}</TableCell>
-                    <TableCell className="text-foreground">{formatDate(p.fecha)}</TableCell>
-                    <TableCell>
-                      <StatusSelect
-                        value={String(p.id_metodo_pago)}
-                        onValueChange={v => withToast(onChangeMethod(p.id_pago, Number(v)), 'Método actualizado')}
-                        options={metodosPago.map(m => ({
-                          value:    String(m.id_metodo_pago),
-                          label:    m.nombre,
-                          badgeCls: METODO_BADGE[m.nombre] ?? 'border-slate-300 bg-slate-100 text-slate-600',
-                        }))}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {estadoNombre.toLowerCase().includes('anulado') ? (
-                        <Badge variant="outline" className="border-red-300 bg-red-100 text-red-800 cursor-not-allowed opacity-70">{estadoNombre}</Badge>
-                      ) : (
-                        <StatusSelect
-                          value={String(p.id_estado_pago)}
-                          onValueChange={v => handleChangeStatus(p, Number(v))}
-                          options={estadosPago.map(e => ({
-                            value:    String(e.id_estado_pago),
-                            label:    e.nombre,
-                            badgeCls: ESTADO_BADGE[e.nombre] ?? 'border-slate-300 bg-slate-100 text-slate-600',
-                          }))}
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" aria-label="Ver detalle de pago" onClick={() => openView(p)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Ver detalle</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-          </div>
-
-          <Pagination
-            page={page} totalPages={totalPages} total={total} pageSize={pageSize}
-            onChange={setPage} onPageSizeChange={setPageSize} className="px-2 pb-2"
-          />
-        </div>
-        )}
-
-      {viewingItem && (
-        <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
-          title={`Pago #${viewingItem.id_pago}`}
-          fields={[
-            { label: 'Venta',          value: ventasOpts.find(o => o.value === String(viewingItem.id_venta))?.label ?? `#${viewingItem.id_venta}`, fullWidth: true },
-            { label: 'Monto',          value: formatCurrency(viewingItem.monto) },
-            { label: 'Fecha',          value: formatDate(viewingItem.fecha) },
-            { label: 'Método de pago', value: getMetodoLabel(viewingItem.id_metodo_pago) },
-            { label: 'Estado',         value: getEstadoLabel(viewingItem.id_estado_pago) },
-          ]} />
+        <PaymentsTable
+          pagos={paginated}
+          metodosPago={metodosPago} estadosPago={estadosPago}
+          ventasOpts={ventasOpts} rawVentas={rawVentas}
+          page={page} totalPages={totalPages} total={total} pageSize={pageSize}
+          onPageChange={setPage} onPageSizeChange={setPageSize}
+          onView={openView}
+          onChangeStatus={statusFlow.handleChangeStatus}
+          onChangeMethod={(p, nuevoIdMetodo) => onChangeMethod(p.id_pago, nuevoIdMetodo)}
+        />
       )}
 
-      <AlertDialog open={alertEstado.open} onOpenChange={v => { if (!v) setAlertEstado({ open: false, msg: '' }) }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{alertEstado.title ?? (alertEstado.showAnular ? '¿Anular este pago?' : 'Estado no modificable')}</AlertDialogTitle>
-            <AlertDialogDescription>{alertEstado.msg}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{alertEstado.showAnular ? 'Volver' : 'Cerrar'}</AlertDialogCancel>
-            {alertEstado.showAnular && idEstadoAnulado && (
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => {
-                  if (alertEstado.pagoId && idEstadoAnulado) {
-                    const { pagoId } = alertEstado
-                    undoableAction({
-                      message: 'Anulando pago...',
-                      successMsg: 'Pago anulado',
-                      onCommit: () => onChangeStatus(pagoId, idEstadoAnulado),
-                    })
-                  }
-                  setAlertEstado({ open: false, msg: '' })
-                }}
-              >
-                Anular pago
-              </AlertDialogAction>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {viewingItem && (
+        <PaymentViewDialog
+          open={isViewOpen} onOpenChange={setIsViewOpen}
+          pago={viewingItem}
+          ventasOpts={ventasOpts}
+          metodosPago={metodosPago} estadosPago={estadosPago}
+        />
+      )}
 
-      <Dialog open={isFormOpen} onOpenChange={v => { setIsFormOpen(v); if (!v) resetForm() }}>
-        <DialogContent className="bg-card text-card-foreground border-border max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-serif text-xl text-secondary">Registrar Pago</DialogTitle>
-            <DialogDescription className="text-muted-foreground">Completa los datos del pago.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
-            <div>
-              <label className={labelCls} htmlFor="pago-venta">Venta <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.idVenta}>
-                <div>
-                  <Combobox id="pago-venta" options={ventasOpts} value={idVenta} onValueChange={v => { setIdVenta(v); if (errors.idVenta) setErrors(p => ({...p, idVenta:''})) }} onSearchChange={searchVentas} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
-                </div>
-              </FieldErrorTooltip>
-              {ventaPagada && (
-                <p className="mt-1 text-xs text-destructive font-medium">Esta venta ya tiene todos sus abonos registrados y no admite más pagos.</p>
-              )}
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="pago-monto">Monto <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.monto}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="relative">
-                      <input
-                        id="pago-monto"
-                        type="text"
-                        inputMode="numeric"
-                        value={monto ? formatCurrency(monto) : ''}
-                        readOnly={!idVenta || saldoPendiente === 0}
-                        aria-disabled={!idVenta || saldoPendiente === 0}
-                        onChange={e => {
-                          const digits = e.target.value.replace(/\D/g, '')
-                          const numericValue = Number(digits)
-                          const cappedValue = saldoPendiente !== null && Number.isFinite(numericValue) && numericValue > saldoPendiente
-                            ? String(saldoPendiente)
-                            : digits
-                          setMonto(cappedValue)
-                          if (saldoPendiente !== null && Number.isFinite(numericValue) && numericValue > saldoPendiente) {
-                            setAlertEstado({
-                              open: true,
-                              title: 'Monto superior al saldo pendiente',
-                              msg: `No se puede ingresar más de ${formatCurrency(saldoPendiente)} en esta venta.`,
-                            })
-                          }
-                          if (errors.monto) setErrors(p => ({...p, monto:''}))
-                        }}
-                        className={inputCls + ` ${(!idVenta || saldoPendiente === 0) ? 'cursor-not-allowed opacity-60' : ''}`}
-                        placeholder={idVenta ? '0' : 'Seleccione una venta'}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  {(!idVenta || saldoPendiente === 0) && (
-                    <TooltipContent>
-                      {!idVenta ? 'Elija primero una venta para habilitar el monto.' : 'Esta venta ya está totalmente pagada.'}
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </FieldErrorTooltip>
-              {nextInstallment !== null && !ventaPagada && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Próximo abono sugerido:{' '}
-                  <span className="font-semibold text-foreground">{formatCurrency(nextInstallment)}</span>
-                </p>
-              )}
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="pago-fecha">Fecha <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.fecha}>
-                <div>
-                  <DatePicker
-                    id="pago-fecha"
-                    value={fecha}
-                    max={bogotaMaxFuturoStr()}
-                    onChange={v => { setFecha(v); if (errors.fecha) setErrors(p => ({...p, fecha:''})) }}
-                    error={errors.fecha}
-                  />
-                </div>
-              </FieldErrorTooltip>
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="pago-metodo">Método de pago <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.idMetodo}>
-                <Select value={idMetodo} onValueChange={v => { setIdMetodo(v); if (errors.idMetodo) setErrors(p => ({...p, idMetodo:''})) }}>
-                  <SelectTrigger id="pago-metodo" className={selectCls}><SelectValue placeholder="Seleccionar método" /></SelectTrigger>
-                  <SelectContent>{metodosPago.map(m => <SelectItem key={m.id_metodo_pago} value={String(m.id_metodo_pago)}>{m.nombre}</SelectItem>)}</SelectContent>
-                </Select>
-              </FieldErrorTooltip>
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="pago-estado">Estado <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.idEstado}>
-                <Select value={idEstado} onValueChange={v => { setIdEstado(v); if (errors.idEstado) setErrors(p => ({...p, idEstado:''})) }}>
-                  <SelectTrigger id="pago-estado" className={selectCls}><SelectValue placeholder="Seleccionar estado" /></SelectTrigger>
-                  <SelectContent>{estadosPago.map(e => <SelectItem key={e.id_estado_pago} value={String(e.id_estado_pago)}>{e.nombre}</SelectItem>)}</SelectContent>
-                </Select>
-              </FieldErrorTooltip>
-            </div>
-            <div className="flex justify-end gap-3 pt-2 border-t border-border">
-              <button type="button" onClick={() => { setIsFormOpen(false); resetForm() }} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">Cancelar</button>
-              <button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50">Registrar</button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <PaymentStatusAlert
+        state={statusFlow.alertEstado}
+        hasIdEstadoAnulado={!!statusFlow.idEstadoAnulado}
+        onOpenChange={(v) => { if (!v) statusFlow.closeAlertEstado() }}
+        onConfirmAnular={statusFlow.confirmAnular}
+      />
+
+      <PaymentFormDialog
+        open={form.isFormOpen}
+        onOpenChange={v => { form.setIsFormOpen(v); if (!v) form.resetForm() }}
+        ventasOpts={ventasOpts} onSearchVentas={searchVentas}
+        metodosPago={metodosPago} estadosPago={estadosPago}
+        idVenta={form.idVenta} onIdVentaChange={form.setIdVenta}
+        monto={form.monto} onMontoChange={form.setMonto}
+        fecha={form.fecha} onFechaChange={form.setFecha}
+        idMetodo={form.idMetodo} onIdMetodoChange={form.setIdMetodo}
+        idEstado={form.idEstado} onIdEstadoChange={form.setIdEstado}
+        errors={form.errors}
+        isSubmitting={form.isSubmitting}
+        ventaPagada={form.ventaPagada}
+        saldoPendiente={form.saldoPendiente}
+        nextInstallment={form.nextInstallment}
+        onSubmit={form.handleSubmit}
+        onCancel={() => { form.setIsFormOpen(false); form.resetForm() }}
+      />
     </div>
   )
 }
