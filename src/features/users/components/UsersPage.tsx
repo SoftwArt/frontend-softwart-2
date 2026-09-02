@@ -1,110 +1,40 @@
 // src/features/users/components/UsersPage.tsx
 import { useUsers } from '../hooks/useUsers'
+import { useUserForm } from '../hooks/useUserForm'
 import { useRolesOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo } from 'react'
-import type { Usuario, CreateUsuarioDto, UpdateUsuarioDto } from '../types'
-import { inputCls, labelCls, selectCls, getRolLabel, getRolBadgeClass, filterUsuarios } from '../utils'
-import { Plus, Pencil, Eye, Trash2 } from 'lucide-react'
+import type { Usuario } from '../types'
+import { filterUsuarios } from '../utils'
+import { Plus } from 'lucide-react'
 import { Button }   from '@/src/shared/components/ui/button'
-import { Badge }    from '@/src/shared/components/ui/badge'
 import { Skeleton } from '@/src/shared/components/ui/skeleton'
-import { ToggleSwitch, ACTIVO_OPTIONS } from '@/src/shared/components/ToggleSwitch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/src/shared/components/ui/alert-dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/shared/components/ui/table'
-import { ViewDialog, EstadoBadge } from '@/src/shared/components/ViewDialog'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { EmptyState } from '@/src/shared/components/EmptyState'
-import { withToast } from '@/src/shared/lib/withToast'   
 import { SearchInput }  from '@/src/shared/components/SearchInput'
 import { FilterBar }    from '@/src/shared/components/FilterBar'
 import { usePagination } from '@/src/shared/hooks/usePagination'
-import { Pagination } from '@/src/shared/components/Pagination'
-import { PasswordChecklist } from '@/src/shared/components/PasswordChecklist'
-import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
-import { validatePassword } from '@/src/shared/lib/passwordValidation'
-import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
-
+import { UsersTable } from './UsersTable'
+import { UserFormDialog } from './UserFormDialog'
+import { UserViewDialog } from './UserViewDialog'
 
 export function UsersPage() {
   const { usuarios, isLoading, onCreate, onEdit, onDelete, onToggleStatus } = useUsers()
   const { options: rolesOptsActivos, rawRoles } = useRolesOptions()
 
-  // ── Búsqueda y filtros ─────────────────────────────────────────────────────
   const [q,           setQ]           = useState('')
   const [filterRol,   setFilterRol]   = useState('')
   const [filterEstado, setFilterEstado] = useState('')
 
   const filtered = useMemo(() => filterUsuarios(usuarios, rawRoles, q, filterRol, filterEstado), [usuarios, rawRoles, q, filterRol, filterEstado])
-
   const { paginated, page, setPage, totalPages, total, pageSize, setPageSize } = usePagination(filtered)
 
-  // ── Form ───────────────────────────────────────────────────────────────────
-  const [isFormOpen,   setIsFormOpen]   = useState(false)
-  const [isViewOpen,   setIsViewOpen]   = useState(false)
-  const [editingId,    setEditingId]    = useState<number | null>(null)
-  const [viewingItem,  setViewingItem]  = useState<Usuario | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [correo, setCorreo] = useState('')
-  const [clave,  setClave]  = useState('')
-  const [idRol,  setIdRol]  = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isViewOpen,  setIsViewOpen]  = useState(false)
+  const [viewingItem, setViewingItem] = useState<Usuario | null>(null)
+  const openView = (u: Usuario) => { setViewingItem(u); setIsViewOpen(true) }
 
-  // Roles activos + el rol actualmente asignado (si se está editando y ese
-  // rol pasó a inactivo después de asignado) — así no se pierde de vista
-  // qué rol tiene hoy, sin permitir elegir otros roles inactivos.
-  const rolesOptsForm = useMemo(() => {
-    if (editingId && !rolesOptsActivos.some(r => r.value === idRol)) {
-      const actual = rawRoles.find(r => String(r.id_rol) === idRol)
-      if (actual) return [...rolesOptsActivos, { value: String(actual.id_rol), label: `${actual.nombre} (inactivo)` }]
-    }
-    return rolesOptsActivos
-  }, [rolesOptsActivos, rawRoles, editingId, idRol])
-
-  const resetForm  = () => { setCorreo(''); setClave(''); setIdRol(''); setErrors({}); setEditingId(null) }
-  const openCreate = () => { resetForm(); setIsFormOpen(true) }
-  const openEdit   = (u: Usuario) => { setEditingId(u.id_usuario); setCorreo(u.correo); setClave(''); setIdRol(String(u.id_rol)); setErrors({}); setIsFormOpen(true) }
-  const openView   = (u: Usuario) => { setViewingItem(u); setIsViewOpen(true) }
-
-  // El admin base no puede cambiar de correo ni de rol (updateUser lo rechaza
-  // con 403) — el form se lo deshabilita en vez de dejar que falle al guardar.
-  const editingIsAdminBase = editingId !== null && usuarios.find(u => u.id_usuario === editingId)?.es_admin_base === true
-
-  const handleDelete = (id: number) => withToast(onDelete(id), 'Usuario eliminado')
-
-  // Reactivo: igual que Register/Clientes, no espera al submit.
-  const correoFormatoError = correo.length > 0 && !isEmailValid(correo) ? EMAIL_ERROR : null
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const newErrors: Record<string, string> = {}
-    if (!correo.trim())              newErrors.correo = 'Campo requerido'
-    else if (correoFormatoError)     newErrors.correo = correoFormatoError
-    if (!editingId) {
-      if (!clave.trim())             newErrors.clave  = 'Campo requerido'
-      else {
-        const pw = validatePassword(clave)
-        if (!pw.valid)               newErrors.clave  = pw.firstError ?? 'Contraseña no válida'
-      }
-    }
-    if (!idRol)                      newErrors.idRol  = 'Campo requerido'
-    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
-    setIsSubmitting(true)
-    try {
-      await withToast(
-        editingId
-          ? onEdit(editingId, { correo, id_rol: Number(idRol) } as UpdateUsuarioDto)
-          : onCreate({ correo, clave, id_rol: Number(idRol), estado: true } as CreateUsuarioDto),
-        editingId ? 'Usuario actualizado' : 'Usuario registrado'
-      )
-      setIsFormOpen(false); resetForm()
-    } catch { } finally { setIsSubmitting(false) }
-  }
+  const form = useUserForm({ usuarios, rolesOptsActivos, rawRoles, onCreate, onEdit })
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl text-secondary">Usuarios</h1>
@@ -112,13 +42,12 @@ export function UsersPage() {
         </div>
         <div className="flex items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Buscar por correo o rol..." className="w-64" />
-          <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+          <Button onClick={form.openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Usuario
           </Button>
         </div>
       </div>
 
-      {/* FilterBar */}
       <FilterBar
         filters={[
           { key: 'rol', label: 'Rol', type: 'select', value: filterRol, onChange: setFilterRol,
@@ -134,163 +63,37 @@ export function UsersPage() {
       ) : filtered.length === 0 ? (
         <EmptyState title="Sin resultados" description="No hay usuarios que coincidan con la búsqueda." />
       ) : (
-        <div className="flex flex-col gap-2">
-          <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-     
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[50%]">Correo</TableHead>
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[18%]">Rol</TableHead>
-                <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[14%]">Estado</TableHead>
-                <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[18%]">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginated.map((u) => (
-                <TableRow key={u.id_usuario} className="hover:bg-muted/40 transition-colors border-border">
-            
-                  <TableCell className="text-foreground">{u.correo}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getRolBadgeClass(rawRoles, u.id_rol)}>
-                      {getRolLabel(rawRoles, u.id_rol)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell><ToggleSwitch value={u.estado ? 1 : 0} onChange={() => withToast(onToggleStatus(u.id_usuario), 'Estado actualizado')} options={ACTIVO_OPTIONS} disabled={u.es_admin_base} /></TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Ver detalle de usuario" onClick={() => openView(u)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Ver detalle</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Editar usuario" onClick={() => openEdit(u)}><Pencil className="h-4 w-4 text-foreground" /></Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Editar</TooltipContent>
-                      </Tooltip>
-                      {u.es_admin_base ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost" size="icon"
-                              aria-label="Eliminar usuario"
-                              aria-disabled
-                              onClick={() => {}}
-                              className="opacity-40 cursor-not-allowed"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>El usuario administrador base no puede eliminarse</TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <AlertDialog>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label="Eliminar usuario">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent>Eliminar</TooltipContent>
-                          </Tooltip>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar este usuario?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Se eliminará el acceso de <strong>{u.correo}</strong>. Esta acción no se puede deshacer.
-                                {getRolLabel(rawRoles, u.id_rol) === 'Cliente' && (
-                                  <>
-                                    {' '}Como su rol es <strong>Cliente</strong>, perderá el acceso al portal y
-                                    deberá registrarse de nuevo para recuperarlo — su historial como cliente
-                                    (citas, ventas, pagos) no se ve afectado.
-                                  </>
-                                )}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() => handleDelete(u.id_usuario)}
-                              >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          </div>
-
-          <Pagination
-            page={page} totalPages={totalPages} total={total} pageSize={pageSize}
-            onChange={setPage} onPageSizeChange={setPageSize} className="px-2 pb-2"
-          />
-        </div>
-        )}
-
-      {viewingItem && (
-        <ViewDialog open={isViewOpen} onOpenChange={setIsViewOpen}
-          title={`Usuario #${viewingItem.id_usuario}`}
-          fields={[
-            { label: 'Estado', value: <EstadoBadge estado={viewingItem.estado} /> },
-            { label: 'Correo', value: viewingItem.correo, fullWidth: true },
-            { label: 'Rol',    value: <Badge variant="outline" className={getRolBadgeClass(rawRoles, viewingItem.id_rol)}>{getRolLabel(rawRoles, viewingItem.id_rol)}</Badge> },
-          ]} />
+        <UsersTable
+          usuarios={paginated}
+          rawRoles={rawRoles}
+          page={page} totalPages={totalPages} total={total} pageSize={pageSize}
+          onPageChange={setPage} onPageSizeChange={setPageSize}
+          onView={openView}
+          onEdit={form.openEdit}
+          onToggleStatus={onToggleStatus}
+          onDelete={onDelete}
+        />
       )}
 
-      <Dialog open={isFormOpen} onOpenChange={(v) => { setIsFormOpen(v); if (!v) resetForm() }}>
-        <DialogContent className="bg-card text-card-foreground border-border max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-serif text-xl text-secondary">{editingId ? 'Editar Usuario' : 'Registrar Usuario'}</DialogTitle>
-            <DialogDescription className="text-muted-foreground">{editingId ? 'Actualiza el correo o el rol.' : 'Completa los datos del nuevo usuario.'}</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-2" noValidate>
-            <div>
-              <label className={labelCls} htmlFor="usr-correo">Correo <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.correo || correoFormatoError}>
-                <input id="usr-correo" type="email" value={correo} placeholder='Ingrese el correo...' disabled={editingIsAdminBase} onChange={(e) => { setCorreo(e.target.value); if (errors.correo) setErrors({...errors, correo:''}) }} className={inputCls} />
-              </FieldErrorTooltip>
-              {editingIsAdminBase && <p className="text-xs text-muted-foreground mt-1">El correo del administrador base no puede cambiarse.</p>}
-            </div>
-            {!editingId && (
-              <div>
-                <label className={labelCls} htmlFor="usr-clave">Contraseña <span className="text-destructive">*</span></label>
-                <FieldErrorTooltip error={errors.clave}>
-                  <input id="usr-clave" type="password" value={clave} placeholder='Ingrese la contraseña...' onChange={(e) => { setClave(e.target.value); if (errors.clave) setErrors({...errors, clave:''}) }} className={inputCls} />
-                </FieldErrorTooltip>
-                <PasswordChecklist password={clave} />
-              </div>
-            )}
-            <div>
-              <label className={labelCls} htmlFor="usr-rol">Rol <span className="text-destructive">*</span></label>
-              <FieldErrorTooltip error={errors.idRol}>
-                <Select value={idRol} disabled={editingIsAdminBase} onValueChange={(v) => { setIdRol(v); if (errors.idRol) setErrors({...errors, idRol:''}) }}>
-                  <SelectTrigger id="usr-rol" className={selectCls}><SelectValue placeholder="Seleccionar rol" /></SelectTrigger>
-                  <SelectContent>
-                    {rolesOptsForm.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </FieldErrorTooltip>
-              {editingIsAdminBase && <p className="text-xs text-muted-foreground mt-1">El rol del administrador base no puede cambiarse.</p>}
-            </div>
-            <div className="flex justify-end gap-3 pt-2 border-t border-border">
-              <button type="button" onClick={() => { setIsFormOpen(false); resetForm() }} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors">Cancelar</button>
-              <button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50">{editingId ? 'Guardar cambios' : 'Registrar'}</button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {viewingItem && (
+        <UserViewDialog open={isViewOpen} onOpenChange={setIsViewOpen} usuario={viewingItem} rawRoles={rawRoles} />
+      )}
+
+      <UserFormDialog
+        open={form.isFormOpen}
+        onOpenChange={(v) => { form.setIsFormOpen(v); if (!v) form.resetForm() }}
+        editingId={form.editingId}
+        correo={form.correo} onCorreoChange={form.setCorreo}
+        clave={form.clave} onClaveChange={form.setClave}
+        idRol={form.idRol} onIdRolChange={form.setIdRol}
+        rolesOptsForm={form.rolesOptsForm}
+        errors={form.errors}
+        correoFormatoError={form.correoFormatoError}
+        editingIsAdminBase={form.editingIsAdminBase}
+        isSubmitting={form.isSubmitting}
+        onSubmit={form.handleSubmit}
+        onCancel={() => { form.setIsFormOpen(false); form.resetForm() }}
+      />
     </div>
   )
 }

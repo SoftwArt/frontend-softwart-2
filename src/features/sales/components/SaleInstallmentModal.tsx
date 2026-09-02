@@ -1,132 +1,22 @@
 // src/features/sales/components/SaleInstallmentModal.tsx
-import { useState, useEffect } from 'react'
-import { toast } from 'sonner'
-import { apiRequest } from '@/src/shared/lib/apiClient'
-import { formatCurrency } from '@/src/shared/lib/formatCurrency'
-import type { AbonoEsperado, EstadoPago, EstadoPagos, MetodoPago, SaleInstallmentModalProps } from '../types'
-import { inputCls, labelCls } from '../utils'
+import { useSaleInstallmentModal } from '../hooks/useSaleInstallmentModal'
+import type { SaleInstallmentModalProps } from '../types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
-import { Button }  from '@/src/shared/components/ui/button'
-import { Badge }   from '@/src/shared/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/components/ui/select'
-import { CheckCircle2, CreditCard, Settings2, ChevronRight } from 'lucide-react'
-import { formatDate } from '@/src/shared/lib/formatDate'
-import { DatePicker } from '@/src/shared/components/DatePicker'
-import { bogotaMaxFuturoStr } from '@/src/shared/lib/bogotaTime'
-import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
-
-// Mismo margen que el default de `tolerancia` en registerInstallment
-// (SaleInstallmentsController.ts) — $1 de holgura por redondeos. Si el
-// backend cambia su default, hay que actualizar acá también (no hay un
-// endpoint que lo exponga todavía).
-const TOLERANCIA_ABONO = 1
+import { CreditCard } from 'lucide-react'
+import { formatCurrency } from '@/src/shared/lib/formatCurrency'
+import { InstallmentPlanProgress } from './InstallmentPlanProgress'
+import { InstallmentPayTab } from './InstallmentPayTab'
+import { InstallmentConfigTab } from './InstallmentConfigTab'
+import { InstallmentCompletedBanner } from './InstallmentCompletedBanner'
 
 export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuccess }: SaleInstallmentModalProps) {
-  const [estado,            setEstado]            = useState<EstadoPagos | null>(null)
-  const [metodos,           setMetodos]           = useState<MetodoPago[]>([])
-  const [idEstadoValidado,  setIdEstadoValidado]  = useState<number | null>(null)
-  const [isLoading,         setIsLoading]         = useState(false)
-  const [tab,               setTab]               = useState<'pagar' | 'configurar'>('pagar')
-
-  // Form pago
-  const [monto,        setMonto]        = useState('')
-  const [idMetodo,     setIdMetodo]     = useState('')
-  const [fechaPago,    setFechaPago]    = useState(() => new Date().toISOString().slice(0, 10))
-  const [isPagando,    setIsPagando]    = useState(false)
-
-  // Form configurar
-  const [numAbonos,    setNumAbonos]    = useState('')
-  const [pctPrimero,   setPctPrimero]   = useState('')
-  const [isConfigurando, setIsConfigurando] = useState(false)
-
-  // Cargar estado de pagos y métodos
-  useEffect(() => {
-    if (!open || !idVenta) return
-    setIsLoading(true)
-    setTab('pagar')
-
-    Promise.all([
-      apiRequest<{ success: boolean; data: EstadoPagos }>(`/api/sales/${idVenta}/payment-plan`),
-      apiRequest<{ success: boolean; data: MetodoPago[] }>('/api/payment-methods?limit=50'),
-      apiRequest<{ success: boolean; data: EstadoPago[] }>('/api/payment-status?limit=50'),
-    ])
-      .then(([estadoRes, metodosRes, estadosPagoRes]) => {
-        setEstado(estadoRes.data)
-        setMetodos(metodosRes.data ?? [])
-        const validado = (estadosPagoRes.data ?? []).find(e => e.nombre === 'Validado')
-        setIdEstadoValidado(validado?.id_estado_pago ?? null)
-        // Pre-llenar monto con el siguiente abono esperado
-        if (estadoRes.data.siguiente_abono) {
-          setMonto(String(estadoRes.data.siguiente_abono.expectedAmount))
-        }
-        setNumAbonos(String(estadoRes.data.num_abonos))
-        setPctPrimero(String(estadoRes.data.porcentaje_primer_abono))
-      })
-      .catch(() => {})
-      .finally(() => setIsLoading(false))
-  }, [open, idVenta])
-
-  const handlePagar = async () => {
-    if (!idMetodo) { toast.error('Selecciona el método de pago'); return }
-    setIsPagando(true)
-    try {
-      const body: Record<string, unknown> = { monto: Number(monto), id_metodo_pago: Number(idMetodo), fecha: fechaPago }
-      if (idEstadoValidado != null) body.id_estado_pago = idEstadoValidado
-      const res = await apiRequest<{ success: boolean; message: string; data: any }>(
-        `/api/sales/${idVenta}/installment`,
-        { method: 'POST', body: JSON.stringify(body) }
-      )
-      toast.success(res.message)
-      onSuccess()
-      // Recargar estado
-      const estadoRes = await apiRequest<{ success: boolean; data: EstadoPagos }>(`/api/sales/${idVenta}/payment-plan`)
-      setEstado(estadoRes.data)
-      if (estadoRes.data.siguiente_abono) setMonto(String(estadoRes.data.siguiente_abono.expectedAmount))
-      else setMonto('')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Error al registrar abono')
-    } finally { setIsPagando(false) }
-  }
-
-  const handleConfigurar = async () => {
-    setIsConfigurando(true)
-    try {
-      const res = await apiRequest<{ success: boolean; message: string; data: any }>(
-        `/api/sales/${idVenta}/configure-installments`,
-        { method: 'PATCH', body: JSON.stringify({
-            num_abonos:             Number(numAbonos),
-            porcentaje_primer_abono: Number(pctPrimero),
-        })}
-      )
-      toast.success(res.message)
-      const estadoRes = await apiRequest<{ success: boolean; data: EstadoPagos }>(`/api/sales/${idVenta}/payment-plan`)
-      setEstado(estadoRes.data)
-      if (estadoRes.data.siguiente_abono) setMonto(String(estadoRes.data.siguiente_abono.expectedAmount))
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Error al configurar')
-    } finally { setIsConfigurando(false) }
-  }
-
-  // Reactivo: mismo criterio de aceptación que registerInstallment
-  // (SaleInstallmentsController.ts) — último abono exige monto exacto
-  // (± tolerancia), los intermedios solo exigen un mínimo (se puede pagar de
-  // más, no de menos). Feedback inmediato en vez de esperar el 400 del submit.
-  const siguienteAbono = estado?.siguiente_abono
-  const montoError = (() => {
-    if (!siguienteAbono || !monto.trim()) return undefined
-    const montoNum = Number(monto)
-    if (isNaN(montoNum)) return 'Monto inválido'
-    const esperado    = siguienteAbono.expectedAmount
-    const diferencia  = Math.abs(montoNum - esperado)
-    if (siguienteAbono.isLast) {
-      if (diferencia > TOLERANCIA_ABONO) {
-        return `El último abono debe ser de ${formatCurrency(esperado)} (saldo exacto). Ingresaste ${formatCurrency(montoNum)}`
-      }
-    } else if (montoNum < esperado - TOLERANCIA_ABONO) {
-      return `El abono ${siguienteAbono.number} debe ser de al menos ${formatCurrency(esperado)}`
-    }
-    return undefined
-  })()
+  const {
+    estado, metodos, isLoading, tab, setTab,
+    monto, setMonto, idMetodo, setIdMetodo, fechaPago, setFechaPago, isPagando,
+    numAbonos, setNumAbonos, pctPrimero, setPctPrimero, isConfigurando,
+    handlePagar, handleConfigurar,
+    montoError,
+  } = useSaleInstallmentModal({ open, idVenta, onSuccess })
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
@@ -146,50 +36,7 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
         ) : !estado ? null : (
           <div className="flex flex-col gap-4 mt-2">
 
-            {/* ── Barra de progreso ────────────────────────────────────────── */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Pagado: {formatCurrency(estado.total_pagado)}</span>
-                <span>Saldo: {formatCurrency(estado.saldo_pendiente)}</span>
-              </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${Math.min(100, estado.total_pagado / estado.total * 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* ── Plan de abonos ───────────────────────────────────────────── */}
-            <div className="grid gap-1.5">
-              {estado.plan_abonos.map(ab => {
-                const pagado = estado.historial_pagos[ab.number - 1]
-                return (
-                  <div key={ab.number}
-                    className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm
-                      ${pagado ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950 dark:border-emerald-800'
-                               : ab.number === (estado.pagos_realizados + 1)
-                                 ? 'border-primary/40 bg-primary/5'
-                                 : 'border-border bg-muted/30'}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {pagado
-                        ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                        : <span className="h-4 w-4 rounded-full border-2 border-muted-foreground/40 shrink-0" />
-                      }
-                      <span className="font-medium text-foreground">Abono {ab.number}</span>
-                      <span className="text-muted-foreground text-xs">({ab.percentage}%)</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-semibold text-foreground">{formatCurrency(ab.amount)}</span>
-                      {pagado && (
-                        <span className="ml-2 text-xs text-emerald-600">{formatDate(pagado.fecha)}</span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+            <InstallmentPlanProgress estado={estado} />
 
             {/* ── Tabs: Pagar / Configurar ─────────────────────────────────── */}
             {!estado.completado && (
@@ -208,168 +55,32 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
                   ))}
                 </div>
 
-                {/* Tab Pagar */}
-                {tab === 'pagar' && estado.siguiente_abono && (
-                  <div className="flex flex-col gap-3">
-                    <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm">
-                      <span className="text-muted-foreground">Abono {estado.siguiente_abono.number} esperado: </span>
-                      <span className="font-bold text-foreground">{formatCurrency(estado.siguiente_abono.expectedAmount)}</span>
-                      {estado.siguiente_abono.isLast && (
-                        <Badge variant="outline" className="ml-2 text-[10px] border-amber-300 bg-amber-50 text-amber-700">Último abono</Badge>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={labelCls} htmlFor="abono-monto">Monto ($) <span className="text-destructive">*</span></label>
-                        <FieldErrorTooltip error={montoError}>
-                          <input
-                            id="abono-monto"
-                            type="number" min="0" value={monto} placeholder="0"
-                            onChange={e => setMonto(e.target.value)}
-                            className={inputCls}
-                          />
-                        </FieldErrorTooltip>
-                        {monto && <p className="text-xs text-muted-foreground mt-1">{formatCurrency(Number(monto))}</p>}
-                      </div>
-                      <div>
-                        <label className={labelCls} htmlFor="abono-fecha">Fecha <span className="text-destructive">*</span></label>
-                        <DatePicker
-                          id="abono-fecha"
-                          value={fechaPago}
-                          max={bogotaMaxFuturoStr()}
-                          onChange={v => setFechaPago(v)}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className={labelCls}>Método de pago <span className="text-destructive">*</span></label>
-                      <div className="flex rounded-lg border border-border overflow-hidden mt-1">
-                        {metodos.map(m => (
-                          <button
-                            key={m.id_metodo_pago}
-                            type="button"
-                            onClick={() => setIdMetodo(String(m.id_metodo_pago))}
-                            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors
-                              ${idMetodo === String(m.id_metodo_pago)
-                                ? 'bg-secondary text-secondary-foreground'
-                                : 'bg-background text-muted-foreground hover:bg-muted hover:text-foreground'}`}
-                          >
-                            {m.nombre}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 self-end">
-                      <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={isPagando}
-                        className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handlePagar}
-                        disabled={isPagando || !monto || !idMetodo || !!montoError}
-                        className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                        {isPagando ? 'Registrando...' : `Registrar abono ${estado.siguiente_abono.number}`}
-                      </button>
-                    </div>
-                  </div>
+                {tab === 'pagar' && (
+                  <InstallmentPayTab
+                    estado={estado}
+                    metodos={metodos}
+                    monto={monto} onMontoChange={setMonto} montoError={montoError}
+                    fechaPago={fechaPago} onFechaPagoChange={setFechaPago}
+                    idMetodo={idMetodo} onIdMetodoChange={setIdMetodo}
+                    isPagando={isPagando}
+                    onCancel={onClose}
+                    onSubmit={handlePagar}
+                  />
                 )}
 
-                {/* Tab Configurar */}
                 {tab === 'configurar' && (
-                  <div className="flex flex-col gap-3">
-                    {estado.pagos_realizados > 0 && (
-                      <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                        Ya hay {estado.pagos_realizados} pago(s) registrado(s). No se puede cambiar la configuración.
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={labelCls} htmlFor="abono-num">Número de abonos <span className="text-destructive">*</span></label>
-                        <input
-                          id="abono-num"
-                          type="number" min="1" max="12"
-                          value={numAbonos} placeholder="Ej: 2"
-                          onChange={e => setNumAbonos(e.target.value)}
-                          disabled={estado.pagos_realizados > 0}
-                          className={inputCls}
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1">Máximo 12</p>
-                      </div>
-                      <div>
-                        <label className={labelCls} htmlFor="abono-pct">% primer abono <span className="text-destructive">*</span></label>
-                        <input
-                          id="abono-pct"
-                          type="number" min="1" max="99"
-                          value={pctPrimero} placeholder="Ej: 70"
-                          onChange={e => setPctPrimero(e.target.value)}
-                          disabled={estado.pagos_realizados > 0}
-                          className={inputCls}
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1">Entre 1 y 99</p>
-                      </div>
-                    </div>
-
-                    {/* Preview del plan */}
-                    {numAbonos && pctPrimero && Number(numAbonos) >= 1 && Number(pctPrimero) >= 1 && (
-                      <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-                        <p className="font-medium text-foreground mb-1.5">Vista previa:</p>
-                        {(() => {
-                          const t = estado.total
-                          const n = Number(numAbonos)
-                          const p = Number(pctPrimero)
-                          const a1 = Math.round(t * p / 100 * 100) / 100
-                          const resto = t - a1
-                          if (n === 1) return <p>Abono único: {formatCurrency(t)}</p>
-                          const intermedios = Array.from({ length: n - 2 }, (_, i) =>
-                            Math.round(resto / (n - 1) * 100) / 100
-                          )
-                          const ultimo = Math.round((resto - intermedios.reduce((a,b) => a+b, 0)) * 100) / 100
-                          return (
-                            <div className="space-y-0.5">
-                              <p>Abono 1: {formatCurrency(a1)} ({p}%)</p>
-                              {intermedios.map((m, i) => <p key={`abono-${i}`}>Abono {i+2}: {formatCurrency(m)}</p>)}
-                              <p>Abono {n} (último): {formatCurrency(ultimo)}</p>
-                            </div>
-                          )
-                        })()}
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={handleConfigurar}
-                      disabled={isConfigurando || estado.pagos_realizados > 0}
-                      variant="outline"
-                      className="gap-2 self-end"
-                    >
-                      <Settings2 className="h-4 w-4" />
-                      {isConfigurando ? 'Guardando...' : 'Guardar configuración'}
-                    </Button>
-                  </div>
+                  <InstallmentConfigTab
+                    estado={estado}
+                    numAbonos={numAbonos} onNumAbonosChange={setNumAbonos}
+                    pctPrimero={pctPrimero} onPctPrimeroChange={setPctPrimero}
+                    isConfigurando={isConfigurando}
+                    onSubmit={handleConfigurar}
+                  />
                 )}
               </>
             )}
 
-            {/* Completado */}
-            {estado.completado && (
-              <div className="flex items-center gap-3 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-emerald-800">Venta completamente pagada</p>
-                  <p className="text-xs text-emerald-700">{estado.num_abonos} abono(s) · Total: {formatCurrency(estado.total)}</p>
-                </div>
-              </div>
-            )}
+            {estado.completado && <InstallmentCompletedBanner estado={estado} />}
 
           </div>
         )}

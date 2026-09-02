@@ -1,291 +1,48 @@
 // src/features/account/hooks/useAccount.ts
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
-import { apiRequest } from '@/src/shared/lib/apiClient'
-import { performLogout, clearAuth } from '@/src/features/auth/utils'
-import { validatePassword } from '@/src/shared/lib/passwordValidation'
-import { isTelefonoValid, TELEFONO_ERROR } from '@/src/shared/lib/validateTelefono'
-import { isNombreLongitudValida, NOMBRE_MIN_ERROR } from '@/src/shared/lib/validateNombre'
-import { isEmailValid, EMAIL_ERROR } from '@/src/shared/lib/validateEmail'
-import { usePolling } from '@/src/shared/hooks/usePolling'
-import { bogotaTomorrowStr } from '@/src/shared/lib/bogotaTime'
-import { BookedSlot } from '@/src/shared/components/TimePicker'
+import { performLogout } from '@/src/features/auth/utils'
+import { useAccountData } from './useAccountData'
+import { useProfileForm } from './useProfileForm'
+import { usePasswordForm } from './usePasswordForm'
+import { useAppointmentBooking } from './useAppointmentBooking'
+import { useDeleteAccount } from './useDeleteAccount'
 import type { PerfilCliente, Cita, Servicio } from '../types'
 
 export type { PerfilCliente, Cita, Servicio } from '../types'
 
-type ApiResponse<T> = { success: boolean; message?: string; data: T }
-
 // ── Hook ──────────────────────────────────────────────────────────────────────
-
+// Composición de los hooks especializados de la cuenta del cliente — mantiene
+// la misma forma plana de retorno que antes para no tocar los consumidores
+// (MyAccountPage, ProfileModal, AppointmentsModal, NewAppointmentModal, ServicesModal).
 export function useAccount() {
   const navigate = useNavigate()
 
-  // ── Estado servidor ─────────────────────────────────────────────────────────
-  const [perfil,    setPerfil]    = useState<PerfilCliente | null>(null)
-  const [citas,     setCitas]     = useState<Cita[]>([])
-  const [servicios, setServicios] = useState<Servicio[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error,     setError]     = useState<string | null>(null)
-
-  // ── Derived ─────────────────────────────────────────────────────────────────
-  const primerNombre = perfil?.nombre?.split(' ')[0] ?? ''
-
-  const proximaCita = useMemo(() =>
-    [...citas]
-      .filter(c => {
-        const n = c.appointmentStatus?.nombre?.toLowerCase() ?? ''
-        return n.includes('pend') || n.includes('confirmada')
-      })
-      .sort((a, b) => a.fecha.localeCompare(b.fecha))[0] ?? null
-  , [citas])
-
-  const serviciosActivos = useMemo(() =>
-    servicios.filter(s => {
-      const e = s.estado.toLowerCase()
-      return !e.includes('finaliz') && !e.includes('cancel')
-    }).length
-  , [servicios])
-
-  const ultimoServicio = useMemo(() =>
-    [...servicios].sort((a, b) => b.fecha.localeCompare(a.fecha))[0] ?? null
-  , [servicios])
-
-  const serviciosRecientes = useMemo(() =>
-    [...servicios].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 3)
-  , [servicios])
-
-  // ── Fetch ───────────────────────────────────────────────────────────────────
-  const fetchProfile = useCallback(async () => {
-    const res = await apiRequest<ApiResponse<PerfilCliente>>('/api/account/perfil')
-    setPerfil(res.data)
-  }, [])
-
-  // Diff antes de reemplazar el estado: si el refetch (manual o del polling) trae
-  // exactamente lo mismo, se conserva la misma referencia y React no re-renderiza
-  // la lista (evita parpadeo cuando no cambió nada).
-  const fetchMyAppointments = useCallback(async () => {
-    const res = await apiRequest<ApiResponse<Cita[]>>('/api/account/citas')
-    const nuevas = res.data ?? []
-    setCitas(prev => JSON.stringify(prev) === JSON.stringify(nuevas) ? prev : nuevas)
-  }, [])
-
-  const fetchMyServices = useCallback(async () => {
-    const res = await apiRequest<ApiResponse<Servicio[]>>('/api/account/servicios')
-    const nuevos = res.data ?? []
-    setServicios(prev => JSON.stringify(prev) === JSON.stringify(nuevos) ? prev : nuevos)
-  }, [])
-
-  const refresh = useCallback(async () => {
-    setIsLoading(true); setError(null)
-    try {
-      await Promise.all([fetchProfile(), fetchMyAppointments(), fetchMyServices()])
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar tu cuenta')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [fetchProfile, fetchMyAppointments, fetchMyServices])
-
-  useEffect(() => { refresh() }, [refresh])
-
-  // ── Refresh dinámico (polling scoped) ──────────────────────────────────────
-  // Citas y servicios ya vienen filtrados por id_cliente del JWT en el backend
-  // (myAppointments/myServices) — nunca puede traer datos de otro cliente.
-  // Se pausa mientras hay una mutación propia en curso (cancelar cita, agendar)
-  // para no pisar un update optimista con una respuesta vieja del servidor.
-  const isMutatingRef = useRef(false)
-
-  const pollQuietly = useCallback(() => {
-    if (isMutatingRef.current) return
-    fetchMyAppointments().catch(() => {})
-    fetchMyServices().catch(() => {})
-  }, [fetchMyAppointments, fetchMyServices])
-
-  usePolling(pollQuietly, 15000)
-
-  // ── Form perfil ─────────────────────────────────────────────────────────────
-  const [perfilNombre,   setPerfilNombre]   = useState('')
-  const [perfilTelefono, setPerfilTelefono] = useState('')
-  const [perfilCorreo,   setPerfilCorreo]   = useState('')
-  const [perfilErrors,   setPerfilErrors]   = useState<{ nombre?: string; telefono?: string; correo?: string }>({})
-  const [isSavingPerfil, setIsSavingPerfil] = useState(false)
-
-  useEffect(() => {
-    if (!perfil) return
-    setPerfilNombre(perfil.nombre ?? '')
-    setPerfilTelefono(perfil.telefono ?? '')
-    setPerfilCorreo(perfil.correo ?? '')
-  }, [perfil])
-
-  const submitPerfil = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const fieldErrors: { nombre?: string; telefono?: string; correo?: string } = {}
-    if (!isNombreLongitudValida(perfilNombre)) fieldErrors.nombre = NOMBRE_MIN_ERROR
-    if (!perfilTelefono.trim())                fieldErrors.telefono = 'El teléfono es obligatorio.'
-    else if (!isTelefonoValid(perfilTelefono))  fieldErrors.telefono = TELEFONO_ERROR
-    if (!perfilCorreo.trim())                   fieldErrors.correo = 'Campo requerido'
-    else if (!isEmailValid(perfilCorreo))       fieldErrors.correo = EMAIL_ERROR
-    setPerfilErrors(fieldErrors)
-    if (Object.keys(fieldErrors).length > 0) return
-    setIsSavingPerfil(true)
-    try {
-      const res = await apiRequest<ApiResponse<PerfilCliente>>('/api/account/perfil', {
-        method: 'PUT',
-        body: JSON.stringify({ nombre: perfilNombre, telefono: perfilTelefono || null, correo: perfilCorreo }),
-      })
-      setPerfil(res.data)
-      toast.success('Datos actualizados correctamente')
-    } catch (e2) {
-      toast.error(e2 instanceof Error ? e2.message : 'Error al actualizar')
-    } finally { setIsSavingPerfil(false) }
-  }
-
-  // ── Form cambio de contraseña ───────────────────────────────────────────────
-  const [claveActual,   setClaveActual]   = useState('')
-  const [claveNueva,    setClaveNueva]    = useState('')
-  const [claveConfirm,  setClaveConfirm]  = useState('')
-  const [isSavingClave, setIsSavingClave] = useState(false)
-
-  const submitClave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!claveActual.trim()) { toast.error('Ingresa tu contraseña actual'); return }
-    const pwCheck = validatePassword(claveNueva)
-    if (!pwCheck.valid) { toast.error(pwCheck.firstError!); return }
-    if (claveNueva !== claveConfirm) { toast.error('Las contraseñas no coinciden'); return }
-    setIsSavingClave(true)
-    try {
-      await apiRequest('/api/account/perfil', {
-        method: 'PUT',
-        body: JSON.stringify({ clave_actual: claveActual, clave: claveNueva }),
-      })
-      toast.success('Contraseña actualizada correctamente')
-      setClaveActual(''); setClaveNueva(''); setClaveConfirm('')
-    } catch (e2) {
-      toast.error(e2 instanceof Error ? e2.message : 'Error al cambiar contraseña')
-    } finally { setIsSavingClave(false) }
-  }
-
-  // ── Form nueva cita ─────────────────────────────────────────────────────────
-  const [citaFecha,      setCitaFecha]      = useState(bogotaTomorrowStr)
-  const [citaHora,       setCitaHora]       = useState('')
-  const [citaObs,        setCitaObs]        = useState('')
-  const [disponibilidad, setDisponibilidad] = useState<BookedSlot[]>([])
-  const [citaErrors,     setCitaErrors]     = useState<Record<string, string>>({})
-  const [isAgendando,    setIsAgendando]    = useState(false)
-
-  const onCitaFechaChange = async (fecha: string) => {
-    setCitaFecha(fecha)
-    setCitaHora('')
-    setCitaErrors(p => ({ ...p, fecha: '', hora: '' }))
-    try {
-      const res = await apiRequest<{ success: boolean; data: { id_cita: number; hora: string }[] }>(
-        `/api/account/availability?fecha=${fecha}`
-      )
-      setDisponibilidad(
-        (res.data ?? []).map(d => ({ hora: d.hora, id_cita: d.id_cita, clienteNombre: 'Ocupado' }))
-      )
-    } catch { setDisponibilidad([]) }
-  }
-
-  const onCitaHoraChange = (hora: string) => {
-    setCitaHora(hora)
-    setCitaErrors(p => ({ ...p, hora: '' }))
-  }
-
-  // Retorna true si el agendamiento fue exitoso (para que el componente cierre el modal)
-  const submitCita = async (e: React.FormEvent): Promise<boolean> => {
-    e.preventDefault()
-    const errs: Record<string, string> = {}
-    if (!citaFecha) errs.fecha = 'Selecciona una fecha'
-    if (!citaHora)  errs.hora  = 'Selecciona una hora'
-    if (citaFecha < bogotaTomorrowStr()) errs.fecha = 'Solo puedes agendar desde mañana'
-    if (Object.keys(errs).length) { setCitaErrors(errs); return false }
-    setIsAgendando(true); setCitaErrors({})
-    isMutatingRef.current = true
-    try {
-      await apiRequest('/api/account/citas', {
-        method: 'POST',
-        body: JSON.stringify({ fecha: citaFecha, hora: citaHora, observacion: citaObs || undefined }),
-      })
-      toast.success('¡Cita agendada! Te contactaremos para confirmarla.')
-      setCitaFecha(bogotaTomorrowStr()); setCitaHora(''); setCitaObs('')
-      await fetchMyAppointments()
-      return true
-    } catch (e2) {
-      toast.error(e2 instanceof Error ? e2.message : 'Error al agendar la cita')
-      return false
-    } finally { setIsAgendando(false); isMutatingRef.current = false }
-  }
-
-  const resetCitaForm = () => {
-    setCitaErrors({})
-  }
-
-  // ── Cancelar cita ───────────────────────────────────────────────────────────
-  const onCancelAppointment = async (id_cita: number, motivo?: string) => {
-    isMutatingRef.current = true
-    try {
-      await apiRequest(`/api/account/citas/${id_cita}/cancelar`, {
-        method: 'PATCH',
-        body: JSON.stringify({ motivo: motivo?.trim() || undefined }),
-      })
-      // Refetch en vez de quitarla del estado local — la cita sigue
-      // existiendo (ahora en estado Cancelada), no debe desaparecer de la
-      // lista hasta el próximo poll de 15s.
-      await fetchMyAppointments()
-    } finally {
-      isMutatingRef.current = false
-    }
-  }
-
-  // ── Eliminar cuenta ─────────────────────────────────────────────────────────
-  const [isDeleting, setIsDeleting] = useState(false)
-
-  // Devuelve el message real del backend — distingue "desactivada" (con
-  // historial) de "eliminada permanentemente" (sin historial), así el toast
-  // no asume cuál de los dos pasó.
-  const onDeleteAccount = async (): Promise<string> => {
-    setIsDeleting(true)
-    try {
-      const res = await apiRequest<{ success: boolean; message: string }>('/api/account', { method: 'DELETE' })
-      clearAuth()
-      navigate('/', { replace: true })
-      return res.message
-    } catch (e2) {
-      setIsDeleting(false)
-      throw e2
-    }
-  }
+  const data = useAccountData()
+  const profileForm = useProfileForm(data.perfil, data.setPerfil)
+  const passwordForm = usePasswordForm()
+  const booking = useAppointmentBooking({ fetchMyAppointments: data.fetchMyAppointments, isMutatingRef: data.isMutatingRef })
+  const { isDeleting, onDeleteAccount } = useDeleteAccount()
 
   // ── Auth ────────────────────────────────────────────────────────────────────
   const handleLogout = async () => { await performLogout(); navigate('/', { replace: true }) }
 
   return {
     // servidor
-    perfil, citas, servicios, isLoading, error, refresh,
+    perfil: data.perfil, citas: data.citas, servicios: data.servicios,
+    isLoading: data.isLoading, error: data.error, refresh: data.refresh,
     // derivado
-    primerNombre, proximaCita, serviciosActivos, ultimoServicio, serviciosRecientes,
+    primerNombre: data.primerNombre, proximaCita: data.proximaCita,
+    serviciosActivos: data.serviciosActivos, ultimoServicio: data.ultimoServicio,
+    serviciosRecientes: data.serviciosRecientes,
     // form perfil
-    perfilNombre,   setPerfilNombre,
-    perfilTelefono, setPerfilTelefono,
-    perfilCorreo,   setPerfilCorreo,
-    perfilErrors, isSavingPerfil, submitPerfil,
+    ...profileForm,
     // form clave
-    claveActual,  setClaveActual,
-    claveNueva,   setClaveNueva,
-    claveConfirm, setClaveConfirm,
-    isSavingClave, submitClave,
-    // form cita
-    citaFecha, citaHora, citaObs, setCitaObs,
-    citaErrors,
-    isAgendando, disponibilidad,
-    onCitaFechaChange, onCitaHoraChange,
-    submitCita, resetCitaForm,
-    // acciones
-    onCancelAppointment,
+    ...passwordForm,
+    // form cita + cancelar
+    ...booking,
+    // eliminar cuenta
     isDeleting, onDeleteAccount,
+    // auth
     handleLogout,
   }
 }
