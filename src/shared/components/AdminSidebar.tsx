@@ -26,9 +26,9 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { label: 'Clientes',         href: '/admin/clients',      icon: UserCircle,    permiso: 'CLIENTES.VER' },
       { label: 'Citas',            href: '/admin/appointments', icon: Calendar,      permiso: 'CITAS.VER' },
-      { label: 'Pedidos',          href: '/admin/sales',        icon: CreditCard,    permiso: 'VENTAS.VER' },
+      { label: 'Pedidos',          href: '/admin/sales',        icon: ShoppingBag,    permiso: 'VENTAS.VER' },
       { label: 'Servicios',        href: '/admin/orders',       icon: ClipboardList, permiso: 'PEDIDOS.VER' },
-      { label: 'Ventas',           href: '/admin/payments',     icon: ShoppingBag,   permiso: 'PAGOS.VER' },
+      { label: 'Ventas',           href: '/admin/payments',     icon: CreditCard,   permiso: 'PAGOS.VER' },
       { label: 'Calculadora',       href: '/admin/calculator',  icon: Calculator,    permiso: 'MARCOS.VER' },
     ],
   },
