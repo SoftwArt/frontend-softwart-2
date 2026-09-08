@@ -76,6 +76,12 @@ export function isCitaCancelada(estados: EstadoCita[], id: number): boolean {
 export function isCitaCompletada(estados: EstadoCita[], id: number): boolean {
   return estadoLabel(estados, id).toLowerCase().includes('completada')
 }
+// Cancelada/No Asistió liberan el slot de hora — mismo criterio que el
+// backend (`appointmentAvailability`, WHERE ... NOT IN ('cancelada', 'no asistió')).
+export function isCitaOcupaSlot(estados: EstadoCita[], id: number): boolean {
+  const n = estadoLabel(estados, id).toLowerCase()
+  return !n.includes('cancelada') && !n.includes('no asisti')
+}
 
 // ── Cascadas (eliminar / cancelar) ───────────────────────────────
 export function hasValidatedPayments(payments?: PaymentPreview[]): boolean {
