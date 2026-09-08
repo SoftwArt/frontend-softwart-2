@@ -133,6 +133,11 @@ export function AppointmentsPage() {
         total={saleForm.totalVenta}
         isSubmitting={saleForm.isCreandoVenta}
         onSubmit={saleForm.handleCrearVenta}
+        onCrearCotizacion={() => saleForm.handleCrearCotizacion(
+          clientesOpts.find(o => o.value === String(saleForm.ventaModalCita?.id_cliente))?.label ?? 'Cliente',
+          serviciosOpts,
+          marcosOpts,
+        )}
       />
 
       <AppointmentCancelAlert
