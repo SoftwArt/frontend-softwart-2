@@ -3,7 +3,7 @@ import { useAppointments } from '../hooks/useAppointments'
 import { useAppointmentForm } from '../hooks/useAppointmentForm'
 import { useAppointmentSaleForm } from '../hooks/useAppointmentSaleForm'
 import { useAppointmentDangerZone } from '../hooks/useAppointmentDangerZone'
-import { useServicesOptions, useFrameOptions, useClientsOptions } from '@/src/shared/hooks/useOptions'
+import { useServicesOptions, useFrameOptions, useClientsOptions, usePaymentMethodOptions } from '@/src/shared/hooks/useOptions'
 import { useState, useMemo } from 'react'
 import type { Cita } from '../types'
 import { filterCitas } from '../utils'
@@ -27,6 +27,7 @@ export function AppointmentsPage() {
   const { options: clientesOpts, rawClientes, search: searchClientes } = useClientsOptions()
   const { options: serviciosOpts } = useServicesOptions()
   const { options: marcosOpts }    = useFrameOptions()
+  const { options: metodosPagoOpts } = usePaymentMethodOptions()
   const [searchParams] = useSearchParams()
 
   const [q,            setQ]            = useState(searchParams.get('q') ?? '')
@@ -124,6 +125,7 @@ export function AppointmentsPage() {
         clientesOpts={clientesOpts}
         serviciosOpts={serviciosOpts}
         marcosOpts={marcosOpts}
+        metodosPagoOpts={metodosPagoOpts}
         lineas={saleForm.ventaLineas}
         onAddLinea={saleForm.addLinea}
         onRemoveLinea={saleForm.removeLinea}
@@ -138,6 +140,12 @@ export function AppointmentsPage() {
           serviciosOpts,
           marcosOpts,
         )}
+        configurarAbonos={saleForm.configurarAbonos} onConfigurarAbonosChange={saleForm.setConfigurarAbonos}
+        numAbonos={saleForm.numAbonos} onNumAbonosChange={saleForm.setNumAbonos}
+        modoPrimerAbono={saleForm.modoPrimerAbono} onModoPrimerAbonoChange={saleForm.setModoPrimerAbono}
+        pctPrimero={saleForm.pctPrimero} onPctPrimeroChange={saleForm.setPctPrimero}
+        montoPrimero={saleForm.montoPrimero} onMontoPrimeroChange={saleForm.setMontoPrimero}
+        idMetodoPago={saleForm.idMetodoPago} onIdMetodoPagoChange={saleForm.setIdMetodoPago}
       />
 
       <AppointmentCancelAlert

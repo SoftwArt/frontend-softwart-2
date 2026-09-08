@@ -32,17 +32,30 @@ export function InstallmentConfigTab({
   const bloqueado = estado.pagos_realizados > 0
   const t = estado.total
 
+  // Con 1 abono no hay nada que repartir — es, por definición, el 100% del
+  // total en un solo pago (el hook ya fuerza pct=100 y bloquea el modo $ al
+  // llegar a este número, ver useSaleInstallmentModal.setNumAbonos).
+  const abonoUnico = Number(numAbonos) === 1
+
   // % efectivo para la vista previa, sin importar el modo activo — en modo
   // "monto" se deriva del valor ingresado (misma fórmula que el backend:
   // Math.round(monto/total*100)), solo para mostrar; la validación real
-  // (1-99%) la hace el servidor al guardar.
+  // (1-99%, o 100% solo con 1 abono) la hace el servidor al guardar.
   const pctEfectivo = modoPrimerAbono === 'pct'
     ? Number(pctPrimero)
     : Math.round((Number(montoPrimero) / t) * 100)
 
   const previewValido = numAbonos && Number(numAbonos) >= 1 &&
-    (modoPrimerAbono === 'pct' ? Number(pctPrimero) >= 1 : Number(montoPrimero) > 0) &&
-    pctEfectivo >= 1 && pctEfectivo <= 99
+    (abonoUnico || (
+      (modoPrimerAbono === 'pct' ? Number(pctPrimero) >= 1 : Number(montoPrimero) > 0) &&
+      pctEfectivo >= 1 && pctEfectivo <= 99
+    ))
+
+  // Aviso no bloqueante — mismo criterio que el modal de "Crear pedido"
+  // desde Citas: el primer abono queda por debajo de lo que le tocaría en
+  // un reparto parejo entre los N abonos. Se permite igual, solo se avisa.
+  const promedioEsperado = Number(numAbonos) > 0 ? Math.round(100 / Number(numAbonos)) : 0
+  const avisoAbonoBajo = !abonoUnico && pctEfectivo >= 1 && pctEfectivo <= 99 && pctEfectivo < promedioEsperado
 
   return (
     <div className="flex flex-col gap-3">
@@ -80,15 +93,15 @@ export function InstallmentConfigTab({
                 <TooltipTrigger asChild>
                   <button type="button"
                     onClick={() => onModoPrimerAbonoChange(m)}
-                    disabled={bloqueado}
-                    aria-label={MODO_TOOLTIP[m]}
-                    className={`px-2 py-1 font-medium transition-colors
+                    disabled={bloqueado || abonoUnico}
+                    aria-label={abonoUnico ? 'Con 1 abono se paga el total completo' : MODO_TOOLTIP[m]}
+                    className={`px-2 py-1 font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed
                       ${modoPrimerAbono === m ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:text-foreground'}`}
                   >
                     {m === 'pct' ? '%' : '$'}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>{MODO_TOOLTIP[m]}</TooltipContent>
+                <TooltipContent>{abonoUnico ? 'Con 1 abono se paga el total completo — no hay nada que repartir' : MODO_TOOLTIP[m]}</TooltipContent>
               </Tooltip>
             ))}
           </div>
@@ -98,13 +111,15 @@ export function InstallmentConfigTab({
           <>
             <input
               id="abono-primer"
-              type="number" min="1" max="99"
+              type="number" min="1" max="100"
               value={pctPrimero} placeholder="Ej: 70"
               onChange={e => onPctPrimeroChange(e.target.value)}
-              disabled={bloqueado}
-              className={inputCls}
+              disabled={bloqueado || abonoUnico}
+              className={`${inputCls} disabled:opacity-70`}
             />
-            <p className="text-[10px] text-muted-foreground mt-1">Entre 1% y 99% del total</p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {abonoUnico ? 'Con 1 abono se paga el 100% del total en un solo pago' : 'Entre 1% y 99% del total'}
+            </p>
           </>
         ) : (
           <>
@@ -113,8 +128,8 @@ export function InstallmentConfigTab({
               type="number" min="1"
               value={montoPrimero} placeholder={`Ej: ${Math.round(t * 0.7)}`}
               onChange={e => onMontoPrimeroChange(e.target.value)}
-              disabled={bloqueado}
-              className={inputCls}
+              disabled={bloqueado || abonoUnico}
+              className={`${inputCls} disabled:opacity-70`}
             />
             <p className="text-[10px] text-muted-foreground mt-1">
               {montoPrimero && Number(montoPrimero) > 0
@@ -124,6 +139,14 @@ export function InstallmentConfigTab({
           </>
         )}
       </div>
+
+      {avisoAbonoBajo && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          ⚠ El primer abono ({pctEfectivo}%) es menor al {promedioEsperado}% que le tocaría en un reparto
+          parejo entre los {numAbonos} abonos. Podés continuar si es intencional, pero confirma que no fue
+          un error de tipeo.
+        </div>
+      )}
 
       {/* Preview del plan */}
       {previewValido && (
