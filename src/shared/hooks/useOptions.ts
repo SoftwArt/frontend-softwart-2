@@ -178,6 +178,30 @@ export function useRolesOptions() {
   return { options, rawRoles, isLoading }
 }
 
+// ── Métodos de pago ───────────────────────────────────────────
+type MetodoPagoOption = { id_metodo_pago: number; nombre: string }
+
+export function usePaymentMethodOptions() {
+  const [options,   setOptions]   = useState<ComboboxOption[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    apiRequest<ApiResponse<MetodoPagoOption[]>>('/api/payment-methods')
+      .then((res) => {
+        setOptions(
+          (res.data ?? []).map((m) => ({
+            value: String(m.id_metodo_pago),
+            label: m.nombre,
+          }))
+        )
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false))
+  }, [])
+
+  return { options, isLoading }
+}
+
 // ── Marcos ────────────────────────────────────────────────────
 type MarcoOption = { id_marco: number; codigo: string; precio_ensamblado: number }
 

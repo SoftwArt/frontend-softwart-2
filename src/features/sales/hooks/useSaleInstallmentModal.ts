@@ -27,14 +27,58 @@ export function useSaleInstallmentModal({ open, idVenta, onSuccess }: Params) {
   const [isPagando,    setIsPagando]    = useState(false)
 
   // Form configurar
-  const [numAbonos,    setNumAbonos]    = useState('')
-  const [pctPrimero,   setPctPrimero]   = useState('')
+  const [numAbonos,    setNumAbonosRaw] = useState('')
+  const [pctPrimero,   setPctPrimeroRaw] = useState('')
   // Vía alterna al %: el admin puede indicar el monto en pesos del primer
   // abono en vez de su porcentaje — son modos mutuamente excluyentes, el
   // campo del modo inactivo es opcional/ignorado (nunca se envían ambos).
   const [modoPrimerAbono, setModoPrimerAbono] = useState<'pct' | 'monto'>('pct')
-  const [montoPrimero, setMontoPrimero] = useState('')
+  const [montoPrimero, setMontoPrimeroRaw] = useState('')
   const [isConfigurando, setIsConfigurando] = useState(false)
+
+  // Con 1 abono no hay nada que repartir — es, por definición, el 100% del
+  // total en un solo pago. Se fuerza acá (no solo se deshabilita el input,
+  // ver InstallmentConfigTab) para que el payload sea coherente aunque el
+  // admin nunca haya tocado el toggle %/$. Al volver a 2+ abonos se
+  // restaura un default sensato (70%) en vez de dejar el 100% inválido ahí.
+  const setNumAbonos = (v: string) => {
+    setNumAbonosRaw(v)
+    if (v === '1') {
+      setModoPrimerAbono('pct')
+      setPctPrimeroRaw('100')
+    } else if (numAbonos === '1' && v !== '1') {
+      setPctPrimeroRaw('70')
+    }
+  }
+
+  // 100% (o más) del primer abono es, otra vez, "págalo todo ahora" — se
+  // convierte directo a pago único (1 abono) en vez de solo aceptar/clamear
+  // el valor, para no dejar una combinación inválida como "2 abonos, 100%
+  // el primero" (el backend la rechaza: 100% solo es válido con 1 abono).
+  const setPctPrimero = (v: string) => {
+    const p = Number(v)
+    if (v && !isNaN(p) && p >= 100 && numAbonos !== '1') {
+      setNumAbonos('1')
+      toast.info(`El ${p}% ingresado cubre el total (100% o más) — se configuró como pago único (1 abono).`)
+      return
+    }
+    setPctPrimeroRaw(v)
+  }
+
+  // Un monto de primer abono >= total tampoco tiene sentido como "primer"
+  // abono — cubre (o supera) toda la venta. Mismo criterio: se convierte a
+  // pago único (1 abono) y se avisa, en vez de solo bloquear con un error.
+  const setMontoPrimero = (v: string) => {
+    const monto = Number(v)
+    const total = estado?.total ?? 0
+    if (v && total > 0 && !isNaN(monto) && monto >= total) {
+      setNumAbonos('1')
+      setMontoPrimeroRaw('')
+      toast.info(`El monto ingresado (${formatCurrency(monto)}) cubre el total de la venta (${formatCurrency(total)}) — se configuró como pago único (1 abono).`)
+      return
+    }
+    setMontoPrimeroRaw(v)
+  }
 
   // Cargar estado de pagos y métodos
   useEffect(() => {
@@ -56,10 +100,15 @@ export function useSaleInstallmentModal({ open, idVenta, onSuccess }: Params) {
         if (estadoRes.data.siguiente_abono) {
           setMonto(String(estadoRes.data.siguiente_abono.expectedAmount))
         }
-        setNumAbonos(String(estadoRes.data.num_abonos))
-        setPctPrimero(String(estadoRes.data.porcentaje_primer_abono))
+        // Setters "Raw" acá a propósito: esto refleja el estado YA guardado
+        // en el servidor (ej. num_abonos=1/100% de una venta ya configurada
+        // como pago único), no una edición del admin — pasar por los
+        // setters con auto-conversión dispararía un toast de "se configuró
+        // como pago único" espurio, cada vez que se abre el modal.
+        setNumAbonosRaw(String(estadoRes.data.num_abonos))
+        setPctPrimeroRaw(String(estadoRes.data.porcentaje_primer_abono))
         setModoPrimerAbono('pct')
-        setMontoPrimero(String(Math.round(estadoRes.data.total * estadoRes.data.porcentaje_primer_abono / 100)))
+        setMontoPrimeroRaw(String(Math.round(estadoRes.data.total * estadoRes.data.porcentaje_primer_abono / 100)))
       })
       .catch(() => {})
       .finally(() => setIsLoading(false))
@@ -104,8 +153,10 @@ export function useSaleInstallmentModal({ open, idVenta, onSuccess }: Params) {
       toast.success(res.message)
       const estadoRes = await apiRequest<{ success: boolean; data: EstadoPagos }>(`/api/sales/${idVenta}/payment-plan`)
       setEstado(estadoRes.data)
-      setPctPrimero(String(estadoRes.data.porcentaje_primer_abono))
-      setMontoPrimero(String(Math.round(estadoRes.data.total * estadoRes.data.porcentaje_primer_abono / 100)))
+      // Raw acá también — reflejar lo que el servidor acaba de confirmar
+      // guardar, no una edición nueva del admin.
+      setPctPrimeroRaw(String(estadoRes.data.porcentaje_primer_abono))
+      setMontoPrimeroRaw(String(Math.round(estadoRes.data.total * estadoRes.data.porcentaje_primer_abono / 100)))
       if (estadoRes.data.siguiente_abono) setMonto(String(estadoRes.data.siguiente_abono.expectedAmount))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error al configurar')

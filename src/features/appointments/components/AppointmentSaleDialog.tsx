@@ -1,12 +1,20 @@
 // src/features/appointments/components/AppointmentSaleDialog.tsx
 import type { Cita, VentaLinea } from '../types'
+import type { ModoPrimerAbono } from '../hooks/useAppointmentSaleForm'
 import { labelCls, fmtCOP } from '../utils'
 import type { ComboboxOption } from '@/src/shared/components/Combobox'
 import { Button } from '@/src/shared/components/ui/button'
 import { Input } from '@/src/shared/components/ui/input'
+import { Checkbox } from '@/src/shared/components/ui/checkbox'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
-import { PlusCircle, ShoppingCart, FileText, Trash } from 'lucide-react'
+import { PlusCircle, ShoppingCart, FileText, Trash, CreditCard } from 'lucide-react'
+
+const MODO_TOOLTIP: Record<ModoPrimerAbono, string> = {
+  pct:   'Calcular el primer abono como porcentaje del total',
+  monto: 'Calcular el primer abono a partir de su valor en pesos',
+}
 
 interface AppointmentSaleDialogProps {
   cita: Cita | null
@@ -14,6 +22,7 @@ interface AppointmentSaleDialogProps {
   clientesOpts: ComboboxOption[]
   serviciosOpts: ComboboxOption[]
   marcosOpts: ComboboxOption[]
+  metodosPagoOpts: ComboboxOption[]
   lineas: VentaLinea[]
   onAddLinea: () => void
   onRemoveLinea: (id: number) => void
@@ -24,13 +33,50 @@ interface AppointmentSaleDialogProps {
   isSubmitting: boolean
   onSubmit: () => void
   onCrearCotizacion: () => void
+  // Plan de abonos + primer abono — opcional, para dejar hecho todo el
+  // flujo del negocio (Cita -> Venta -> primer abono) desde este mismo modal.
+  configurarAbonos: boolean; onConfigurarAbonosChange: (v: boolean) => void
+  numAbonos: string; onNumAbonosChange: (v: string) => void
+  modoPrimerAbono: ModoPrimerAbono; onModoPrimerAbonoChange: (v: ModoPrimerAbono) => void
+  pctPrimero: string; onPctPrimeroChange: (v: string) => void
+  montoPrimero: string; onMontoPrimeroChange: (v: string) => void
+  idMetodoPago: string; onIdMetodoPagoChange: (v: string) => void
 }
 
 export function AppointmentSaleDialog({
-  cita, onClose, clientesOpts, serviciosOpts, marcosOpts,
+  cita, onClose, clientesOpts, serviciosOpts, marcosOpts, metodosPagoOpts,
   lineas, onAddLinea, onRemoveLinea, onUpdateLinea,
   observacion, onObservacionChange, errors, total, isSubmitting, onSubmit, onCrearCotizacion,
+  configurarAbonos, onConfigurarAbonosChange,
+  numAbonos, onNumAbonosChange,
+  modoPrimerAbono, onModoPrimerAbonoChange,
+  pctPrimero, onPctPrimeroChange,
+  montoPrimero, onMontoPrimeroChange,
+  idMetodoPago, onIdMetodoPagoChange,
 }: AppointmentSaleDialogProps) {
+  // Con 1 abono no hay nada que repartir: es, por definición, el 100% del
+  // total en un solo pago. Se bloquea el modo/valor (el hook ya lo fuerza a
+  // pct=100 al llegar a este número) para no dejar un campo editable que de
+  // todos modos el backend va a ignorar.
+  const abonoUnico = Number(numAbonos) === 1
+
+  // Preview informativo del primer abono — el cálculo real (y su validación
+  // de rango) los hace el backend con la misma fórmula (calculateInstallments).
+  const pctEfectivo = modoPrimerAbono === 'pct'
+    ? Number(pctPrimero)
+    : total > 0 ? Math.round((Number(montoPrimero) / total) * 100) : 0
+  const primerAbonoPreview = modoPrimerAbono === 'monto'
+    ? Number(montoPrimero) || 0
+    : Math.round(total * (Number(pctPrimero) || 0) / 100 * 100) / 100
+
+  // Aviso (no bloqueante) cuando el primer abono queda por debajo de lo que
+  // le tocaría en un reparto parejo — ej. 2 abonos y 20% de primero deja el
+  // segundo con el 80%, al revés de cómo se suele estructurar un primer
+  // abono. Se permite igual (es una decisión válida del negocio), solo se
+  // avisa — mismo criterio de accesibilidad que el resto del panel: informar,
+  // no asumir que quien usa el form no sabe lo que está haciendo.
+  const promedioEsperado = Number(numAbonos) > 0 ? Math.round(100 / Number(numAbonos)) : 0
+  const avisoAbonoBajo = !abonoUnico && pctEfectivo >= 1 && pctEfectivo <= 99 && pctEfectivo < promedioEsperado
   return (
     <Dialog open={cita !== null} onOpenChange={v => { if (!v) onClose() }}>
       {/* max-w-3xl (antes 2xl) — con 3 acciones + el total en el footer,
@@ -42,8 +88,14 @@ export function AppointmentSaleDialog({
           footer con truncate+min-w-0 en el total) alcanzaba a disparar una
           scrollbar horizontal real, aunque nada se viera recortado. Bajarle
           el tamaño de letra al total solo corría el umbral más arriba, no
-          lo eliminaba — bloquear el eje X sí, de raíz. */}
-      <DialogContent className="bg-card text-card-foreground border-border max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+          lo eliminaba — bloquear el eje X sí, de raíz.
+          max-w-4xl (antes 3xl) — con el bloque de plan de abonos (label
+          "Número de abonos *" + su input, col-span-3 dentro de un pl-6) el
+          ancho de 3xl ya no le alcanzaba a la etiqueta en una sola línea y
+          se envolvía, empujando el input más abajo que sus columnas
+          vecinas. Más ancho de base también deja más margen para cuando el
+          total crece de dígitos. */}
+      <DialogContent className="bg-card text-card-foreground border-border max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-emerald-600" />
@@ -140,6 +192,144 @@ export function AppointmentSaleDialog({
               className="w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all text-sm resize-none"
               rows={2}
             />
+          </div>
+
+          {/* Plan de abonos + primer abono — opcional. Deja hecho todo el
+              flujo del negocio (Cita -> Venta -> primer abono) sin salir de
+              este modal. El monto del primer abono nunca se teclea a mano
+              — se deriva de num_abonos/% (misma fórmula que Ventas ->
+              Gestionar abonos), acá solo se ve como preview informativo. */}
+          <div className="rounded-lg border border-border p-3 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="venta-config-abonos"
+                checked={configurarAbonos}
+                onCheckedChange={v => onConfigurarAbonosChange(v === true)}
+              />
+              <label htmlFor="venta-config-abonos" className="text-sm font-medium text-foreground cursor-pointer flex items-center gap-1.5">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                Configurar plan de abonos y registrar el primer abono
+              </label>
+            </div>
+
+            {configurarAbonos && (
+              <div className="grid grid-cols-12 gap-3 pl-6">
+                <div className="col-span-3">
+                  <label className="block text-xs text-muted-foreground mb-1 whitespace-nowrap" htmlFor="venta-num-abonos">
+                    Número de abonos <span className="text-destructive">*</span>
+                  </label>
+                  <FieldErrorTooltip error={errors.numAbonos}>
+                    <Input
+                      id="venta-num-abonos"
+                      type="number" min="1" max="12" placeholder="Ej: 2"
+                      value={numAbonos}
+                      onChange={e => onNumAbonosChange(e.target.value)}
+                      className="h-8 text-xs bg-card border-border"
+                    />
+                  </FieldErrorTooltip>
+                </div>
+
+                <div className="col-span-5">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs text-muted-foreground" htmlFor="venta-primer-abono">
+                      Primer abono <span className="text-destructive">*</span>
+                    </label>
+                    <div className="flex rounded-md border border-border overflow-hidden text-[11px]">
+                      {(['pct', 'monto'] as const).map(m => (
+                        <Tooltip key={m}>
+                          <TooltipTrigger asChild>
+                            <button type="button"
+                              onClick={() => onModoPrimerAbonoChange(m)}
+                              disabled={abonoUnico}
+                              aria-label={abonoUnico ? 'Con 1 abono se paga el total completo' : MODO_TOOLTIP[m]}
+                              className={`px-2 py-0.5 font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+                                ${modoPrimerAbono === m ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:text-foreground'}`}
+                            >
+                              {m === 'pct' ? '%' : '$'}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>{abonoUnico ? 'Con 1 abono se paga el total completo — no hay nada que repartir' : MODO_TOOLTIP[m]}</TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  </div>
+                  {(() => {
+                    const inputField = (
+                      <FieldErrorTooltip error={modoPrimerAbono === 'pct' ? errors.pctPrimero : errors.montoPrimero}>
+                        {modoPrimerAbono === 'pct' ? (
+                          <Input
+                            id="venta-primer-abono"
+                            type="number" min="1" max="99" placeholder="Ej: 70"
+                            value={pctPrimero}
+                            disabled={abonoUnico}
+                            onChange={e => onPctPrimeroChange(e.target.value)}
+                            className="h-8 text-xs bg-card border-border disabled:opacity-70"
+                          />
+                        ) : (
+                          <Input
+                            id="venta-primer-abono"
+                            type="number" min="1" placeholder={`Ej: ${Math.round(total * 0.7)}`}
+                            value={montoPrimero}
+                            disabled={abonoUnico}
+                            onChange={e => onMontoPrimeroChange(e.target.value)}
+                            className="h-8 text-xs bg-card border-border disabled:opacity-70"
+                          />
+                        )}
+                      </FieldErrorTooltip>
+                    )
+                    if (!abonoUnico) return inputField
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild><div>{inputField}</div></TooltipTrigger>
+                        <TooltipContent>Con 1 abono, el pago es del 100% del total — no hay nada que configurar acá.</TooltipContent>
+                      </Tooltip>
+                    )
+                  })()}
+                </div>
+
+                <div className="col-span-4">
+                  <label className="block text-xs text-muted-foreground mb-1" htmlFor="venta-metodo-pago">
+                    Método de pago <span className="text-destructive">*</span>
+                  </label>
+                  <FieldErrorTooltip error={errors.idMetodoPago}>
+                    <select
+                      id="venta-metodo-pago"
+                      value={idMetodoPago}
+                      onChange={e => onIdMetodoPagoChange(e.target.value)}
+                      className="flex h-8 w-full rounded-md border border-border bg-card px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {metodosPagoOpts.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                  </FieldErrorTooltip>
+                </div>
+
+                {total > 0 && (abonoUnico || (pctEfectivo >= 1 && pctEfectivo <= 99)) && (
+                  <div className="col-span-12 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                    {abonoUnico ? (
+                      <>Se paga el total completo en un solo abono: <span className="font-semibold text-foreground">{fmtCOP(total)}</span>.</>
+                    ) : (
+                      <>
+                        Primer abono: <span className="font-semibold text-foreground">{fmtCOP(primerAbonoPreview)}</span>
+                        {' '}({pctEfectivo}% del total) — el resto se reparte en {Math.max(1, Number(numAbonos) - 1)} abono(s) más.
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Aviso no bloqueante — el primer abono queda por debajo de
+                    lo que le tocaría en un reparto parejo entre los N
+                    abonos. Se permite igual (puede ser intencional), solo
+                    se avisa para que no sea un error de tipeo. */}
+                {avisoAbonoBajo && (
+                  <div className="col-span-12 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    ⚠ El primer abono ({pctEfectivo}%) es menor al {promedioEsperado}% que le tocaría en un reparto
+                    parejo entre los {numAbonos} abonos. Podés continuar si es intencional (ej. dejar los pagos
+                    más grandes para el final), pero confirma que no fue un error de tipeo.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Total + confirmar — shrink-0 en los botones y tabular-nums en el
