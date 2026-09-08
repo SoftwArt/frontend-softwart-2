@@ -92,7 +92,7 @@ export function AppointmentsTable({
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost" size="icon"
-                            aria-label="Crear venta desde cita"
+                            aria-label="Crear pedido desde cita"
                             aria-disabled={!isCitaCompletada(estadosCita, c.id_estado_cita) || c.tieneVenta}
                             onClick={() => { if (isCitaCompletada(estadosCita, c.id_estado_cita) && !c.tieneVenta) onCreateSale(c) }}
                             className={(!isCitaCompletada(estadosCita, c.id_estado_cita) || c.tieneVenta) ? 'opacity-40 cursor-not-allowed' : ''}
@@ -102,10 +102,10 @@ export function AppointmentsTable({
                         </TooltipTrigger>
                         <TooltipContent>
                           {!isCitaCompletada(estadosCita, c.id_estado_cita)
-                            ? 'Solo se puede crear una venta cuando la cita está Completada'
+                            ? 'Solo se puede crear un pedido cuando la cita está Completada'
                             : c.tieneVenta
-                              ? 'Esta cita ya tiene una venta — si necesitas registrar otra (ej. un producto sin servicio asociado), créala manual desde Ventas sin vincular la cita'
-                              : 'Crear venta'}
+                              ? 'Esta cita ya tiene un pedido — si necesitas registrar otro (ej. un producto sin servicio asociado), créalo manual desde Pedidos sin vincular la cita'
+                              : 'Crear pedido'}
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>

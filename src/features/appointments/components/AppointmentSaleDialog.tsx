@@ -36,7 +36,7 @@ export function AppointmentSaleDialog({
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-emerald-600" />
-            Crear venta — Cita #{cita?.id_cita}
+            Crear pedido — Cita #{cita?.id_cita}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             {cita != null
@@ -125,7 +125,7 @@ export function AppointmentSaleDialog({
               id="venta-obs"
               value={observacion}
               onChange={e => onObservacionChange(e.target.value)}
-              placeholder="Notas sobre la venta..."
+              placeholder="Notas sobre el pedido..."
               className="w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all text-sm resize-none"
               rows={2}
             />
@@ -148,7 +148,7 @@ export function AppointmentSaleDialog({
                 className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-all disabled:opacity-50"
               >
                 <ShoppingCart className="h-4 w-4" />
-                {isSubmitting ? 'Creando...' : 'Crear venta'}
+                {isSubmitting ? 'Creando...' : 'Crear pedido'}
               </button>
             </div>
           </div>
