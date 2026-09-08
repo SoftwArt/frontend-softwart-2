@@ -6,7 +6,7 @@ import { Button } from '@/src/shared/components/ui/button'
 import { Input } from '@/src/shared/components/ui/input'
 import { FieldErrorTooltip } from '@/src/shared/components/FieldErrorTooltip'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/src/shared/components/ui/dialog'
-import { PlusCircle, ShoppingCart, Trash } from 'lucide-react'
+import { PlusCircle, ShoppingCart, FileText, Trash } from 'lucide-react'
 
 interface AppointmentSaleDialogProps {
   cita: Cita | null
@@ -23,12 +23,13 @@ interface AppointmentSaleDialogProps {
   total: number
   isSubmitting: boolean
   onSubmit: () => void
+  onCrearCotizacion: () => void
 }
 
 export function AppointmentSaleDialog({
   cita, onClose, clientesOpts, serviciosOpts, marcosOpts,
   lineas, onAddLinea, onRemoveLinea, onUpdateLinea,
-  observacion, onObservacionChange, errors, total, isSubmitting, onSubmit,
+  observacion, onObservacionChange, errors, total, isSubmitting, onSubmit, onCrearCotizacion,
 }: AppointmentSaleDialogProps) {
   return (
     <Dialog open={cita !== null} onOpenChange={v => { if (!v) onClose() }}>
@@ -140,6 +141,19 @@ export function AppointmentSaleDialog({
             <div className="flex gap-2">
               <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors disabled:opacity-50">
                 Cancelar
+              </button>
+              {/* Cotización — mismo form, sin tocar el backend: descarga un
+                  PDF de un solo uso (el admin lo comparte/guarda por su
+                  cuenta), no crea ningún registro. Misma validación que
+                  "Crear pedido" (servicio + precio por línea). */}
+              <button
+                type="button"
+                onClick={onCrearCotizacion}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted active:scale-95 transition-all disabled:opacity-50"
+              >
+                <FileText className="h-4 w-4" />
+                Crear cotización
               </button>
               <button
                 type="button"
