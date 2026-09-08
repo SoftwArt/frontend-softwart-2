@@ -11,7 +11,7 @@ interface MarcoCalculatorDialogProps {
   largo: string; onLargoChange: (v: string) => void
   ancho: string; onAnchoChange: (v: string) => void
   errors: Record<string, string>
-  values: { costo: number; venta: number }
+  values: { costo: number; ventaMin: number; venta: number; ventaMax: number }
 }
 
 export function MarcoCalculatorDialog({ open, onOpenChange, marco, largo, onLargoChange, ancho, onAnchoChange, errors, values }: MarcoCalculatorDialogProps) {
@@ -43,7 +43,23 @@ export function MarcoCalculatorDialog({ open, onOpenChange, marco, largo, onLarg
             </div>
             <div className="rounded-lg border border-border p-4 flex flex-col gap-2">
               <div className="flex justify-between"><span className="text-foreground">Costo:</span><span className="font-bold text-foreground">{fmt(values.costo)}</span></div>
-              <div className="flex justify-between"><span className="text-foreground">Venta (×2):</span><span className="font-bold text-primary">{fmt(values.venta)}</span></div>
+            </div>
+            {/* Rango de venta — ×2 es el cálculo normal (el de siempre);
+                ×1.5 es el piso y ×2.5 el techo, para negociar dentro de ese
+                rango sin recalcular a mano. */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg border border-border p-3 flex flex-col gap-1 items-center text-center">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Mínimo ×1.5</span>
+                <span className="font-bold text-foreground">{fmt(values.ventaMin)}</span>
+              </div>
+              <div className="rounded-lg border-2 border-primary p-3 flex flex-col gap-1 items-center text-center bg-primary/5">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">Normal ×2</span>
+                <span className="font-bold text-primary">{fmt(values.venta)}</span>
+              </div>
+              <div className="rounded-lg border border-border p-3 flex flex-col gap-1 items-center text-center">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Máximo ×2.5</span>
+                <span className="font-bold text-foreground">{fmt(values.ventaMax)}</span>
+              </div>
             </div>
           </div>
         )}
