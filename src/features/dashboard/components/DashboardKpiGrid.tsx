@@ -23,9 +23,9 @@ export function DashboardKpiGrid({ isLoading, kpis, ventasTrend, ventasDiff, tot
         Array.from({ length: 7 }).map((_, i) => <Skeleton key={`sk-${i}`} className="h-28 rounded-xl" />)
       ) : (
         <>
-          <DashboardKpiCard label="Ventas del mes"         value={formatCurrency(kpis.ventas_mes_actual)} icon={DollarSign}    trend={ventasTrend}  trendLabel={ventasDiff} color="primary" />
-          <DashboardKpiCard label="Ingresos cobrados"      value={formatCurrency(kpis.ingresos_mes)}      icon={Wallet}        color="emerald" sub="Pagos confirmados este mes" />
-          <DashboardKpiCard label="Pagos pendientes"       value={formatCurrency(kpis.pagos_pendientes)}  icon={CreditCard}    color="amber"   sub="Pendientes de cobro" />
+          <DashboardKpiCard label="Pedidos del mes"        value={formatCurrency(kpis.ventas_mes_actual)} icon={DollarSign}    trend={ventasTrend}  trendLabel={ventasDiff} color="primary" />
+          <DashboardKpiCard label="Ingresos cobrados"      value={formatCurrency(kpis.ingresos_mes)}      icon={Wallet}        color="emerald" sub="Ventas confirmadas este mes" />
+          <DashboardKpiCard label="Ventas pendientes"      value={formatCurrency(kpis.pagos_pendientes)}  icon={CreditCard}    color="amber"   sub="Pendientes de cobro" />
           <DashboardKpiCard label="Citas hoy"              value={kpis.citas_hoy}                         icon={CalendarClock} color="emerald" sub="Programadas para hoy" />
           <DashboardKpiCard label="Citas pendientes"       value={kpis.citas_pendientes}                  icon={Clock}         color="amber"   sub="Por confirmar" />
           <DashboardKpiCard label="Pedidos sin empezar"    value={kpis.pedidos_sin_empezar}                icon={PackageSearch} color="rose"    sub="Sin iniciar aún" />

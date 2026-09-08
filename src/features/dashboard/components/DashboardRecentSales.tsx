@@ -8,7 +8,7 @@ interface DashboardRecentSalesProps { ventas: VentaReciente[]; isLoading: boolea
 export function DashboardRecentSales({ ventas, isLoading }: DashboardRecentSalesProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-foreground">Últimas ventas</h2>
+      <h2 className="text-sm font-semibold text-foreground">Últimos pedidos</h2>
       {isLoading ? (
         <div className="flex flex-col gap-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={`sk-${i}`} className="h-10 w-full" />)}</div>
       ) : (

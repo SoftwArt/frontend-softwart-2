@@ -26,7 +26,7 @@ export function DashboardSalesChart({ data, isLoading, weeksFilter, onWeeksFilte
   return (
     <div className="lg:col-span-2 rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Ventas por semana</h2>
+        <h2 className="text-sm font-semibold text-foreground">Pedidos por semana</h2>
         <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
           {WEEK_OPTIONS.map(opt => (
             <button
