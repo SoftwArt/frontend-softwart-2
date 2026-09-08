@@ -1,7 +1,7 @@
 // src/features/appointments/hooks/useAppointmentForm.ts
 import { useState, useMemo } from 'react'
 import type { Cita, EstadoCita } from '../types'
-import { todayStr, validateFecha } from '../utils'
+import { todayStr, validateFecha, isCitaOcupaSlot } from '../utils'
 import { isWithinBusinessHours } from '@/src/shared/lib/businessHours'
 import { withToast } from '@/src/shared/lib/withToast'
 import type { BookedSlot } from '@/src/shared/components/TimePicker'
@@ -47,12 +47,14 @@ export function useAppointmentForm({ citas, estadosCita, onCreate, onEdit }: Par
     setIsFormOpen(true)
   }
 
+  // Cancelada/No Asistió liberan la celda — mismo criterio que la
+  // disponibilidad del portal cliente (backend `appointmentAvailability`).
   const bookedSlots: BookedSlot[] = useMemo(() => {
     if (!fecha) return []
     return citas
-      .filter(c => c.fecha === fecha && c.id_cita !== editingId)
+      .filter(c => c.fecha === fecha && c.id_cita !== editingId && isCitaOcupaSlot(estadosCita, c.id_estado_cita))
       .map((c): BookedSlot => ({ hora: c.hora, clienteNombre: c.clienteNombre, id_cita: c.id_cita }))
-  }, [citas, fecha, editingId])
+  }, [citas, fecha, editingId, estadosCita])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
