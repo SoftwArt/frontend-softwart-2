@@ -2,8 +2,14 @@
 import type { EstadoPagos } from '../types'
 import { inputCls, labelCls } from '../utils'
 import { Button } from '@/src/shared/components/ui/button'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/src/shared/components/ui/tooltip'
 import { formatCurrency } from '@/src/shared/lib/formatCurrency'
 import { Settings2 } from 'lucide-react'
+
+const MODO_TOOLTIP: Record<'pct' | 'monto', string> = {
+  pct:   'Calcular el primer abono como porcentaje del total',
+  monto: 'Calcular el primer abono a partir de su valor en pesos',
+}
 
 interface InstallmentConfigTabProps {
   estado: EstadoPagos
@@ -65,17 +71,25 @@ export function InstallmentConfigTab({
             Primer abono <span className="text-destructive">*</span>
           </label>
           {/* Toggle de modo — cambiar de modo no borra el otro valor, solo
-              decide cuál de los dos se envía al guardar. */}
+              decide cuál de los dos se envía al guardar. Tooltip explicando
+              cada botón, mismo criterio de accesibilidad que el resto del
+              panel (informar la acción, no solo un ícono/símbolo suelto). */}
           <div className="flex rounded-md border border-border overflow-hidden text-[11px]">
             {(['pct', 'monto'] as const).map(m => (
-              <button key={m} type="button"
-                onClick={() => onModoPrimerAbonoChange(m)}
-                disabled={bloqueado}
-                className={`px-2 py-1 font-medium transition-colors
-                  ${modoPrimerAbono === m ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:text-foreground'}`}
-              >
-                {m === 'pct' ? '%' : '$'}
-              </button>
+              <Tooltip key={m}>
+                <TooltipTrigger asChild>
+                  <button type="button"
+                    onClick={() => onModoPrimerAbonoChange(m)}
+                    disabled={bloqueado}
+                    aria-label={MODO_TOOLTIP[m]}
+                    className={`px-2 py-1 font-medium transition-colors
+                      ${modoPrimerAbono === m ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:text-foreground'}`}
+                  >
+                    {m === 'pct' ? '%' : '$'}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{MODO_TOOLTIP[m]}</TooltipContent>
+              </Tooltip>
             ))}
           </div>
         </div>

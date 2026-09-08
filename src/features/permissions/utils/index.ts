@@ -6,14 +6,22 @@ import {
 
 export const ADMIN_ROL_ID = 1
 
+// VENTAS/PEDIDOS/PAGOS son los códigos de permiso reales (VENTAS.VER, etc.)
+// y no cambian — pero VENTAS.* hoy controla la página que el panel muestra
+// como "Pedidos", PEDIDOS.* controla la que se sigue mostrando como
+// "Servicios", y PAGOS.* controla la que se muestra como "Ventas" (ver
+// AdminSidebar.tsx). Estos labels reflejan eso, para que el módulo que se
+// activa/desactiva en Permisos coincida con lo que el rol realmente ve.
+// SERVICIOS (Tipos de Servicio) es un módulo aparte, sin relación con este
+// swap, y queda igual.
 export const MODULO_LABELS: Record<string, string> = {
   DASHBOARD: 'Dashboard',
   CUENTA:    'Mi Cuenta (Cliente)',
   CLIENTES:  'Clientes',
   CITAS:     'Citas',
-  VENTAS:    'Ventas',
-  PEDIDOS:   'Pedidos',
-  PAGOS:     'Pagos',
+  VENTAS:    'Pedidos',
+  PEDIDOS:   'Servicios',
+  PAGOS:     'Ventas',
   MARCOS:    'Marcos / Calculadora',
   SERVICIOS: 'Tipos de Servicio',
   USUARIOS:  'Usuarios',
@@ -28,9 +36,9 @@ export const MODULO_ICONS: Record<string, ComponentType<{ className?: string }>>
   CUENTA:    UserRound,
   CLIENTES:  UserCircle,
   CITAS:     Calendar,
-  VENTAS:    ShoppingBag,
+  VENTAS:    CreditCard,
   PEDIDOS:   ClipboardList,
-  PAGOS:     CreditCard,
+  PAGOS:     ShoppingBag,
   MARCOS:    Calculator,
   SERVICIOS: Wrench,
   USUARIOS:  Users,
