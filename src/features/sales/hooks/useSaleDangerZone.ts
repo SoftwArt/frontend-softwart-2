@@ -41,7 +41,7 @@ export function useSaleDangerZone({ onToggleStatus, onDelete, refetch }: Params)
     setEliminarTarget(null)
     undoableAction({
       message: `Eliminando ${label}...`,
-      successMsg: 'Venta eliminada',
+      successMsg: 'Pedido eliminado',
       onCommit: () => onDelete(id),
     })
   }
@@ -68,7 +68,7 @@ export function useSaleDangerZone({ onToggleStatus, onDelete, refetch }: Params)
     setAnularTarget(null)
     undoableAction({
       message: `Anulando ${label}...`,
-      successMsg: 'Venta anulada',
+      successMsg: 'Pedido anulado',
       onCommit: async () => {
         await onToggleStatus(id)
         await refetch() // refrescar: la anulación cambió abonos/servicios en cascada

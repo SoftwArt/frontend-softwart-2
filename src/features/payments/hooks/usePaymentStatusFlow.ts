@@ -21,16 +21,16 @@ export function usePaymentStatusFlow({ estadosPago, onChangeStatus }: Params) {
     const estadoNuevo  = estadoLabel(estadosPago, nuevoIdEstado).toLowerCase()
 
     if (estadoActual.includes('anulado')) {
-      setAlertEstado({ open: true, msg: 'Este pago fue anulado y su estado no puede modificarse.' })
+      setAlertEstado({ open: true, msg: 'Esta venta fue anulada y su estado no puede modificarse.' })
       return
     }
     if (estadoActual.includes('validado') && !estadoNuevo.includes('anulado')) {
-      setAlertEstado({ open: true, msg: 'Un pago validado no puede cambiar de estado. Si es necesario, solo se puede anular.', pagoId: pago.id_pago, showAnular: true })
+      setAlertEstado({ open: true, msg: 'Una venta validada no puede cambiar de estado. Si es necesario, solo se puede anular.', pagoId: pago.id_pago, showAnular: true })
       return
     }
     // Anular es terminal e irreversible → pedir confirmación antes de aplicar
     if (estadoNuevo.includes('anulado')) {
-      setAlertEstado({ open: true, msg: 'Anular un pago es definitivo: no podrá modificarse ni reactivarse después.', pagoId: pago.id_pago, showAnular: true })
+      setAlertEstado({ open: true, msg: 'Anular una venta es definitivo: no podrá modificarse ni reactivarse después.', pagoId: pago.id_pago, showAnular: true })
       return
     }
     withToast(onChangeStatus(pago.id_pago, nuevoIdEstado), 'Estado actualizado')
@@ -40,8 +40,8 @@ export function usePaymentStatusFlow({ estadosPago, onChangeStatus }: Params) {
     if (alertEstado.pagoId && idEstadoAnulado) {
       const { pagoId } = alertEstado
       undoableAction({
-        message: 'Anulando pago...',
-        successMsg: 'Pago anulado',
+        message: 'Anulando venta...',
+        successMsg: 'Venta anulada',
         onCommit: () => onChangeStatus(pagoId, idEstadoAnulado),
       })
     }

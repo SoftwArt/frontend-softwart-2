@@ -36,7 +36,7 @@ export function PaymentsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[28%]">Venta</TableHead>
+              <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[28%]">Pedido</TableHead>
               <TableHead className="text-right text-xs font-semibold tracking-wide text-muted-foreground w-[11%]">Monto</TableHead>
               <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[13%]">Fecha</TableHead>
               <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[16%]">Método</TableHead>
@@ -96,7 +96,7 @@ export function PaymentsTable({
                     <div className="flex items-center justify-end gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Ver detalle de pago" onClick={() => onView(p)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
+                          <Button variant="ghost" size="icon" aria-label="Ver detalle de venta" onClick={() => onView(p)}><Eye className="h-4 w-4 text-muted-foreground" /></Button>
                         </TooltipTrigger>
                         <TooltipContent>Ver detalle</TooltipContent>
                       </Tooltip>

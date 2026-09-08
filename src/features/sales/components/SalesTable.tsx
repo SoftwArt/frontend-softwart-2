@@ -68,13 +68,13 @@ export function SalesTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <ToggleSwitch value={v.estado ? 1 : 0} onChange={() => onAnular(v.id_venta, `Venta #${v.id_venta} · ${clienteLabel}`)} options={ACTIVO_OPTIONS} disabled={!v.estado} />
+                    <ToggleSwitch value={v.estado ? 1 : 0} onChange={() => onAnular(v.id_venta, `Pedido #${v.id_venta} · ${clienteLabel}`)} options={ACTIVO_OPTIONS} disabled={!v.estado} />
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Ver detalle de venta" onClick={() => onView(v)}>
+                          <Button variant="ghost" size="icon" aria-label="Ver detalle de pedido" onClick={() => onView(v)}>
                             <Eye className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </TooltipTrigger>
@@ -89,7 +89,7 @@ export function SalesTable({
                             aria-disabled={!v.estado}
                             onClick={() => {
                               if (!v.estado) return
-                              onManagePayments({ id: v.id_venta, label: `Venta #${v.id_venta} · ${clienteLabel}` })
+                              onManagePayments({ id: v.id_venta, label: `Pedido #${v.id_venta} · ${clienteLabel}` })
                             }}
                             className={!v.estado ? 'opacity-40 cursor-not-allowed' : ''}
                           >
@@ -97,7 +97,7 @@ export function SalesTable({
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {v.estado ? 'Gestionar abonos' : 'No se pueden gestionar abonos: la venta está anulada'}
+                          {v.estado ? 'Gestionar abonos' : 'No se pueden gestionar abonos: el pedido está anulado'}
                         </TooltipContent>
                       </Tooltip>
 
@@ -106,7 +106,7 @@ export function SalesTable({
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost" size="icon"
-                              aria-label="Eliminar venta"
+                              aria-label="Eliminar pedido"
                               aria-disabled
                               onClick={() => {}}
                               className="opacity-40 cursor-not-allowed"
@@ -120,8 +120,8 @@ export function SalesTable({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              variant="ghost" size="icon" aria-label="Eliminar venta"
-                              onClick={() => onEliminar(v.id_venta, `Venta #${v.id_venta} · ${clienteLabel}`)}
+                              variant="ghost" size="icon" aria-label="Eliminar pedido"
+                              onClick={() => onEliminar(v.id_venta, `Pedido #${v.id_venta} · ${clienteLabel}`)}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>

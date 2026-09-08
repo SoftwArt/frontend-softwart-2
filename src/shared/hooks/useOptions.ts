@@ -85,7 +85,11 @@ export function useSalesOptions() {
     () =>
       rawVentas.map((v) => ({
         value:    String(v.id_venta),
-        label:    `Venta #${v.id_venta} — ${new Date(v.fecha).toLocaleDateString('es-CO')}`,
+        // La entidad Sale se muestra como "Pedido" en el panel (Ventas -> Pedidos,
+        // ver AdminSidebar.tsx) — este label lo consumen tanto la página de Ventas
+        // (antes Pagos) como la de Servicios (antes/aún Pedidos) para referenciar
+        // a qué Sale pertenece cada fila.
+        label:    `Pedido #${v.id_venta} — ${new Date(v.fecha).toLocaleDateString('es-CO')}`,
         sublabel: v.total?.toLocaleString('es-CO', { style: 'currency', currency: 'COP' }),
       })),
     [rawVentas]

@@ -17,7 +17,7 @@ export function SaleViewDialog({ open, onOpenChange, venta, clientesOpts, citasO
   const cliente = rawClientes.find(c => c.id_cliente === venta.id_cliente)
   return (
     <ViewDialog open={open} onOpenChange={onOpenChange}
-      title={`Venta #${venta.id_venta}`}
+      title={`Pedido #${venta.id_venta}`}
       fields={[
         { label: 'Estado', value: <EstadoBadge estado={venta.estado} /> },
         { label: 'Cliente', value: clientesOpts.find(o => o.value === String(venta.id_cliente))?.label ?? `#${venta.id_cliente}`, fullWidth: true },

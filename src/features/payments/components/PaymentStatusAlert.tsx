@@ -14,7 +14,7 @@ export function PaymentStatusAlert({ state, hasIdEstadoAnulado, onOpenChange, on
     <AlertDialog open={state.open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{state.title ?? (state.showAnular ? '¿Anular este pago?' : 'Estado no modificable')}</AlertDialogTitle>
+          <AlertDialogTitle>{state.title ?? (state.showAnular ? '¿Anular esta venta?' : 'Estado no modificable')}</AlertDialogTitle>
           <AlertDialogDescription>{state.msg}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -24,7 +24,7 @@ export function PaymentStatusAlert({ state, hasIdEstadoAnulado, onOpenChange, on
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={onConfirmAnular}
             >
-              Anular pago
+              Anular venta
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

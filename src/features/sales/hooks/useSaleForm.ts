@@ -65,7 +65,7 @@ export function useSaleForm({ citasOpts, rawCitas, onCreate, onEdit }: Params) {
       const data = { id_cliente: Number(idCliente), id_cita: idCita ? Number(idCita) : null, fecha, total: Number(total), observacion, estado: true }
       await withToast(
         editingId ? onEdit(editingId, data) : onCreate(data),
-        editingId ? 'Venta actualizada' : 'Venta registrada'
+        editingId ? 'Pedido actualizado' : 'Pedido registrado'
       )
       setIsFormOpen(false); resetForm()
     } catch { } finally { setIsSubmitting(false) }

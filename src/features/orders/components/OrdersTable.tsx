@@ -36,7 +36,7 @@ export function OrdersTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[18%]">Venta</TableHead>
+              <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[18%]">Pedido</TableHead>
               <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[14%]">Tipo de Servicio</TableHead>
               <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[13%]">Marco</TableHead>
               <TableHead className="text-xs font-semibold tracking-wide text-muted-foreground w-[11%]">Fecha</TableHead>

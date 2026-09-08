@@ -45,19 +45,19 @@ export function PaymentFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card text-card-foreground border-border max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-serif text-xl text-secondary">Registrar Pago</DialogTitle>
-          <DialogDescription className="text-muted-foreground">Completa los datos del pago.</DialogDescription>
+          <DialogTitle className="font-serif text-xl text-secondary">Registrar Venta</DialogTitle>
+          <DialogDescription className="text-muted-foreground">Completa los datos de la venta.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="flex flex-col gap-5 mt-2" noValidate>
           <div>
-            <label className={labelCls} htmlFor="pago-venta">Venta <span className="text-destructive">*</span></label>
+            <label className={labelCls} htmlFor="pago-venta">Pedido <span className="text-destructive">*</span></label>
             <FieldErrorTooltip error={errors.idVenta}>
               <div>
-                <Combobox id="pago-venta" options={ventasOpts} value={idVenta} onValueChange={onIdVentaChange} onSearchChange={onSearchVentas} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." />
+                <Combobox id="pago-venta" options={ventasOpts} value={idVenta} onValueChange={onIdVentaChange} onSearchChange={onSearchVentas} placeholder="Buscar pedido..." searchPlaceholder="ID o fecha..." />
               </div>
             </FieldErrorTooltip>
             {ventaPagada && (
-              <p className="mt-1 text-xs text-destructive font-medium">Esta venta ya tiene todos sus abonos registrados y no admite más pagos.</p>
+              <p className="mt-1 text-xs text-destructive font-medium">Este pedido ya tiene todos sus abonos registrados y no admite más ventas.</p>
             )}
           </div>
           <div>
@@ -75,13 +75,13 @@ export function PaymentFormDialog({
                       aria-disabled={montoDisabled}
                       onChange={e => onMontoChange(e.target.value.replace(/\D/g, ''))}
                       className={inputCls + ` ${montoDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
-                      placeholder={idVenta ? '0' : 'Seleccione una venta'}
+                      placeholder={idVenta ? '0' : 'Seleccione un pedido'}
                     />
                   </div>
                 </TooltipTrigger>
                 {montoDisabled && (
                   <TooltipContent>
-                    {!idVenta ? 'Elija primero una venta para habilitar el monto.' : 'Esta venta ya está totalmente pagada.'}
+                    {!idVenta ? 'Elija primero un pedido para habilitar el monto.' : 'Este pedido ya está totalmente pagado.'}
                   </TooltipContent>
                 )}
               </Tooltip>
