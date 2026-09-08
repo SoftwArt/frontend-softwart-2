@@ -1,6 +1,7 @@
 import type { Cita, EstadoCita, PaymentPreview, SalePreview } from '../types'
 import { bogotaTodayStr } from '@/src/shared/lib/bogotaTime'
 import { fmtCOP } from '@/src/shared/lib/formatCurrency'
+import { matchesFecha } from '@/src/shared/lib/formatDate'
 
 export const inputCls  = 'w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all text-sm'
 export const labelCls  = 'block text-xs font-bold capitalize tracking-widest text-muted-foreground mb-2'
@@ -34,17 +35,20 @@ const ESTADO_ORDER: Record<number, number> = { 1: 0, 5: 1, 2: 2, 3: 3, 4: 4 }
 export function filterCitas(
   citas: Cita[],
   clientesOpts: { value: string; label: string }[],
+  rawClientes: { id_cliente: number; documento: string }[],
   q: string,
   filterEstado: string,
 ): Cita[] {
   const s = q.toLowerCase()
   return citas.filter(c => {
-    const clienteLabel = clientesOpts.find(o => o.value === String(c.id_cliente))?.label ?? ''
+    const clienteLabel     = clientesOpts.find(o => o.value === String(c.id_cliente))?.label ?? ''
+    const clienteDocumento = rawClientes.find(rc => rc.id_cliente === c.id_cliente)?.documento ?? ''
     const matchQ = !s ||
       String(c.id_cita).includes(s) ||
-      c.fecha.includes(s) ||
+      matchesFecha(c.fecha, s) ||
       c.hora.includes(s) ||
-      clienteLabel.toLowerCase().includes(s)
+      clienteLabel.toLowerCase().includes(s) ||
+      clienteDocumento.includes(s)
     const matchEstado = !filterEstado || String(c.id_estado_cita) === filterEstado
     return matchQ && matchEstado
   }).sort((a, b) => {
@@ -80,7 +84,7 @@ export function hasValidatedPayments(payments?: PaymentPreview[]): boolean {
 
 export function buildDeleteCitaLines(sale: SalePreview): string[] {
   return [
-    `Venta #${sale.id_venta} se eliminará`,
+    `Pedido #${sale.id_venta} se eliminará`,
     ...(sale.saleDetails ?? []).map(d => `Servicio #${d.id_detalle} se eliminará`),
     ...(sale.payments ?? []).map(p => `Abono #${p.id_pago} se eliminará`),
   ]
@@ -98,7 +102,7 @@ export function buildCancelCitaLines(sale: SalePreview): string[] {
     .filter(p => p.paymentStatus?.nombre?.toLowerCase().includes('pendiente'))
 
   return [
-    `Se anulará la Venta #${sale.id_venta}`,
+    `Se anulará el Pedido #${sale.id_venta}`,
     ...serviciosACancelar.map(id => `Servicio #${id} se cancelará`),
     ...abonosAAnular.map(p => `Abono #${p.id_pago} (${fmtCOP(p.monto)}) se anulará`),
   ]

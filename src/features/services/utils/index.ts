@@ -11,7 +11,11 @@ export function fmtDuracion(dias: number): string {
 export function filterServicios(servicios: Servicio[], q: string, filterEstado: string): Servicio[] {
   const s = q.toLowerCase()
   return servicios.filter(sv => {
-    const matchQ      = !s || sv.nombre.toLowerCase().includes(s) || (sv.descripcion ?? '').toLowerCase().includes(s)
+    const matchQ      = !s ||
+      sv.nombre.toLowerCase().includes(s) ||
+      (sv.descripcion ?? '').toLowerCase().includes(s) ||
+      String(sv.duracion).includes(s) ||
+      fmtDuracion(sv.duracion).toLowerCase().includes(s)
     const matchEstado = !filterEstado || (filterEstado === 'activo' ? sv.estado : !sv.estado)
     return matchQ && matchEstado
   })

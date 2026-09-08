@@ -32,7 +32,7 @@ export function AppointmentsPage() {
   const [q,            setQ]            = useState(searchParams.get('q') ?? '')
   const [filterEstado, setFilterEstado] = useState('')
 
-  const filtered = useMemo(() => filterCitas(citas, clientesOpts, q, filterEstado), [citas, clientesOpts, q, filterEstado])
+  const filtered = useMemo(() => filterCitas(citas, clientesOpts, rawClientes, q, filterEstado), [citas, clientesOpts, rawClientes, q, filterEstado])
   const { paginated, page, setPage, totalPages, total, pageSize, setPageSize } = usePagination(filtered)
 
   const [isViewOpen,  setIsViewOpen]  = useState(false)

@@ -1,5 +1,6 @@
 import type { Venta, VentaDetalle } from '../types'
-import { formatCurrency } from '@/src/shared/lib/formatCurrency'
+import { formatCurrency, matchesMonto } from '@/src/shared/lib/formatCurrency'
+import { matchesFecha } from '@/src/shared/lib/formatDate'
 
 export const inputCls  = 'w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all text-sm'
 export const labelCls  = 'block text-xs font-bold capitalize tracking-widest text-muted-foreground mb-2'
@@ -9,17 +10,21 @@ export function filterVentas(
   ventas: Venta[],
   clientesOpts: { value: string; label: string }[],
   citasOpts:    { value: string; label: string }[],
+  rawClientes:  { id_cliente: number; documento: string }[],
   q:            string,
   filterEstado: string,
 ): Venta[] {
   const s = q.toLowerCase()
   return ventas.filter(v => {
-    const clienteLabel = clientesOpts.find(o => o.value === String(v.id_cliente))?.label ?? ''
-    const citaLabel    = v.id_cita ? (citasOpts.find(o => o.value === String(v.id_cita))?.label ?? '') : ''
+    const clienteLabel    = clientesOpts.find(o => o.value === String(v.id_cliente))?.label ?? ''
+    const citaLabel       = v.id_cita ? (citasOpts.find(o => o.value === String(v.id_cita))?.label ?? '') : ''
+    const clienteDocumento = rawClientes.find(c => c.id_cliente === v.id_cliente)?.documento ?? ''
     const matchQ       = !s ||
       clienteLabel.toLowerCase().includes(s) ||
+      clienteDocumento.includes(s) ||
       citaLabel.toLowerCase().includes(s) ||
-      v.fecha.includes(s)
+      matchesMonto(v.total, s) ||
+      matchesFecha(v.fecha, s)
     const matchEstado  = !filterEstado || (filterEstado === 'activo' ? v.estado : !v.estado)
     return matchQ && matchEstado
   })

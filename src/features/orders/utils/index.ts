@@ -1,5 +1,6 @@
 import type { Pedido, EstadoServicio, SalePreview } from '../types'
-import { formatCurrency } from '@/src/shared/lib/formatCurrency'
+import { formatCurrency, matchesMonto } from '@/src/shared/lib/formatCurrency'
+import { matchesFecha } from '@/src/shared/lib/formatDate'
 
 export const inputCls = 'w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all text-sm'
 export const labelCls = 'block text-xs font-bold capitalize tracking-widest text-muted-foreground mb-2'
@@ -52,7 +53,8 @@ export function filterPedidos(
       ventaLabel.toLowerCase().includes(s) ||
       servicioLabel.toLowerCase().includes(s) ||
       marcoLabel.toLowerCase().includes(s) ||
-      p.fecha.includes(s)
+      matchesMonto(p.precio, s) ||
+      matchesFecha(p.fecha, s)
     const matchEstado   = !filterEstado   || String(p.id_estado)   === filterEstado
     const matchServicio = !filterServicio || String(p.id_servicio) === filterServicio
     return matchQ && matchEstado && matchServicio
@@ -94,7 +96,7 @@ export function buildCancelCascadeLines(sale: SalePreview, idDetalleActual: numb
   if (hermanosActivos.length > 0) {
     // Quedan otros servicios activos: no cascadea, solo se informa.
     return [
-      `La Venta #${sale.id_venta} NO se anulará`,
+      `El Pedido #${sale.id_venta} NO se anulará`,
       ...hermanosActivos.map(d => `Servicio #${d.id_detalle} sigue activo, no se ve afectado`),
     ]
   }
@@ -103,7 +105,7 @@ export function buildCancelCascadeLines(sale: SalePreview, idDetalleActual: numb
   const abonosAAnular = (sale.payments ?? [])
     .filter(p => p.paymentStatus?.nombre?.toLowerCase().includes('pendiente'))
   return [
-    `Se anulará también la Venta #${sale.id_venta} (era su último servicio activo)`,
+    `Se anulará también el Pedido #${sale.id_venta} (era su último servicio activo)`,
     ...abonosAAnular.map(p => `Abono #${p.id_pago} (${formatCurrency(p.monto)}) se anulará`),
   ]
 }
