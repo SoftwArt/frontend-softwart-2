@@ -20,10 +20,17 @@ export function useMarcoCalculator() {
     return errs
   }, [largo, ancho])
 
+  // Rango de venta sobre el mismo costo — x2 sigue siendo el cálculo normal
+  // (el que ya se usaba), x1.5 es el piso (mínimo aceptable, ej. cliente
+  // frecuente o volumen) y x2.5 el techo (máximo, ej. pieza compleja/urgente).
+  // Los tres se muestran juntos para que el admin negocie dentro de ese
+  // rango sin tener que recalcular a mano.
   const calcValues = useMemo(() => {
-    if (!calcMarco || !largo || !ancho || Number(largo) <= 0 || Number(ancho) <= 0) return { costo: 0, venta: 0 }
+    if (!calcMarco || !largo || !ancho || Number(largo) <= 0 || Number(ancho) <= 0) {
+      return { costo: 0, ventaMin: 0, venta: 0, ventaMax: 0 }
+    }
     const costo = ((Number(largo) + Number(ancho)) * 2 + Number(calcMarco.colilla)) * Number(calcMarco.precio_ensamblado)
-    return { costo, venta: costo * 2 }
+    return { costo, ventaMin: costo * 1.5, venta: costo * 2, ventaMax: costo * 2.5 }
   }, [calcMarco, largo, ancho])
 
   return {
