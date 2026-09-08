@@ -33,7 +33,17 @@ export function AppointmentSaleDialog({
 }: AppointmentSaleDialogProps) {
   return (
     <Dialog open={cita !== null} onOpenChange={v => { if (!v) onClose() }}>
-      <DialogContent className="bg-card text-card-foreground border-border max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* max-w-3xl (antes 2xl) — con 3 acciones + el total en el footer,
+          2xl dejaba "Crear pedido" apretado contra el borde.
+          overflow-x-hidden explícito: `overflow-y-auto` por sí solo hace que
+          el navegador compute el eje X como 'auto' también (regla de CSS de
+          "un eje no-visible fuerza al otro"), así que con un total de 9+
+          dígitos el desborde interno de unos pocos px (el ancho mínimo del
+          footer con truncate+min-w-0 en el total) alcanzaba a disparar una
+          scrollbar horizontal real, aunque nada se viera recortado. Bajarle
+          el tamaño de letra al total solo corría el umbral más arriba, no
+          lo eliminaba — bloquear el eje X sí, de raíz. */}
+      <DialogContent className="bg-card text-card-foreground border-border max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-emerald-600" />
@@ -132,34 +142,39 @@ export function AppointmentSaleDialog({
             />
           </div>
 
-          {/* Total + confirmar */}
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <div>
+          {/* Total + confirmar — shrink-0 en los botones y tabular-nums en el
+              total: antes, al pasar el precio de $0 a un número con más
+              dígitos, el total empujaba el grupo de botones y lo comprimía
+              (el texto de "Crear cotización" alcanzaba a envolver). */}
+          <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total</p>
-              <p className="text-xl font-bold text-foreground">{fmtCOP(total)}</p>
+              <p className="text-xl font-bold text-foreground tabular-nums truncate">{fmtCOP(total)}</p>
             </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors disabled:opacity-50">
+            <div className="flex shrink-0 gap-2">
+              <button type="button" onClick={onClose} disabled={isSubmitting} className="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors disabled:opacity-50">
                 Cancelar
               </button>
               {/* Cotización — mismo form, sin tocar el backend: descarga un
                   PDF de un solo uso (el admin lo comparte/guarda por su
                   cuenta), no crea ningún registro. Misma validación que
-                  "Crear pedido" (servicio + precio por línea). */}
+                  "Crear pedido" (servicio + precio por línea). Label corto
+                  ("Cotizar") a propósito — con las 3 acciones + el total no
+                  entraba "Crear cotización" sin apretar el resto. */}
               <button
                 type="button"
                 onClick={onCrearCotizacion}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted active:scale-95 transition-all disabled:opacity-50"
+                className="flex items-center gap-2 whitespace-nowrap px-5 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted active:scale-95 transition-all disabled:opacity-50"
               >
                 <FileText className="h-4 w-4" />
-                Crear cotización
+                Cotizar
               </button>
               <button
                 type="button"
                 onClick={onSubmit}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-all disabled:opacity-50"
+                className="flex items-center gap-2 whitespace-nowrap px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-all disabled:opacity-50"
               >
                 <ShoppingCart className="h-4 w-4" />
                 {isSubmitting ? 'Creando...' : 'Crear pedido'}
