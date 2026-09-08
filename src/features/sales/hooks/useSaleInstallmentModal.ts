@@ -29,6 +29,11 @@ export function useSaleInstallmentModal({ open, idVenta, onSuccess }: Params) {
   // Form configurar
   const [numAbonos,    setNumAbonos]    = useState('')
   const [pctPrimero,   setPctPrimero]   = useState('')
+  // Vía alterna al %: el admin puede indicar el monto en pesos del primer
+  // abono en vez de su porcentaje — son modos mutuamente excluyentes, el
+  // campo del modo inactivo es opcional/ignorado (nunca se envían ambos).
+  const [modoPrimerAbono, setModoPrimerAbono] = useState<'pct' | 'monto'>('pct')
+  const [montoPrimero, setMontoPrimero] = useState('')
   const [isConfigurando, setIsConfigurando] = useState(false)
 
   // Cargar estado de pagos y métodos
@@ -53,6 +58,8 @@ export function useSaleInstallmentModal({ open, idVenta, onSuccess }: Params) {
         }
         setNumAbonos(String(estadoRes.data.num_abonos))
         setPctPrimero(String(estadoRes.data.porcentaje_primer_abono))
+        setModoPrimerAbono('pct')
+        setMontoPrimero(String(Math.round(estadoRes.data.total * estadoRes.data.porcentaje_primer_abono / 100)))
       })
       .catch(() => {})
       .finally(() => setIsLoading(false))
@@ -83,16 +90,22 @@ export function useSaleInstallmentModal({ open, idVenta, onSuccess }: Params) {
   const handleConfigurar = async () => {
     setIsConfigurando(true)
     try {
+      const body: Record<string, unknown> = { num_abonos: Number(numAbonos) }
+      // Campos mutuamente excluyentes y opcionales — solo se envía el del
+      // modo activo (el backend también los valida como excluyentes, ver
+      // configureInstallmentsSchema).
+      if (modoPrimerAbono === 'pct') body.porcentaje_primer_abono = Number(pctPrimero)
+      else                           body.monto_primer_abono      = Number(montoPrimero)
+
       const res = await apiRequest<{ success: boolean; message: string; data: any }>(
         `/api/sales/${idVenta}/configure-installments`,
-        { method: 'PATCH', body: JSON.stringify({
-            num_abonos:             Number(numAbonos),
-            porcentaje_primer_abono: Number(pctPrimero),
-        })}
+        { method: 'PATCH', body: JSON.stringify(body) }
       )
       toast.success(res.message)
       const estadoRes = await apiRequest<{ success: boolean; data: EstadoPagos }>(`/api/sales/${idVenta}/payment-plan`)
       setEstado(estadoRes.data)
+      setPctPrimero(String(estadoRes.data.porcentaje_primer_abono))
+      setMontoPrimero(String(Math.round(estadoRes.data.total * estadoRes.data.porcentaje_primer_abono / 100)))
       if (estadoRes.data.siguiente_abono) setMonto(String(estadoRes.data.siguiente_abono.expectedAmount))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error al configurar')
@@ -124,6 +137,7 @@ export function useSaleInstallmentModal({ open, idVenta, onSuccess }: Params) {
     estado, metodos, isLoading, tab, setTab,
     monto, setMonto, idMetodo, setIdMetodo, fechaPago, setFechaPago, isPagando,
     numAbonos, setNumAbonos, pctPrimero, setPctPrimero, isConfigurando,
+    modoPrimerAbono, setModoPrimerAbono, montoPrimero, setMontoPrimero,
     handlePagar, handleConfigurar,
     montoError,
   }

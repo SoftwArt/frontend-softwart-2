@@ -10,7 +10,7 @@ export function SaleDeleteAlert({ target, onOpenChange, onConfirm }: SaleDeleteA
     <AlertDialog open={target !== null} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar esta venta?</AlertDialogTitle>
+          <AlertDialogTitle>¿Eliminar este pedido?</AlertDialogTitle>
           <AlertDialogDescription>
             {target?.label}. {target?.bloqueado ? target.msg : 'Esta acción no se puede deshacer.'}
           </AlertDialogDescription>
@@ -23,7 +23,7 @@ export function SaleDeleteAlert({ target, onOpenChange, onConfirm }: SaleDeleteA
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             onClick={onConfirm}
           >
-            {target?.bloqueado ? 'No se puede eliminar' : 'Sí, eliminar venta'}
+            {target?.bloqueado ? 'No se puede eliminar' : 'Sí, eliminar pedido'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

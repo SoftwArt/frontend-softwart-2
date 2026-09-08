@@ -1,4 +1,6 @@
 import type { Pago, MetodoPago, EstadoPago } from '../types'
+import { matchesFecha } from '@/src/shared/lib/formatDate'
+import { matchesMonto } from '@/src/shared/lib/formatCurrency'
 
 export const inputCls  = 'w-full bg-muted border-0 border-b-2 border-transparent focus:border-secondary focus:ring-0 focus:outline-none px-4 py-3 rounded-t-lg transition-all text-sm'
 export const labelCls  = 'block text-xs font-bold capitalize tracking-widest text-muted-foreground mb-2'
@@ -23,14 +25,20 @@ export const METODO_BADGE: Record<string, string> = {
 export function filterPagos(
   pagos:        Pago[],
   ventasOpts:   { value: string; label: string }[],
+  rawVentas:    { id_venta: number; client?: { nombre?: string } | null }[],
   q:            string,
   filterMetodo: string,
   filterEstado: string,
 ): Pago[] {
   const s = q.toLowerCase()
   return pagos.filter(p => {
-    const ventaLabel  = ventasOpts.find(o => o.value === String(p.id_venta))?.label ?? ''
-    const matchQ      = !s || ventaLabel.toLowerCase().includes(s) || String(p.monto).includes(s) || p.fecha.includes(s)
+    const ventaLabel    = ventasOpts.find(o => o.value === String(p.id_venta))?.label ?? ''
+    const clienteNombre = rawVentas.find(rv => rv.id_venta === p.id_venta)?.client?.nombre ?? ''
+    const matchQ      = !s ||
+      clienteNombre.toLowerCase().includes(s) ||
+      ventaLabel.toLowerCase().includes(s) ||
+      matchesMonto(p.monto, s) ||
+      matchesFecha(p.fecha, s)
     const matchMetodo = !filterMetodo || String(p.id_metodo_pago) === filterMetodo
     const matchEstado = !filterEstado || String(p.id_estado_pago) === filterEstado
     return matchQ && matchMetodo && matchEstado

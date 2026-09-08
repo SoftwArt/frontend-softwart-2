@@ -128,7 +128,7 @@ export function usePaymentForm({ pagos, estadosPago, rawVentas, onCreate, onAler
       onAlert({
         open: true,
         title: 'Monto superior al saldo pendiente',
-        msg: `No se puede ingresar más de ${formatCurrency(saldoPendiente)} en esta venta.`,
+        msg: `No se puede ingresar más de ${formatCurrency(saldoPendiente)} en este pedido.`,
       })
     }
     clearError('monto')
@@ -140,10 +140,10 @@ export function usePaymentForm({ pagos, estadosPago, rawVentas, onCreate, onAler
     if (ventaCompletada) {
       onAlert({
         open: true,
-        title: 'Venta completada',
+        title: 'Pedido completado',
         msg: ventaPagada
-          ? 'Esta venta ya tiene todos sus abonos registrados y no admite más pagos.'
-          : 'Esta venta ya tiene el total pagado y no admite más pagos.',
+          ? 'Este pedido ya tiene todos sus abonos registrados y no admite más ventas.'
+          : 'Este pedido ya tiene el total pagado y no admite más ventas.',
       })
       return
     }
@@ -153,7 +153,7 @@ export function usePaymentForm({ pagos, estadosPago, rawVentas, onCreate, onAler
       onAlert({
         open: true,
         title: 'Monto superior al saldo pendiente',
-        msg: `No se puede ingresar más de ${formatCurrency(saldoPendiente)} en esta venta.`,
+        msg: `No se puede ingresar más de ${formatCurrency(saldoPendiente)} en este pedido.`,
       })
       return
     }
@@ -169,7 +169,7 @@ export function usePaymentForm({ pagos, estadosPago, rawVentas, onCreate, onAler
     try {
       await withToast(
         onCreate({ id_venta: Number(idVenta), monto: Number(monto), fecha, id_metodo_pago: Number(idMetodo), id_estado_pago: Number(idEstado) }),
-        'Pago registrado correctamente'
+        'Venta registrada correctamente'
       )
       setIsFormOpen(false); resetForm()
     } catch { } finally { setIsSubmitting(false) }

@@ -32,7 +32,7 @@ export function SalesPage() {
   const [q,            setQ]            = useState(searchParams.get('q') ?? '')
   const [filterEstado, setFilterEstado] = useState('')
 
-  const filtered = useMemo(() => filterVentas(ventas, clientesOpts, citasOpts, q, filterEstado), [ventas, clientesOpts, citasOpts, q, filterEstado])
+  const filtered = useMemo(() => filterVentas(ventas, clientesOpts, citasOpts, rawClientes, q, filterEstado), [ventas, clientesOpts, citasOpts, rawClientes, q, filterEstado])
   const { paginated, page, setPage, totalPages, total: paginationTotal, pageSize, setPageSize } = usePagination(filtered)
 
   const [isViewOpen,  setIsViewOpen]  = useState(false)
@@ -46,13 +46,13 @@ export function SalesPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-3xl text-secondary">Ventas</h1>
-          <p className="text-muted-foreground">Gestiona las ventas registradas</p>
+          <h1 className="font-serif text-3xl text-secondary">Pedidos</h1>
+          <p className="text-muted-foreground">Gestiona los pedidos registrados</p>
         </div>
         <div className="flex items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Buscar cliente, cita, fecha..." className="w-96" />
           <Button onClick={form.openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
-            <Plus className="mr-2 h-4 w-4" />Registrar Venta
+            <Plus className="mr-2 h-4 w-4" />Registrar Pedido
           </Button>
         </div>
       </div>
@@ -68,7 +68,7 @@ export function SalesPage() {
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={`sk-${i}`} className="h-12 w-full rounded-md" />)}</div>
       ) : filtered.length === 0 ? (
-        <EmptyState title="Sin registros" description="No hay ventas registradas aún." />
+        <EmptyState title="Sin registros" description="No hay pedidos registrados aún." />
       ) : (
         <SalesTable
           ventas={paginated}

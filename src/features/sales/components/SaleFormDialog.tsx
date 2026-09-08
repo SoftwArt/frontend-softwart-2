@@ -38,8 +38,8 @@ export function SaleFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card text-card-foreground border-border max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-serif text-xl text-secondary">{editingId ? 'Editar Venta' : 'Registrar Venta'}</DialogTitle>
-          <DialogDescription className="text-muted-foreground">Completa los datos de la venta.</DialogDescription>
+          <DialogTitle className="font-serif text-xl text-secondary">{editingId ? 'Editar Pedido' : 'Registrar Pedido'}</DialogTitle>
+          <DialogDescription className="text-muted-foreground">Completa los datos del pedido.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="flex flex-col gap-5 mt-2" noValidate>
           <div>
@@ -88,7 +88,7 @@ export function SaleFormDialog({
           </div>
           <div>
             <label className={labelCls} htmlFor="vta-observacion">Observación (opcional)</label>
-            <textarea id="vta-observacion" value={observacion} placeholder="Notas o detalles de la venta..." onChange={e => onObservacionChange(e.target.value)}
+            <textarea id="vta-observacion" value={observacion} placeholder="Notas o detalles del pedido..." onChange={e => onObservacionChange(e.target.value)}
               className={inputCls + ' resize-none'} rows={3} />
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-border">

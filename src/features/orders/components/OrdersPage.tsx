@@ -58,7 +58,7 @@ export function OrdersPage() {
           <p className="text-muted-foreground">Gestiona los servicios registrados</p>
         </div>
         <div className="flex items-center gap-2">
-          <SearchInput value={q} onChange={setQ} placeholder="Buscar venta, tipo de servicio, marco, fecha..." className="w-96" />
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar pedido, tipo de servicio, marco, fecha..." className="w-96" />
           <Button onClick={form.openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             <Plus className="mr-2 h-4 w-4" />Registrar Servicio
           </Button>

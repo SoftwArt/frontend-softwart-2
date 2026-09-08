@@ -72,8 +72,8 @@ export function DashboardPage() {
           title="Métodos de pago"
           data={(data?.metodos_pago ?? []).map(m => ({ name: m.metodo, total: Number(m.total) }))}
           isLoading={isLoading}
-          tooltipLabel="Pagos"
-          emptyMessage="Sin pagos registrados"
+          tooltipLabel="Ventas"
+          emptyMessage="Sin ventas registradas"
         />
       </div>
     </div>

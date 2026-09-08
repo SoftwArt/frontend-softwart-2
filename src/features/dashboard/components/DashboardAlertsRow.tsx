@@ -19,7 +19,7 @@ export function DashboardAlertsRow({
     <div className="flex flex-wrap gap-2">
       <DashboardAlertChip<AlertaVenta & { href: string }>
         items={alertas.ventas_sin_pago.map(v => ({ ...v, href: '/admin/sales' }))}
-        label="ventas sin pago registrado"
+        label="pedidos sin venta registrada"
         baseHref="/admin/sales"
         ignoredIds={ignoredVentas}
         onIgnore={onIgnoreVenta}
@@ -27,7 +27,7 @@ export function DashboardAlertsRow({
       />
       <DashboardAlertChip<AlertaCita & { href: string }>
         items={alertas.citas_sin_venta.map(c => ({ ...c, href: '/admin/appointments' }))}
-        label="citas completadas sin venta"
+        label="citas completadas sin pedido"
         baseHref="/admin/appointments"
         ignoredIds={ignoredCitas}
         onIgnore={onIgnoreCita}

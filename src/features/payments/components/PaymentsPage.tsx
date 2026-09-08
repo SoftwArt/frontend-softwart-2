@@ -26,7 +26,7 @@ export function PaymentsPage() {
   const [filterMetodo,  setFilterMetodo]  = useState('')
   const [filterEstado,  setFilterEstado]  = useState('')
 
-  const filtered = useMemo(() => filterPagos(pagos, ventasOpts, q, filterMetodo, filterEstado), [pagos, ventasOpts, q, filterMetodo, filterEstado])
+  const filtered = useMemo(() => filterPagos(pagos, ventasOpts, rawVentas, q, filterMetodo, filterEstado), [pagos, ventasOpts, rawVentas, q, filterMetodo, filterEstado])
   const { paginated, page, setPage, totalPages, total, pageSize, setPageSize } = usePagination(filtered)
 
   const [isViewOpen,  setIsViewOpen]  = useState(false)
@@ -40,13 +40,13 @@ export function PaymentsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl text-secondary">Pagos</h1>
-          <p className="text-muted-foreground">Gestiona los pagos registrados</p>
+          <h1 className="font-serif text-3xl text-secondary">Ventas</h1>
+          <p className="text-muted-foreground">Gestiona las ventas registradas</p>
         </div>
         <div className="flex items-center gap-2">
-          <SearchInput value={q} onChange={setQ} placeholder="Buscar venta, monto, fecha..." className="w-96" />
+          <SearchInput value={q} onChange={setQ} placeholder="Buscar pedido, monto, fecha..." className="w-96" />
           <Button onClick={() => form.openCreate()} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
-            <Plus className="mr-2 h-4 w-4" />Registrar Pago
+            <Plus className="mr-2 h-4 w-4" />Registrar Venta
           </Button>
         </div>
       </div>
@@ -64,7 +64,7 @@ export function PaymentsPage() {
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={`sk-${i}`} className="h-12 w-full rounded-md" />)}</div>
       ) : filtered.length === 0 ? (
-        <EmptyState title="Sin resultados" description="No hay pagos que coincidan." />
+        <EmptyState title="Sin resultados" description="No hay ventas que coincidan." />
       ) : (
         <PaymentsTable
           pagos={paginated}

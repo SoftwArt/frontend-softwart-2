@@ -14,6 +14,7 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
     estado, metodos, isLoading, tab, setTab,
     monto, setMonto, idMetodo, setIdMetodo, fechaPago, setFechaPago, isPagando,
     numAbonos, setNumAbonos, pctPrimero, setPctPrimero, isConfigurando,
+    modoPrimerAbono, setModoPrimerAbono, montoPrimero, setMontoPrimero,
     handlePagar, handleConfigurar,
     montoError,
   } = useSaleInstallmentModal({ open, idVenta, onSuccess })
@@ -73,6 +74,8 @@ export function SaleInstallmentModal({ open, onClose, idVenta, labelVenta, onSuc
                     estado={estado}
                     numAbonos={numAbonos} onNumAbonosChange={setNumAbonos}
                     pctPrimero={pctPrimero} onPctPrimeroChange={setPctPrimero}
+                    modoPrimerAbono={modoPrimerAbono} onModoPrimerAbonoChange={setModoPrimerAbono}
+                    montoPrimero={montoPrimero} onMontoPrimeroChange={setMontoPrimero}
                     isConfigurando={isConfigurando}
                     onSubmit={handleConfigurar}
                   />

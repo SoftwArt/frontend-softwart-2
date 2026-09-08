@@ -16,7 +16,7 @@ interface PaymentViewDialogProps {
 export function PaymentViewDialog({ open, onOpenChange, pago, ventasOpts, metodosPago, estadosPago }: PaymentViewDialogProps) {
   return (
     <ViewDialog open={open} onOpenChange={onOpenChange}
-      title={`Pago #${pago.id_pago}`}
+      title={`Venta #${pago.id_pago}`}
       fields={[
         { label: 'Venta',          value: ventasOpts.find(o => o.value === String(pago.id_venta))?.label ?? `#${pago.id_venta}`, fullWidth: true },
         { label: 'Monto',          value: formatCurrency(pago.monto) },

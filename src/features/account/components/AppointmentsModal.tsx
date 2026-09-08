@@ -130,8 +130,8 @@ export function AppointmentsModal({
                           {c.appointmentStatus?.nombre ?? 'Sin estado'}
                         </span>
                         {esCancelable && !puedeCancelar && (
-                          <span className="text-muted-foreground text-xs italic" title="Solo se puede cancelar hasta 6 horas antes de la cita">
-                            No cancelable (faltan &lt;6h)
+                          <span className="text-muted-foreground text-xs italic" title="Solo se puede cancelar con al menos 24 horas de anticipación">
+                            No cancelable (faltan &lt;24h)
                           </span>
                         )}
                         {puedeCancelar && (

@@ -35,7 +35,7 @@ export function useAppointmentDangerZone({ estadosCita, clientesOpts, onDelete, 
         }
         if (hasValidatedPayments(sale.payments)) {
           setEliminarTarget(prev => prev && prev.id === cita.id_cita
-            ? { ...prev, loading: false, bloqueado: true, msg: `Tiene la Venta #${sale.id_venta} con abonos validados. No se puede eliminar, solo anular.`, lines: [] }
+            ? { ...prev, loading: false, bloqueado: true, msg: `Tiene el Pedido #${sale.id_venta} con abonos validados. No se puede eliminar, solo anular.`, lines: [] }
             : prev)
           return
         }
@@ -100,7 +100,7 @@ export function useAppointmentDangerZone({ estadosCita, clientesOpts, onDelete, 
             ...prev,
             loading: false,
             bloqueado: true,
-            msg: `No se puede cancelar: la Venta #${sale.id_venta} asociada tiene pagos validados. Registra la devolución antes de cancelar la cita.`,
+            msg: `No se puede cancelar: el Pedido #${sale.id_venta} asociado tiene pagos validados. Registra la devolución antes de cancelar la cita.`,
             lines: [],
           }))
           return

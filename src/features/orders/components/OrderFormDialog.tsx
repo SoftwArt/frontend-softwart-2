@@ -46,12 +46,12 @@ export function OrderFormDialog({
         <form onSubmit={onSubmit} className="flex flex-col gap-5 mt-2" noValidate>
           <div>
             <label className={labelCls} htmlFor="ped-venta">
-              Venta <span className="text-destructive">*</span>
+              Pedido <span className="text-destructive">*</span>
               {!!editingId && <span className="text-muted-foreground font-normal normal-case tracking-normal"> (no editable)</span>}
             </label>
             <FieldErrorTooltip error={errors.idVenta}>
               <div>
-                <Combobox id="ped-venta" options={ventasOpts} value={idVenta} onValueChange={onIdVentaChange} onSearchChange={onSearchVentas} placeholder="Buscar venta..." searchPlaceholder="ID o fecha..." disabled={!!editingId} />
+                <Combobox id="ped-venta" options={ventasOpts} value={idVenta} onValueChange={onIdVentaChange} onSearchChange={onSearchVentas} placeholder="Buscar pedido..." searchPlaceholder="ID o fecha..." disabled={!!editingId} />
               </div>
             </FieldErrorTooltip>
           </div>
@@ -84,7 +84,7 @@ export function OrderFormDialog({
           </div>
           <div>
             <label className={labelCls} htmlFor="ped-precio">
-              Precio <span className="text-muted-foreground font-normal normal-case tracking-normal">(tomado de la venta, no editable)</span>
+              Precio <span className="text-muted-foreground font-normal normal-case tracking-normal">(tomado del pedido, no editable)</span>
             </label>
             <FieldErrorTooltip error={errors.precio}>
               <input
@@ -93,7 +93,7 @@ export function OrderFormDialog({
                 value={precio ? fmtCOP(Number(precio)) : ''}
                 readOnly
                 className={inputCls + ' opacity-60 cursor-not-allowed'}
-                placeholder="Se completa al seleccionar la venta"
+                placeholder="Se completa al seleccionar el pedido"
               />
             </FieldErrorTooltip>
           </div>

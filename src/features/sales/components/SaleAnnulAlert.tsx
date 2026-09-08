@@ -11,7 +11,7 @@ export function SaleAnnulAlert({ target, onOpenChange, onConfirm }: SaleAnnulAle
     <AlertDialog open={target !== null} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Anular esta venta?</AlertDialogTitle>
+          <AlertDialogTitle>¿Anular este pedido?</AlertDialogTitle>
           <AlertDialogDescription>
             {target?.label}. {target?.bloqueado ? target.msg : MSG_ANULAR_BASE}
           </AlertDialogDescription>
@@ -24,7 +24,7 @@ export function SaleAnnulAlert({ target, onOpenChange, onConfirm }: SaleAnnulAle
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             onClick={onConfirm}
           >
-            {target?.bloqueado ? 'No se puede anular' : 'Sí, anular venta'}
+            {target?.bloqueado ? 'No se puede anular' : 'Sí, anular pedido'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

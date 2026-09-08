@@ -90,7 +90,7 @@ export function useOrderStatusFlow({ estados, onChangeStatus, onDelete }: Params
               ...prev,
               loading: false,
               bloqueado: true,
-              msg: `Es el único servicio activo de la Venta #${sale.id_venta} y tiene pagos validados. Registra la devolución antes de cancelarlo.`,
+              msg: `Es el único servicio activo del Pedido #${sale.id_venta} y tiene pagos validados. Registra la devolución antes de cancelarlo.`,
               lines: [],
             } : prev)
           }
